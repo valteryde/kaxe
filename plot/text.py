@@ -5,7 +5,7 @@ from .styles import *
 import os
 from .shapes import *
 
-basePath = os.path.join(os.path.split(os.path.abspath(__name__))[0], 'nml')
+basePath = os.path.join(os.path.split(os.path.abspath(__name__))[0], 'kaxe')
 
 class Text:
     

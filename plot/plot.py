@@ -127,8 +127,8 @@ class Plot:
             if not fontSize is None: self.fontSize = fontSize
             if not markerStepSizeBand is None: self.markerStepSizeBand = markerStepSizeBand
 
-        if self.fontSize is None: self.fontSize = int(self.width/70)
-        if self.markerStepSizeBand is None: self.markerStepSizeBand = [int(self.fontSize*7), int(self.fontSize*4)]
+        if self.width and self.fontSize is None: self.fontSize = int(self.width/70)
+        if self.fontSize and self.markerStepSizeBand is None: self.markerStepSizeBand = [int(self.fontSize*7), int(self.fontSize*4)]
 
 
         # package options

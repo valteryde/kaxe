@@ -20,7 +20,6 @@ COLORS = [
     (6,71,137, 150),
 ]
 
-
 # SYMBOLS
 CIRCLE = 'o'
 RECTANGLE = 'RECT'
