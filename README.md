@@ -14,8 +14,9 @@ Plotting of functions in two dimensions
 
 ## Missing
 
-### plot.py
+### plot/plot.py
 
 make padding a four length list
 
-
+### obj/funtion.py
+check for diagonal axis support

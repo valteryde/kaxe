@@ -62,7 +62,6 @@ class Plot:
         self.scale = (0,0)
         self.offset = (0,0)
 
-
         # styles
         self.width = None
         self.height = None
@@ -411,6 +410,7 @@ class Plot:
             else:
                 startPos = axis.start
 
+            startPos = startPos - startPos%step
 
             for i in range(math.floor(lengthOverStep)+2):
                 p = direction*step*i + startPos
@@ -481,6 +481,7 @@ class Plot:
         # objects
         for obj in self.objects:
             obj.finalize(self)
+            self.addDrawingFunction(obj)
 
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 
@@ -513,9 +514,34 @@ class Plot:
     def pixel(self, x:int, y:int) -> tuple:
         """
         para: abstract value
+        return: pixel values according to axis
         """
+
         x, y = self.pos(x, y)
         return self.translate(x,y)
+
+
+    def inversepixel(self, x:int, y:int):
+        """
+        para: pixel values according to axis
+        return abstract value
+        """
+
+        x, y = self.inversetranslate(x,y)
+        
+        x += self.firstAxis.offset
+        y += self.secondAxis.offset
+
+        v1 = self.firstAxis.directionVector
+        v2 = self.secondAxis.directionVector
+
+        #b = (-r__b*v__1a + r__a)/(v__1a*v__2b + v__1b*v__2a)
+        b = (v1[0]*y - v2[0]*x)/(v1[0]*v2[1] - v1[1]*v2[0])
+
+        #a = (-b*v__1b + r__a)/v__1a
+        a = (-b*v1[1] + x)/v1[0]
+
+        return a, b
 
 
     def line(self, pos, n):
@@ -534,13 +560,17 @@ class Plot:
         return insideBox(self.windowBox, (x,y))
 
 
-    def inversetranslate(self, x:int, y:int):
+    def inversetranslate(self, x:int=None, y:int=None):
         """
         para: translated value
         return: x,y position according to basis (1,0), (0,1) in abstract space
         """
 
-        return (x+self.offset[0]-self.padding[0])/self.scale[0], (y+self.offset[1]-self.padding[1])/self.scale[1]
+        p = [None, None]
+        if not x is None: p[0] = (x+self.offset[0]-self.padding[0])/self.scale[0]
+        if not y is None: p[1] = (y+self.offset[1]-self.padding[1])/self.scale[1]
+
+        return p
 
 
     # shape
@@ -622,10 +652,7 @@ class Plot:
         background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
         surface = Image.new('RGBA', winSize)
 
-        circle = shapes.Circle(*self.pixel(0,0))
-
         background.drawStatic(surface)
-        circle.drawStatic(surface)
 
         for shape in self.shapes:
             shape.drawStatic(surface)

@@ -1,8 +1,8 @@
 
 import pyglet as pg
-from .styles import *
-from .shapes import drawStaticBatch, shapes
-from .helper import *
+from ..plot.styles import *
+from ..plot.shapes import drawStaticBatch, shapes
+from ..plot.helper import *
 
 class Points:
     def __init__(self, x, y, color:tuple=None, size:int=3, symbol:str=CIRCLE, connect:bool=False):
@@ -46,15 +46,13 @@ class Points:
             if not self.connect or i == len(self.x)-1:
                 continue
             
-            x1, x2 = parent.pixel(self.x[i+1], self.y[i+1])
-            if vlen(vdiff((x1, x2), (x,y))) < self.size:
+            x1, y1 = parent.pixel(self.x[i+1], self.y[i+1])
+            if vlen(vdiff((x1, y1), (x,y))) < self.size:
                 continue
 
-            line = shapes.Line(x,y, x1, x2, color=self.color, width=self.size*2, batch=self.batch, center=True)
+            line = shapes.Line(x,y, x1, y1, color=self.color, width=self.size*2, batch=self.batch, center=True)
             self.lines.append(line)
         
-        parent.addDrawingFunction(self)
-
     
     def draw(self):
         self.batch.draw()
