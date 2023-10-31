@@ -5,7 +5,7 @@ from ..plot.shapes import drawStaticBatch, shapes
 from ..plot.helper import *
 
 class Points:
-    def __init__(self, x, y, color:tuple=None, size:int=3, symbol:str=CIRCLE, connect:bool=False):
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=CIRCLE, connect:bool=False):
         self.batch = pg.shapes.Batch()
         self.points = []
         self.lines = []
@@ -35,13 +35,18 @@ class Points:
     
     def finalize(self, parent):
         
+        # set style 
+        if self.size is None: self.size = round(parent.fontSize / 6)
+
+
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)
             if not parent.inside(x,y):
                 continue
 
-            circle = shapes.Circle(x,y, self.size, color=self.color, batch=self.batch)
-            self.points.append(circle)
+            if self.symbol:
+                circle = shapes.Circle(x,y, self.size, color=self.color, batch=self.batch)
+                self.points.append(circle)
             
             if not self.connect or i == len(self.x)-1:
                 continue
@@ -50,7 +55,7 @@ class Points:
             if vlen(vdiff((x1, y1), (x,y))) < self.size:
                 continue
 
-            line = shapes.Line(x,y, x1, y1, color=self.color, width=self.size*2, batch=self.batch, center=True)
+            line = shapes.Line(x,y, x1, y1, color=self.color, width=self.size, batch=self.batch, center=True)
             self.lines.append(line)
         
     

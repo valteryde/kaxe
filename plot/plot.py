@@ -1,7 +1,8 @@
 
 # times = pg.font.load('Times New Roman', 10, dpi=96)
 #https://github.com/pyglet/pyglet/issues/1
-# absPath = os.path.split(os.path.abspath(__file__))[0] #os.path.pathsep
+# absPath = 
+# .path.split(os.path.abspath(__file__))[0] #os.path.pathsep
 # pg.font.add_file(os.path.join(absPath,os.path.join(absPath,'font', 'PlayfairDisplay-VariableFont_wght.ttf')))
 # playfairDisplay = pg.font.load('Playfair Display')
 
@@ -16,6 +17,8 @@ from pyglet.gl import *
 from .shapes import shapes, shapeBoundingBox, makeSymbolShapes
 from PIL import Image
 import tqdm
+from random import randint
+import os
 
 """
 structure to parent + child
@@ -331,7 +334,7 @@ class Plot:
 
     def __addMarkersToAxis__(self, axis): # move into axis method?
         
-        maxMarkerLengthStr = max(len(str(axis.start)), len(str(axis.end)))
+        maxMarkerLengthStr = min(max(len(str(axis.start)), len(str(axis.end))), 10)
 
         self.markers = []
 
@@ -402,7 +405,7 @@ class Plot:
                 marker = Marker(str(round(step*i, maxMarkerLengthStr)), step*i, shell(axis), **self.markerOptions)
                 marker.finalize(self)
 
-        else:
+        else: # check for true axis support
             
             direction = (-1)**(0 < nullX)
             if direction == -1:
@@ -583,7 +586,18 @@ class Plot:
         self.objects.append(o)
 
     
-    def show(self):
+    def show(self, static:bool=True):
+
+        if static:
+            fname = '.__tempImage{}.png'.format(''.join([randint(0,9) for i in range(10)]))
+            self.save(fname)
+
+            Image.open(fname)
+            # os.remove(fname)
+
+            
+
+
 
         self.style(
             windowWidth=800,

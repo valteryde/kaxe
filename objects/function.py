@@ -31,11 +31,14 @@ class Function:
         lastPointInside = True
         self.lineSegments = []
         
-        for n in range(0, parent.width, 2):
+        for n in range(0, parent.windowBox[2], 2):
 
             x, _ = parent.inversepixel(n,0)
 
-            y = self.function(x)
+            try:
+                y = self.function(x)
+            except (ValueError, ZeroDivisionError):
+                continue
 
             x,y = parent.pixel(x,y)
             # print(x,y)
