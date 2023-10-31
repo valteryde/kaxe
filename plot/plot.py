@@ -589,15 +589,12 @@ class Plot:
     def show(self, static:bool=True):
 
         if static:
-            fname = '.__tempImage{}.png'.format(''.join([randint(0,9) for i in range(10)]))
+            fname = '.__tempImage{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
             self.save(fname)
-
-            Image.open(fname)
-            # os.remove(fname)
-
-            
-
-
+            pilImage = Image.open(fname)
+            pilImage.show()
+            os.remove(fname)
+            return
 
         self.style(
             windowWidth=800,
