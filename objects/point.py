@@ -38,7 +38,6 @@ class Points:
         # set style 
         if self.size is None: self.size = round(parent.fontSize / 3)
 
-
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)
             if not parent.inside(x,y):
@@ -67,6 +66,10 @@ class Points:
     def draw(self, *args, **kwargs):
         self.batch.draw(*args, **kwargs)
 
-    
+    def push(self, x, y):
+        self.batch.push(x, y)
+
+
     def legend(self, text:str):
         self.legendText = text
+    

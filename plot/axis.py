@@ -93,10 +93,10 @@ class Marker:
         )
 
         box = [
-            textPos[0]-self.textLabel.content_width/2,
-            textPos[1]-self.textLabel.content_height/2,
-            textPos[0]+self.textLabel.content_width/2,
-            textPos[1]+self.textLabel.content_height/2
+            textPos[0]-self.textLabel.width/2,
+            textPos[1]-self.textLabel.height/2,
+            textPos[0]+self.textLabel.width/2,
+            textPos[1]+self.textLabel.height/2
         ]
 
         nudge = 0
@@ -110,10 +110,19 @@ class Marker:
         self.textLabel.y += n[1] * nudge
 
         parent.addDrawingFunction(self)
+        dx = min(self.textLabel.x - self.textLabel.width/2, 0)
+        dy = min(self.textLabel.y - self.textLabel.height/2, 0)
+        if dx < 0 or dy < 0:
+            parent.addPaddingCondition(-(dx), -(dy))
+
+        #print(self.textLabel.x - self.textLabel.width/2, self.textLabel.y - self.textLabel.height/2)
 
 
     def draw(self, *args, **kwargs):
         self.batch.draw(*args, **kwargs)
+
+    def push(self, x, y):
+        self.batch.push(x,y)
 
 
 class Axis:
@@ -192,3 +201,5 @@ class Axis:
     def draw(self, *args, **kwargs):
         self.shapeLine.draw(*args, **kwargs)
 
+    def push(self, x,y):
+        self.shapeLine.push(x,y)

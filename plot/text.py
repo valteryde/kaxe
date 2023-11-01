@@ -34,8 +34,8 @@ class Text(Shape):
         self.pilImage.save('.__textImage__.png')
         self.img = pg.image.load('.__textImage__.png')
 
-        self.content_width = self.img.width
-        self.content_height = self.img.height
+        self.width = self.img.width
+        self.height = self.img.height
 
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y

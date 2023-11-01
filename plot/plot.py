@@ -56,7 +56,7 @@ class Plot:
         self.legendBoxShape = shapes.Batch()
         
         self.scale = (0,0)
-        self.offset = (0,0)
+        self.offset = [0,0]
 
         # styles
         self.width = None
@@ -141,6 +141,12 @@ class Plot:
 
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
         # could be a problem depending on where padding is calcualted
+        left = int(left)
+        right = int(right)
+        bottom = int(bottom)
+        top = int(top)
+
+
         self.padding = (
             self.padding[0] + left,
             self.padding[1] + bottom,
@@ -148,11 +154,23 @@ class Plot:
             self.padding[3] + top,
         )
 
+        # opdater ikke disse. Forskellen er indlejret i padding
+        # self.offset[0] += left
+        # self.offset[1] += bottom
 
-    def __createLegendBox__(self):
+        for i in self.shapes:
+            if type(i) is tuple: # list is still unsorted
+                i[0].push(left, bottom)
+                continue
+            i.push(left, bottom)
+        
+        # for i in self.objects:
+        #     i.push(left, bottom)
+
+
+    def __createLegendBox__(self): # maybe add as a seperate object
         """
-        NEEDS MORE WORK
-        VERY FRAGILE
+        stadigvæk lidt skrøbelig
         """
 
         self.legendShapes = []
@@ -198,9 +216,9 @@ class Plot:
             rowTextHeight = 0
             for symbol, text in self.legendObjects:
                 
-                width = text.content_width + symbol.getBoundingBox()[0] + legendGridSpacing[0] + legendSymbolTextSpacing
+                width = text.width + symbol.getBoundingBox()[0] + legendGridSpacing[0] + legendSymbolTextSpacing
                 rowWidth += width
-                rowTextHeight = max(rowTextHeight, text.content_height)
+                rowTextHeight = max(rowTextHeight, text.height)
 
                 if rowWidth > legendMaxWidth:
                     grid.append([])
@@ -219,7 +237,7 @@ class Plot:
                 sumTextHeight + legendGridSpacing[1] * (len(grid)-1) + legendPadding[1] + legendPadding[3]
             ]
             
-            legendPos = [self.width/2 + self.padding[0] - legendBoxSize[0]/2, self.fontSize]
+            legendPos = [self.width/2 + self.padding[0] - legendBoxSize[0]/2, 0]
 
             # draw grid
             rowPos = 0
@@ -241,11 +259,11 @@ class Plot:
                     text.x = basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing
                     text.y = basePos[1] - rowPos
                     symbol.x = basePos[0] + colPos
-                    symbol.y = basePos[1] - text.content_height / 2 - symbolSize[1]/2 - rowPos
+                    symbol.y = basePos[1] - text.height / 2 - symbolSize[1]/2 - rowPos
 
-                    colPos += symbolSize[0] + text.content_width + legendSymbolTextSpacing + legendGridSpacing[0]
+                    colPos += symbolSize[0] + text.width + legendSymbolTextSpacing + legendGridSpacing[0]
                 
-                rowPos += text.content_height + legendGridSpacing[1]
+                rowPos += text.height + legendGridSpacing[1]
 
             # legend box
             # legendBoxSize = [10,30]
@@ -268,7 +286,7 @@ class Plot:
                     batch=self.legendBoxShape
                 ))
 
-            self.addPaddingCondition(bottom=legendBoxSize[1])
+            self.addPaddingCondition(bottom=legendBoxSize[1]+self.fontSize)
 
 
     def __setWindowDimensionBasedOnAxis__(self, firstAxis, secondAxis):
@@ -286,7 +304,7 @@ class Plot:
             yLength = max(abs(p2[1]-p1[1]), abs(p3[1]-p4[1]))
             self.scale = (self.width / xLength, self.height / yLength)
             
-            self.offset = (minX*self.scale[0], minY*self.scale[1])
+            self.offset = [minX*self.scale[0], minY*self.scale[1]]
 
             # move axis to untrue visual values
             # if firstaxis is vertical
@@ -316,7 +334,7 @@ class Plot:
             xLength = abs(maxX - minX)
             yLength = abs(maxY - minY)
             self.scale = (self.width / xLength, self.height / yLength)
-            self.offset = (minX*self.scale[0], minY*self.scale[1])
+            self.offset = [minX*self.scale[0], minY*self.scale[1]]
 
             firstAxis.finalize(self)
             secondAxis.finalize(self)
@@ -413,7 +431,7 @@ class Plot:
                 marker = Marker(str(round(p,maxMarkerLengthStr)), p, shell(axis), **self.markerOptions)
                 marker.finalize(self)
 
-
+    
     def bake(self):
         # finish making plot
         # fit "plot" into window
@@ -448,15 +466,8 @@ class Plot:
 
         else:
             self.untrueAxis = self.untrueAxis
-
+        
         # legend
-        maxLabelWidth = max([
-            getTextDimension(self.windowAxis[0], self.fontSize)[0],
-            getTextDimension(self.windowAxis[1], self.fontSize)[0],
-            getTextDimension(self.windowAxis[2], self.fontSize)[0],
-            getTextDimension(self.windowAxis[3], self.fontSize)[0]]
-        )
-        self.addPaddingCondition(maxLabelWidth,maxLabelWidth, maxLabelWidth,maxLabelWidth)
         self.__createLegendBox__()
 
         self.firstAxis = Axis(self.firstAxisVector, self.windowAxis[0], self.windowAxis[1], offset=self.untrueAxis)
@@ -635,7 +646,7 @@ class Plot:
         self.style(
             windowWidth=2000,
             windowHeight=1500,
-            padding=(30,30,30,30),
+            padding=(100,100,100,100),
             backgroundColor=WHITE,
             markerColor=BLACK,
             markerLength=20,
@@ -647,7 +658,6 @@ class Plot:
             # markerStepSizeBand=[200, 150],
             __overwrite__=False
         )
-
 
         self.bake()
         bar = tqdm.tqdm(total=len(self.shapes))

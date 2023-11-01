@@ -55,6 +55,9 @@ class Batch:
     def add(self, o):
         self.objects.append(o)
 
+    def push(self, x,y):
+        for i in self.objects: i.push(x,y)
+
     def draw(self, *args, **kwargs):
         for i in self.objects: i.draw(*args, **kwargs)
 
@@ -71,6 +74,10 @@ class Shape:
                 self.drawPillow(*args, **kwargs)
         except AttributeError:
             logging.critical('No man')
+
+    def push(self, x, y):
+        self.x += x
+        self.y += y
 
 
 # SHAPES
@@ -118,6 +125,13 @@ class Line(Shape):
         self.centerAlign = center
         super().__init__()
         if batch: batch.add(self)
+
+    # overwrites push
+    def push(self, x, y):
+        self.x0 += x
+        self.x1 += x
+        self.y0 += y
+        self.y1 += y
 
 
     def drawPyglet(self):
