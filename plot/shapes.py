@@ -58,6 +58,7 @@ class Batch:
     def draw(self, *args, **kwargs):
         for i in self.objects: i.draw(*args, **kwargs)
 
+
 # BASESHAPE
 class Shape:
     def __init__(self):
@@ -170,9 +171,6 @@ class Circle(Shape):
         super().__init__()
         if batch: batch.add(self)
 
-
-    def draw(self):
-        pass
 
     def centerAlign(self):
         self.cornerAlign = False
