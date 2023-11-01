@@ -3,8 +3,7 @@ from typing import Callable
 from .point import Points
 from ..plot.styles import getRandomColor
 from ..plot.helper import *
-from ..plot.shapes import shapes, drawStaticBatch
-import pyglet as pg
+from ..plot.shapes import shapes
 
 
 class Function:
@@ -14,7 +13,7 @@ class Function:
         self.function = f
         self.switchAxis = switchAxis
         self.stepSize = stepSize
-        self.batch = pg.shapes.Batch()
+        self.batch = shapes.Batch()
         
         if color is None:
             self.color = getRandomColor()
@@ -73,9 +72,5 @@ class Function:
             lastPoint = [x, y]
 
 
-    def draw(self):
-        pass
-
-
-    def drawStatic(self, surface):
-        drawStaticBatch(self.batch, surface)
+    def draw(self, *args, **kwargs):
+        self.batch.draw(*args, **kwargs)

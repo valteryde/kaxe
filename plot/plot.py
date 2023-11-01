@@ -1,12 +1,4 @@
 
-# times = pg.font.load('Times New Roman', 10, dpi=96)
-#https://github.com/pyglet/pyglet/issues/1
-# absPath = 
-# .path.split(os.path.abspath(__file__))[0] #os.path.pathsep
-# pg.font.add_file(os.path.join(absPath,os.path.join(absPath,'font', 'PlayfairDisplay-VariableFont_wght.ttf')))
-# playfairDisplay = pg.font.load('Playfair Display')
-
-import pyglet as pg
 import math
 from .helper import *
 import logging
@@ -14,7 +6,8 @@ from .styles import *
 from .axis import *
 from .text import Text, getTextDimension
 from pyglet.gl import *
-from .shapes import shapes, shapeBoundingBox, makeSymbolShapes
+from .shapes import shapes
+from .symbol import makeSymbolShapes
 from PIL import Image
 import tqdm
 from random import randint
@@ -59,8 +52,8 @@ class Plot:
         self.shapes = []
         self.objects = []
         self.legendObjects = []
-        self.legendBatch = pg.shapes.Batch()
-        self.legendBoxShape = pg.shapes.Batch()
+        self.legendBatch = shapes.Batch()
+        self.legendBoxShape = shapes.Batch()
         
         self.scale = (0,0)
         self.offset = (0,0)
@@ -205,7 +198,7 @@ class Plot:
             rowTextHeight = 0
             for symbol, text in self.legendObjects:
                 
-                width = text.content_width + shapeBoundingBox(symbol)[0] + legendGridSpacing[0] + legendSymbolTextSpacing
+                width = text.content_width + symbol.getBoundingBox()[0] + legendGridSpacing[0] + legendSymbolTextSpacing
                 rowWidth += width
                 rowTextHeight = max(rowTextHeight, text.content_height)
 
@@ -237,7 +230,7 @@ class Plot:
                     self.legendShapes.append(symbol)
                     self.legendShapes.append(text)
 
-                    symbolSize = shapeBoundingBox(symbol)
+                    symbolSize = symbol.getBoundingBox()
 
                     basePos = [
                         legendPos[0] + legendPadding[0],
@@ -248,7 +241,7 @@ class Plot:
                     text.x = basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing
                     text.y = basePos[1] - rowPos
                     symbol.x = basePos[0] + colPos
-                    symbol.y = basePos[1] - text.content_height / 2 - symbolSize[1]/2 + - rowPos
+                    symbol.y = basePos[1] - text.content_height / 2 - symbolSize[1]/2 - rowPos
 
                     colPos += symbolSize[0] + text.content_width + legendSymbolTextSpacing + legendGridSpacing[0]
                 
@@ -663,14 +656,14 @@ class Plot:
         background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
         surface = Image.new('RGBA', winSize)
 
-        background.drawStatic(surface)
+        background.draw(surface)
 
         for shape in self.shapes:
-            shape.drawStatic(surface)
+            shape.draw(surface)
             bar.update()
 
-        drawStaticBatch(self.legendBoxShape, surface)
-        drawStaticBatch(self.legendBatch, surface)
+        self.legendBoxShape.draw(surface)
+        self.legendBatch.draw(surface)
 
         surface.save(fname)
         bar.close()

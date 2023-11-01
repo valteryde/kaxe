@@ -7,16 +7,18 @@ from .shapes import *
 
 basePath = os.path.join(os.path.split(os.path.abspath(__name__))[0], 'kaxe')
 
-class Text:
+class Text(Shape):
     
-    def __init__(self, text:str, x:int, y:int, fontSize:int=16, color=(0,0,0,255), rotate:int=0, batch:pg.shapes.Batch=None, anchor_x:str="center", anchor_y:str="center", *args, **kwargs):
+    def __init__(self, text:str, x:int, y:int, fontSize:int=16, color=(0,0,0,255), rotate:int=0, batch:Batch=None, anchor_x:str="center", anchor_y:str="center", *args, **kwargs):
         self.batch = batch
         self.x = x
         self.y = y
         self.color = color
         self.rotate = 0
         self.fontSize = fontSize
-        addToBatch(batch, self)
+        self.text = text
+        super().__init__()
+        if batch: batch.add(self)
 
         # make pil image
         pilImage = Image.new("RGBA", (self.fontSize*2*len(text),self.fontSize*2), color=(0,0,0,0))
@@ -43,19 +45,17 @@ class Text:
         if anchor_y == "center":
             self.__offset__[1] = self.pilImage.height/2
 
-        
-
-        # self.img = pg.image.SolidColorImagePattern(WHITE).create_image(pilImage.width, pilImage.height)
-        # self.img.set_data('RGBA', pilImage.width * len('RGBA'), pilImage.tobytes())
-        # self.sprite = pg.sprite.Sprite(self.img, x=x, y=y)
-
         os.remove('.__textImage__.png')
 
         if rotate > 0:
             pass
 
 
-    def draw(self):
+    def __repr__(self):
+        return '{}'.format(self.text)
+
+
+    def drawPyglet(self):
         
         # #self.text,
         #       x=textPos[0], 
@@ -69,10 +69,11 @@ class Text:
         #       font_size=self.fontSize,
         # )
 
-        self.img.blit(self.x, self.y)
+        # self.img.blit(self.x, self.y)
+        pass
 
 
-    def drawStatic(self, surface):
+    def drawPillow(self, surface):
         [self.y] = flipHorizontal(surface, self.y+self.__offset__[1])
         blitImageToSurface(surface, self.pilImage, (int(self.x)-self.__offset__[0], int(self.y)))
 

@@ -18,6 +18,7 @@ Plotting of functions in two dimensions
 
 make padding a four length list
 better sizes based on window size
+fixe det underlige padding lavet fra markørerene
 
 ### obj/funtion.py
 check for diagonal axis support

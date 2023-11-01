@@ -1,7 +1,6 @@
 
-import pyglet as pg
 from .helper import *
-from .shapes import shapes, drawStaticBatch
+from .shapes import shapes
 from .text import Text
 
 class Marker:
@@ -26,7 +25,7 @@ class Marker:
         self.text = text
         self.x = x
         self.axis = axis
-        self.batch = pg.shapes.Batch()
+        self.batch = shapes.Batch()
         
         self.markerLength = markerLength
         self.markerWidth = markerWidth
@@ -113,12 +112,8 @@ class Marker:
         parent.addDrawingFunction(self)
 
 
-    def draw(self):
-        self.batch.draw()
-
-
-    def drawStatic(self, surface):
-        drawStaticBatch(self.batch, surface)
+    def draw(self, *args, **kwargs):
+        self.batch.draw(*args, **kwargs)
 
 
 class Axis:
@@ -194,9 +189,6 @@ class Axis:
         parent.addDrawingFunction(self)
 
 
-    def draw(self):
-        self.shapeLine.draw()
+    def draw(self, *args, **kwargs):
+        self.shapeLine.draw(*args, **kwargs)
 
-
-    def drawStatic(self, surface):
-        self.shapeLine.drawStatic(surface)

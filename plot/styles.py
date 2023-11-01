@@ -19,9 +19,3 @@ COLORS = [
     (247,197,72, 255),
     (6,71,137, 255),
 ]
-
-# SYMBOLS
-CIRCLE = 'o'
-RECTANGLE = 'RECT'
-TRIANGLE = 'TRI'
-STAR = 'STAR'

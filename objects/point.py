@@ -1,12 +1,12 @@
 
-import pyglet as pg
 from ..plot.styles import *
-from ..plot.shapes import drawStaticBatch, shapes
+from ..plot.shapes import shapes
+from ..plot.symbol import makeSymbolShapes, symbol
 from ..plot.helper import *
 
 class Points:
-    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=CIRCLE, connect:bool=False):
-        self.batch = pg.shapes.Batch()
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbol.CIRCLE, connect:bool=False):
+        self.batch = shapes.Batch()
         self.points = []
         self.lines = []
         
@@ -36,7 +36,7 @@ class Points:
     def finalize(self, parent):
         
         # set style 
-        if self.size is None: self.size = round(parent.fontSize / 6)
+        if self.size is None: self.size = round(parent.fontSize / 3)
 
 
         for i, (x,y) in enumerate(zip(self.x,self.y)):
@@ -45,8 +45,13 @@ class Points:
                 continue
 
             if self.symbol:
-                circle = shapes.Circle(x,y, self.size, color=self.color, batch=self.batch)
-                self.points.append(circle)
+                
+                #shapes.Circle(x,y, self.size, color=self.color, batch=self.batch)
+                symbol = makeSymbolShapes(self.symbol, self.size, self.color, batch=self.batch)
+                symbol.x = x
+                symbol.y = y
+                if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
+                self.points.append(symbol)
             
             if not self.connect or i == len(self.x)-1:
                 continue
@@ -55,17 +60,13 @@ class Points:
             if vlen(vdiff((x1, y1), (x,y))) < self.size:
                 continue
 
-            line = shapes.Line(x,y, x1, y1, color=self.color, width=self.size, batch=self.batch, center=True)
+            line = shapes.Line(x,y, x1, y1, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
             self.lines.append(line)
         
     
-    def draw(self):
-        self.batch.draw()
+    def draw(self, *args, **kwargs):
+        self.batch.draw(*args, **kwargs)
 
     
-    def drawStatic(self, surface):
-        drawStaticBatch(self.batch, surface)
-
-
     def legend(self, text:str):
         self.legendText = text
