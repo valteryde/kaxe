@@ -12,6 +12,11 @@ def getRandomColor() -> tuple:
     colorNum+=1
     return COLORS[colorNum%(len(COLORS))]
 
+def resetColor() -> None:
+    global colorNum
+    colorNum = -1
+
+
 COLORS = [
     (91,200,175, 255),
     (222,107,72, 255),

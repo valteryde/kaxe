@@ -22,6 +22,8 @@ check for diagonal axis support
 
 ## Ideas
 
+Render latex math
+
 ### plot/
 
 - Finde maximum og minimum

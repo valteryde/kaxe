@@ -28,8 +28,6 @@ class Text(Shape):
         #draw.fontmode = "1" # this apparently sets (anti)aliasing.
         draw.text((winSize[0]//2, winSize[1]//2), text, color, font=font)
         pilImage = pilImage.rotate(self.rotate)
-        if self.text == 'wow mand ohøj':
-            pilImage.save('test.png')
         self.pilImage = pilImage.crop(pilImage.getbbox())
         
         # pilImage = pilImage.transpose(Image.FLIP_TOP_BOTTOM)

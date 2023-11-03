@@ -25,7 +25,7 @@ To be done:
 
 class Plot:
     def __init__(self, 
-                 window:tuple=[None, None, None, None], 
+                 window:list=None, 
                  untrueAxis:bool=None,
                  firstAxis:tuple = (1,0),
                  secondAxis:tuple = (0,1)
@@ -43,6 +43,7 @@ class Plot:
 
         # options
         self.windowAxis = window
+        if self.windowAxis is None: self.windowAxis = [None, None, None, None]
         self.firstAxisVector = firstAxis
         self.secondAxisVector = secondAxis
         self.standardBasis = (self.firstAxisVector[0] == 0 or self.firstAxisVector[1] == 0) and (self.secondAxisVector[0] == 0 or self.secondAxisVector[1] == 0)
@@ -58,6 +59,8 @@ class Plot:
         self.scale = (0,0)
         self.offset = [0,0]
         self.padding = [0,0,0,0] #computed padding
+        self.firstTitle = None
+        self.secondTitle = None
 
         # styles
         self.width = None
@@ -370,7 +373,8 @@ class Plot:
                 if not self.windowAxis[1]: self.windowAxis[1] = max(horizontal)
                 if not self.windowAxis[2]: self.windowAxis[2] = min(vertical)
                 if not self.windowAxis[3]: self.windowAxis[3] = max(vertical)
-            except:
+            except Exception as e:
+                logging.warn(e) # not tested
                 self.windowAxis = [-10, 10, -5, 5]
         
         if self.untrueAxis is None:
@@ -383,8 +387,8 @@ class Plot:
         else:
             self.untrueAxis = self.untrueAxis
         
-        self.firstAxis = Axis(self.firstAxisVector, self.windowAxis[0], self.windowAxis[1], offset=self.untrueAxis)
-        self.secondAxis = Axis(self.secondAxisVector, self.windowAxis[2], self.windowAxis[3], offset=self.untrueAxis)
+        self.firstAxis = Axis(self.firstAxisVector, self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
+        self.secondAxis = Axis(self.secondAxisVector, self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
         # computed options, padding needs to set before this point
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
@@ -395,8 +399,8 @@ class Plot:
         self.secondAxis._addMarkersToAxis_(self)
 
         # legend & title
-        self.firstAxis.addTitle('hej du', self)
-        self.secondAxis.addTitle('wow mand ohøj', self)
+        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
         self.__createLegendBox__()
 
 
@@ -474,7 +478,7 @@ class Plot:
         return a, b
 
 
-    def line(self, pos, n):
+    def line(self, pos, n): # -> name e.g lineOnWindowBorder
         """
         para: x,y position according to basis (1,0), (0,1) in abstract space
         return: two translated values on border of plot
@@ -516,6 +520,7 @@ class Plot:
     def title(self, first=None, second=None):
         self.firstTitle = first
         self.secondTitle = second
+        return self
 
 
     def show(self, static:bool=True):
@@ -537,7 +542,7 @@ class Plot:
             windowWidth=2000,
             windowHeight=1500,
             # padding=(100,100,100,100),
-            padding=(0,0,0,0),
+            padding=(20,20,20,20),
             backgroundColor=WHITE,
             markerColor=BLACK,
             markerLength=20,
@@ -563,9 +568,6 @@ class Plot:
         for shape in self.shapes:
             shape.draw(surface)
             bar.update()
-
-        # self.legendBoxShape.draw(surface)
-        # self.legendBatch.draw(surface)
 
         surface.save(fname)
         bar.close()

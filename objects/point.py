@@ -4,6 +4,7 @@ from ..plot.shapes import shapes
 from ..plot.symbol import makeSymbolShapes, symbol
 from ..plot.helper import *
 
+
 class Points:
     def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbol.CIRCLE, connect:bool=False):
         self.batch = shapes.Batch()
@@ -72,4 +73,5 @@ class Points:
 
     def legend(self, text:str):
         self.legendText = text
+        return self
     

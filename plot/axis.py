@@ -3,6 +3,7 @@ from .helper import *
 from .shapes import shapes
 from .text import Text, getTextDimension
 
+
 class Marker:
 
     def __init__(self, 
@@ -139,7 +140,7 @@ class Axis:
                  start, 
                  end, 
                  color=(0,0,0,255), 
-                 offset:bool=True):
+                 makeOffsetAvaliable:bool=True):
         """
         offset:bool If graph should be offset with equvalient of start value
         """
@@ -147,7 +148,7 @@ class Axis:
         self.start = start
         self.end = end
         self.offset = 0
-        if offset:
+        if makeOffsetAvaliable:
             self.offset = self.start
         self.title = None
 
@@ -227,7 +228,7 @@ class Axis:
         # is null in frame?
         # NOTE: FEJL her ved start på noget underligt, fx startPos = 0.7832
         nullX, nullY = parent.pixel(0,0)
-        if (parent.padding[0] <= nullX <= parent.width+self.padding[0]) and (parent.padding[1] <= nullY <= parent.height+parent.padding[1]):
+        if (parent.padding[0] <= nullX <= parent.width+parent.padding[0]) and (parent.padding[1] <= nullY <= parent.height+parent.padding[1]):
 
             distBeforeNull = vlen(vdiff((nullX, nullY), self.lineStartPoint))
             distafterNull = vlen(vdiff((nullX, nullY), self.lineEndPoint))
@@ -239,7 +240,7 @@ class Axis:
             ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
 
             # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
-            if not self.standardBasis: 
+            if not parent.standardBasis: 
                 marker = Marker("0", 0, shell(self), **parent.markerOptions)
                 marker.finalize(parent)
                 markers.append(marker)
