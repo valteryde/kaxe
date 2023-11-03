@@ -62,6 +62,11 @@ def vectorMultipliciation(*vs):
 
     return l
 
+
+def angleBetweenVectors(v1, v2):
+    return math.degrees(math.acos((v1[0]*v2[0]+v1[1]*v2[1])/(vlen(v1)*vlen(v2))))
+
+
 # window math
 def boxIntersectWithLine(box, nvector, pos):
 

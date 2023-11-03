@@ -1,5 +1,6 @@
 
 import math
+import time
 from .helper import *
 import logging
 from .styles import *
@@ -24,7 +25,6 @@ To be done:
 
 class Plot:
     def __init__(self, 
-                 labels:list=["", ""],
                  window:tuple=[None, None, None, None], 
                  untrueAxis:bool=None,
                  firstAxis:tuple = (1,0),
@@ -57,11 +57,11 @@ class Plot:
         
         self.scale = (0,0)
         self.offset = [0,0]
+        self.padding = [0,0,0,0] #computed padding
 
         # styles
         self.width = None
         self.height = None
-        self.padding = None
         self.backgroundColor = None
         self.markerColor = None
         self.markerWidth = None
@@ -71,6 +71,7 @@ class Plot:
         self.gridLineColor = None
         self.fontSize = None
         self.markerStepSizeBand = None
+        self.outerPadding = None
 
         
     def style(
@@ -97,7 +98,7 @@ class Plot:
         if not __overwrite__:
             if not windowWidth is None and self.width is None: self.width = windowWidth
             if not windowHeight is None and self.height is None: self.height = windowHeight
-            if not padding is None and self.padding is None: self.padding = list(padding)
+            if not padding is None and self.outerPadding is None: self.outerPadding = list(padding)
             if not backgroundColor is None and self.backgroundColor is None: self.backgroundColor = backgroundColor
             if not markerColor is None and self.markerColor is None: self.markerColor = markerColor
             if not markerWidth is None and self.markerWidth is None: self.markerWidth = markerWidth
@@ -111,7 +112,7 @@ class Plot:
         else:
             if not windowWidth is None: self.width = windowWidth
             if not windowHeight is None: self.height = windowHeight
-            if not padding is None: self.padding = list(padding)
+            if not padding is None: self.outerPadding = list(padding)
             if not backgroundColor is None: self.backgroundColor = backgroundColor
             if not markerColor is None: self.markerColor = markerColor
             if not markerWidth is None: self.markerWidth = markerWidth
@@ -157,6 +158,8 @@ class Plot:
         # opdater ikke disse. Forskellen er indlejret i padding
         # self.offset[0] += left
         # self.offset[1] += bottom
+
+        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
 
         for i in self.shapes:
             if type(i) is tuple: # list is still unsorted
@@ -287,6 +290,8 @@ class Plot:
                 ))
 
             self.addPaddingCondition(bottom=legendBoxSize[1]+self.fontSize)
+            self.addDrawingFunction(self.legendBoxShape)
+            self.addDrawingFunction(self.legendBatch)
 
 
     def __setWindowDimensionBasedOnAxis__(self, firstAxis, secondAxis):
@@ -328,7 +333,6 @@ class Plot:
             else:
                 firstAxis.finalize(self)
 
-
         else: # use full scale
 
             xLength = abs(maxX - minX)
@@ -341,100 +345,12 @@ class Plot:
 
         nullX, nullY = self.pixel(0,0)
         self.nullInPlot = insideBox(self.windowBox, (nullX, nullY))
-        
 
-    def __addMarkersToAxis__(self, axis): # move into axis method?
-        
-        maxMarkerLengthStr = min(max(len(str(axis.start)), len(str(axis.end))), 10)
 
-        self.markers = []
-
-        p1 = self.inversetranslate(*axis.lineStartPoint)
-        p2 = self.inversetranslate(*axis.lineEndPoint)
-        pixelLength = vlen(vdiff(axis.lineStartPoint, axis.lineEndPoint))
-        length = vlen(vdiff(p1, p2))
-
-        MARKERSTEPSIZE = self.markerStepSizeBand
-        MARKERSTEP = [2, 5, 10]
-        acceptence = [math.floor(pixelLength/MARKERSTEPSIZE[0]),math.floor(pixelLength/MARKERSTEPSIZE[1])]
-
-        c = 0
-        cameFromDirection = 0
-        while True:
-
-            step = MARKERSTEP[c%len(MARKERSTEP)] * 10**(c//len(MARKERSTEP))
-
-            lengthOverStep = length / step
-
-            direction = 0
-
-            if lengthOverStep > acceptence[1]:
-                direction = 1
-            
-            if lengthOverStep < acceptence[0]:
-                direction = -1
-            
-            c += direction
-
-            if cameFromDirection == direction*-1:
-                break
-            
-            cameFromDirection = direction
-
-            if direction != 0:
-                continue
-
-            break
-        
-        lengthOverStep = round(lengthOverStep)
-        
-
-        # is null in frame?
-        # NOTE: FEJL her ved start på noget underligt, fx startPos = 0.7832
-        nullX, nullY = self.pixel(0,0)
-        if (self.padding[0] <= nullX <= self.width+self.padding[0]) and (self.padding[1] <= nullY <= self.height+self.padding[1]):
-
-            distBeforeNull = vlen(vdiff((nullX, nullY), axis.lineStartPoint))
-            distafterNull = vlen(vdiff((nullX, nullY), axis.lineEndPoint))
-
-            procentBeforeNull = distBeforeNull/pixelLength
-            procentAfterNull = distafterNull/pixelLength
-
-            ticksBeforeNull = math.ceil(lengthOverStep*procentBeforeNull)
-            ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
-
-            # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
-            if not self.standardBasis: 
-                marker = Marker("0", 0, shell(axis), **self.markerOptions)
-                marker.finalize(self)
-
-            for i in range(1, ticksBeforeNull+1):
-                marker = Marker(str(round(-step*i, maxMarkerLengthStr)), -step*i, shell(axis), **self.markerOptions)
-                marker.finalize(self)
-            
-            for i in range(1, ticksAfterNull+1):
-                marker = Marker(str(round(step*i, maxMarkerLengthStr)), step*i, shell(axis), **self.markerOptions)
-                marker.finalize(self)
-
-        else: # check for true axis support
-            
-            direction = (-1)**(0 < nullX)
-            if direction == -1:
-                startPos = axis.end
-            else:
-                startPos = axis.start
-
-            startPos = startPos - startPos%step
-
-            for i in range(math.floor(lengthOverStep)+2):
-                p = direction*step*i + startPos
-                marker = Marker(str(round(p,maxMarkerLengthStr)), p, shell(axis), **self.markerOptions)
-                marker.finalize(self)
-
-    
     def bake(self):
         # finish making plot
-        # fit "plot" into window
+        # fit "plot" into window 
+        startTime = time.time()
 
         # options to be determined before Axis
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
@@ -467,20 +383,22 @@ class Plot:
         else:
             self.untrueAxis = self.untrueAxis
         
-        # legend
-        self.__createLegendBox__()
-
         self.firstAxis = Axis(self.firstAxisVector, self.windowAxis[0], self.windowAxis[1], offset=self.untrueAxis)
         self.secondAxis = Axis(self.secondAxisVector, self.windowAxis[2], self.windowAxis[3], offset=self.untrueAxis)
-
 
         # computed options, padding needs to set before this point
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
         self.nullInPlot = False
 
         self.__setWindowDimensionBasedOnAxis__(self.firstAxis, self.secondAxis)
-        self.__addMarkersToAxis__(self.firstAxis)
-        self.__addMarkersToAxis__(self.secondAxis)
+        self.firstAxis._addMarkersToAxis_(self)
+        self.secondAxis._addMarkersToAxis_(self)
+
+        # legend & title
+        self.firstAxis.addTitle('hej du', self)
+        self.secondAxis.addTitle('wow mand ohøj', self)
+        self.__createLegendBox__()
+
 
         if self.untrueAxis and not self.standardBasis:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
@@ -491,6 +409,11 @@ class Plot:
             self.addDrawingFunction(obj)
 
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
+
+        # add back outerPadding
+        self.addPaddingCondition(*self.outerPadding)
+
+        logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
 
 
     # translations
@@ -590,6 +513,11 @@ class Plot:
         self.objects.append(o)
 
     
+    def title(self, first=None, second=None):
+        self.firstTitle = first
+        self.secondTitle = second
+
+
     def show(self, static:bool=True):
 
         if static:
@@ -600,53 +528,16 @@ class Plot:
             os.remove(fname)
             return
 
-        self.style(
-            windowWidth=800,
-            windowHeight=600,
-            padding=(30,0,30,30),
-            backgroundColor=WHITE,
-            markerColor=BLACK,
-            markerLength=20,
-            markerWidth=3,
-            fontSize=10,
-            font = "Times New Roman",
-            gridLineColor=(200,200,200,255),
-            gridLines = True,
-            markerStepSizeBand=[200, 150],
-            __overwrite__=False
-        )
-
-
-        self.bake()
-
-        window = pg.window.Window(self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3])
-        background = pg.shapes.Rectangle(0,0,self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3], color=self.backgroundColor)
-
-        @window.event
-        def on_draw():
-            window.clear()
-            background.draw()
-
-            # glEnable(GL_BLEND)
-            # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-            for shape in self.shapes:
-                shape.draw()
-
-            self.legendBoxShape.draw()
-            self.legendBatch.draw()
-
-            # self.paddingBatch.draw()
-
-        pg.app.run()
-
 
     def save(self, fname):
         
+        totStartTime = time.time()
+
         self.style(
             windowWidth=2000,
             windowHeight=1500,
-            padding=(100,100,100,100),
+            # padding=(100,100,100,100),
+            padding=(0,0,0,0),
             backgroundColor=WHITE,
             markerColor=BLACK,
             markerLength=20,
@@ -660,6 +551,7 @@ class Plot:
         )
 
         self.bake()
+        startTime = time.time()
         bar = tqdm.tqdm(total=len(self.shapes))
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
@@ -672,9 +564,12 @@ class Plot:
             shape.draw(surface)
             bar.update()
 
-        self.legendBoxShape.draw(surface)
-        self.legendBatch.draw(surface)
+        # self.legendBoxShape.draw(surface)
+        # self.legendBatch.draw(surface)
 
         surface.save(fname)
         bar.close()
-        
+        logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
+        logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
+    
+    

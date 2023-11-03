@@ -15,10 +15,7 @@ Plotting of functions in two dimensions
 ## Missing
 
 ### plot/plot.py
-
-make padding a four length list
-better sizes based on window size
-fixe det underlige padding lavet fra markørerene
+check for diagonal axis support for title
 
 ### obj/funtion.py
 check for diagonal axis support

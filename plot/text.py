@@ -14,19 +14,22 @@ class Text(Shape):
         self.x = x
         self.y = y
         self.color = color
-        self.rotate = 0
+        self.rotate = rotate
         self.fontSize = fontSize
         self.text = text
         super().__init__()
         if batch: batch.add(self)
 
         # make pil image
-        pilImage = Image.new("RGBA", (self.fontSize*2*len(text),self.fontSize*2), color=(0,0,0,0))
+        winSize = (self.fontSize*2*len(text),self.fontSize*2*len(text))
+        pilImage = Image.new("RGBA", winSize, color=(0,0,0,0))
         draw = ImageDraw.Draw(pilImage)
         font = ImageFont.truetype(os.path.join(basePath,"resource","computer-modern-family","cmu.serif-roman.ttf"), self.fontSize)
         #draw.fontmode = "1" # this apparently sets (anti)aliasing.
-        draw.text((0, 0), text, color, font=font)
-
+        draw.text((winSize[0]//2, winSize[1]//2), text, color, font=font)
+        pilImage = pilImage.rotate(self.rotate)
+        if self.text == 'wow mand ohøj':
+            pilImage.save('test.png')
         self.pilImage = pilImage.crop(pilImage.getbbox())
         
         # pilImage = pilImage.transpose(Image.FLIP_TOP_BOTTOM)
@@ -55,21 +58,11 @@ class Text(Shape):
         return '{}'.format(self.text)
 
 
-    def drawPyglet(self):
-        
-        # #self.text,
-        #       x=textPos[0], 
-        #       y=textPos[1], 
-        #       color=self.color, 
-        #       batch=self.batch, 
-        #       align="center", 
-        #       anchor_x="center",
-        #       anchor_y="center",
-        #       font_name=self.font,
-        #       font_size=self.fontSize,
-        # )
+    def getBoundingBox(self):
+        return [self.width, self.height]
 
-        # self.img.blit(self.x, self.y)
+
+    def drawPyglet(self):
         pass
 
 
@@ -80,4 +73,4 @@ class Text(Shape):
 
 def getTextDimension(text, fontSize ,*args, **kwargs):
     label = Text(*args, text=str(text), x=0, y=0, fontSize=fontSize, **kwargs)
-    return label.content_width, label.content_height
+    return label.width, label.height
