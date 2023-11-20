@@ -4,6 +4,7 @@ from .point import Points
 from ..plot.styles import getRandomColor
 from ..plot.helper import *
 from ..plot.shapes import shapes
+from ..plot.symbol import symbol
 
 
 class Function:
@@ -14,11 +15,13 @@ class Function:
         self.switchAxis = switchAxis
         self.stepSize = stepSize
         self.batch = shapes.Batch()
-        
+        self.legendSymbol = symbol.LINE
+
         if color is None:
             self.color = getRandomColor()
         else:
             self.color = color
+        self.legendColor = self.color
 
         self.thickness = width
 
@@ -47,7 +50,6 @@ class Function:
                 lastPoint = [x, y]
                 continue
 
-
             inside = parent.inside(x,y)
             
             # last is inside but plot heading out
@@ -66,7 +68,10 @@ class Function:
                 lastPointInside = False
                 lastPoint = [x,y]
                 continue
-            
+
+            if (not parent.inside(*lastPoint) and not parent.inside(x,y)):
+                continue
+
             line = shapes.Line(lastPoint[0], lastPoint[1], x, y, color=self.color, width=self.thickness*2, batch=self.batch, center=True)
             self.lineSegments.append(line)
             lastPoint = [x, y]
@@ -74,3 +79,12 @@ class Function:
 
     def draw(self, *args, **kwargs):
         self.batch.draw(*args, **kwargs)
+
+
+    def push(self, *args, **kwargs):
+        self.batch.push(*args, **kwargs)
+    
+
+    def legend(self, text:str):
+        self.legendText = text
+        return self

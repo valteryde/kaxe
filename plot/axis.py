@@ -114,10 +114,11 @@ class Marker:
         
         dx = min(self.textLabel.x - self.textLabel.width/2, 0)
         dy = min(self.textLabel.y - self.textLabel.height/2, 0)
-        if dx < 0 or dy < 0:
-            parent.addPaddingCondition(-(dx), -(dy))
+        dxm = min(parent.width - (self.textLabel.x + self.textLabel.width/2), 0)
+        dym = min(parent.height - (self.textLabel.y + self.textLabel.height/2), 0)
 
-        #print(self.textLabel.x - self.textLabel.width/2, self.textLabel.y - self.textLabel.height/2)
+        if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
+            parent.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
 
 
     def draw(self, *args, **kwargs):
