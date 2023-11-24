@@ -132,38 +132,29 @@ class Marker:
         if hasattr(self, 'textLabel'):
             return self.textLabel.getBoundingBox()
         return [0,0]
+    
+
+    def pos(self):
+        if hasattr(self, 'textLabel'):
+            return self.textLabel.x, self.textLabel.y
 
 
 class Axis:
     def __init__(self, 
                  directionVector:tuple, 
-                 start, 
-                 end, 
-                 color=(0,0,0,255), 
-                 makeOffsetAvaliable:bool=True):
+                 color=(0,0,0,255)):
         """
         offset:bool If graph should be offset with equvalient of start value
         """
         
-        self.start = start
-        self.end = end
-        self.offset = 0
-        if makeOffsetAvaliable:
-            self.offset = self.start
-        self.title = None
-
         self.directionVector = directionVector
         self.vLen = math.sqrt(directionVector[0]**2+directionVector[1]**2)
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
-        self.pos = self.getEndPoints()[0]
 
         # styles
         self.color = color
         self.width = 2
-
-        # computed 
-        self.hasNull = (self.start <= 0 and self.end >= 0)
 
 
     def get(self, x:int) -> tuple:
@@ -180,7 +171,7 @@ class Axis:
         return self.get(self.start), self.get(self.end)
 
 
-    def _addMarkersToAxis_(self, parent):
+    def _addMarkersToAxis(self, parent):
         maxMarkerLengthStr = min(max(len(str(self.start)), len(str(self.end))), 10)
 
         markers = []
@@ -224,7 +215,6 @@ class Axis:
         
         lengthOverStep = round(lengthOverStep)
         
-
         # is null in frame?
         # NOTE: FEJL her ved start på noget underligt, fx startPos = 0.7832
         nullX, nullY = parent.pixel(0,0)
@@ -274,14 +264,24 @@ class Axis:
         self.markers = markers
 
 
+    def _addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
+        # computed 
+        self.start = start
+        self.end = end
+        self.offset = 0
+        if makeOffsetAvaliable:
+            self.offset = self.start
+        self.title = None
+        self.hasNull = (self.start <= 0 and self.end >= 0)
+        self.pos = self.getEndPoints()[0]
+
+
     def finalize(self, parent, visualOffset:tuple=(0,0)):
         self.visualOffset = visualOffset
         
         p1, p2 = self.getEndPoints()
         self.p1 = (p1[0]*parent.scale[0]-parent.offset[0], p1[1]*parent.scale[1]-parent.offset[1])
         self.p2 = (p2[0]*parent.scale[0]-parent.offset[0], p2[1]*parent.scale[1]-parent.offset[1])
-        # self.p1 = (p1[0]*parent.scale[0]-parent.offset[0], p1[1]*parent.scale[1]-parent.offset[1])
-        # self.p2 = (p2[0]*parent.scale[0]-parent.offset[0], p2[1]*parent.scale[1]-parent.offset[1])
 
         v = (self.p1[0] - self.p2[0], self.p1[1] - self.p2[1])
         n = (-v[1], v[0])
@@ -297,32 +297,92 @@ class Axis:
         self.lineEndPoint = p2
 
         self.shapeLine = shapes.Line(p1[0], p1[1], p2[0], p2[1], color=self.color, width=self.width)
-        # self.shapePoint1 = pg.shapes.Circle(*self.p1, 5, color=self.color)
-        # self.shapePoint2 = pg.shapes.Circle(*self.p2, 5, color=self.color)
         parent.addDrawingFunction(self)
 
+    
+    def __boxOverlays__(self, aCenterPos, aSize, bCenterPos, bSize):
+        #https://code.tutsplus.com/collision-detection-using-the-separating-axis-theorem--gamedev-169t
+        #https://stackoverflow.com/questions/40795709/checking-whether-two-rectangles-overlap-in-python-using-two-bottom-left-corners
+        
+        atop_right = (aCenterPos[0] + aSize[0]/2, aCenterPos[1] + aSize[1]/2)
+        abottom_left = (aCenterPos[0] - aSize[0]/2, aCenterPos[1] - aSize[1]/2)
 
-    def getPixelPos(self):
-        return (self.shapeLine.x0, self.shapeLine.y0), (self.shapeLine.x1, self.shapeLine.y1)    
+        btop_right = (bCenterPos[0] + bSize[0]/2, bCenterPos[1] + bSize[1]/2)
+        bbottom_left = (bCenterPos[0] - bSize[0]/2, bCenterPos[1] - bSize[1]/2)
+        
+        return not (atop_right[0] < bbottom_left[0]
+                or abottom_left[0] > btop_right[0]
+                or atop_right[1] < bbottom_left[1]
+                or abottom_left[1] > btop_right[1])
 
-
-    def addTitle(self, title:str, parent) -> None:
-        angle = angleBetweenVectors(self.v, (1,0))
+    def _addTitle(self, title:str, parent) -> None:
+        v = (self.v[0]*parent.scale[0], self.v[1]*parent.scale[1])
+        angle = angleBetweenVectors(v, (1,0))
 
         p1, p2 = self.getPixelPos()
-        v = vectorScalar(vdiff(p1, p2), 1/2)
+        diff = vdiff(p1, p2)
+        v = vectorScalar(diff, 1/2)
         axisPos = addVector(p1, v)
             
-        maxMarkerWidth = max([marker.getBoundingBox()[0] for marker in self.markers])
+        nscaled = (-diff[1], diff[0])
+        nscaledlength = vlen(nscaled)
+        nscaled = (nscaled[0] / nscaledlength, nscaled[1] / nscaledlength)
+
+        maxDist = [distPointLine(nscaled, p1, marker.pos()) for marker in self.markers if hasattr(marker, 'textLabel')]
+        maxDist = max(maxDist)
 
         textDimension = getTextDimension(title, parent.fontSize)
-        v = vectorScalar(self.n, (maxMarkerWidth+textDimension[1]) * self.markers[-1].directionFromAxis)
+        v = vectorScalar(nscaled, (textDimension[1]/2 + maxDist) * self.markers[-1].directionFromAxis)
 
+        # nudge out of marker spots
+        # forstil dig to kasser
+        # vi tjekker om den to kasser er oveni hindanden (om de overlapper)
+        # hvis ja så rykker vi kassen langs normal linjen
+        # ---------------
+        # |             |
+        # |             |
+        # |  --------   |
+        # |  |      |   |
+        # ---|------|----
+        #    |      |
+        #    --------
         pos = (axisPos[0]+v[0], axisPos[1]+v[1])
+        size = getTextDimension(title, parent.fontSize)
+        v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 1)
+        for _ in range(1000): # max nudge
+
+            checkMarkers = [i for i in self.markers] # shallow copy (hopefully)
+
+            for i, marker in enumerate(checkMarkers):
+                if not hasattr(marker, 'textLabel'):
+                    # checkMarkers.pop(i)
+                    #break
+                    continue
+
+                # #print(marker.pos(), marker.getBoundingBox(), pos, size)
+                # if self.__boxOverlays__(marker.pos(), marker.getBoundingBox(), pos, size): print('hjejsa')
+
+                if self.__boxOverlays__(marker.pos(), marker.getBoundingBox(), pos, size):
+                    pos = addVector(pos, v)
+                # else:
+                #     checkMarkers.pop(i)
+                #     break
+
+            if len(checkMarkers) == 0:
+                break
+
+        v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 5)
+        pos = addVector(pos, v)
         self.title = Text(title, *pos, parent.fontSize, parent.markerColor, angle)
 
+        #  del addPaddingCondition
         parent.addPaddingCondition(bottom=-min(pos[1], 0) + parent.fontSize/2, left=-min(pos[0], 0) + parent.fontSize/2)
+        parent.include(self.title)
 
+
+    # *** api ***
+    def getPixelPos(self):
+        return (self.shapeLine.x0, self.shapeLine.y0), (self.shapeLine.x1, self.shapeLine.y1)    
 
     def draw(self, *args, **kwargs):
         self.shapeLine.draw(*args, **kwargs)

@@ -24,14 +24,9 @@ To be done:
 """
 
 class Plot:
-    def __init__(self, 
-                 window:list=None, 
-                 untrueAxis:bool=None,
-                 firstAxis:tuple = (1,0),
-                 secondAxis:tuple = (0,1)
-                ): # |
+    def __init__(self,  window:list=None, trueAxis:bool=None): # |
         """
-        untrueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
+        trueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
 
         window:tuple [x0, x1, y0, y1] axis
 
@@ -39,16 +34,14 @@ class Plot:
         bottom to top is always positive
         """
         
+        self.firstAxis = None
+        self.secondAxis = None
         self.axis = [lambda: self.firstAxis, lambda: self.secondAxis]
+        self.untrueAxis = not trueAxis
 
         # options
         self.windowAxis = window
         if self.windowAxis is None: self.windowAxis = [None, None, None, None]
-        self.firstAxisVector = firstAxis
-        self.secondAxisVector = secondAxis
-        self.standardBasis = (self.firstAxisVector[0] == 0 or self.firstAxisVector[1] == 0) and (self.secondAxisVector[0] == 0 or self.secondAxisVector[1] == 0)
-
-        self.untrueAxis = untrueAxis
 
         self.shapes = []
         self.objects = []
@@ -143,13 +136,17 @@ class Plot:
         return self
 
 
+    def include(self, shape):
+        """includes shape in frame by adding padding"""
+        pass
+
+
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
         # could be a problem depending on where padding is calcualted
         left = int(left)
         right = int(right)
         bottom = int(bottom)
         top = int(top)
-
 
         self.padding = (
             self.padding[0] + left,
@@ -297,7 +294,7 @@ class Plot:
             self.addDrawingFunction(self.legendBatch)
 
 
-    def __setWindowDimensionBasedOnAxis__(self, firstAxis, secondAxis):
+    def __setWindowDimensionBasedOnAxis__(self, firstAxis:Axis, secondAxis:Axis):
         
         p1, p2 = firstAxis.getEndPoints()
         p3, p4 = secondAxis.getEndPoints()
@@ -350,12 +347,20 @@ class Plot:
         self.nullInPlot = insideBox(self.windowBox, (nullX, nullY))
 
 
-    def bake(self):
-        # finish making plot
-        # fit "plot" into window 
-        startTime = time.time()
+    def __createStandardAxis__(self):
+        if self.firstAxis: return # or self.secondAxis
 
-        # options to be determined before Axis
+        self.standardBasis = True
+        self.firstAxis = Axis((1,0))
+        self.secondAxis = Axis((0,1))
+
+
+
+    def __calculateWindowBorders__(self):
+        """
+        where all objects is in
+        unless windowAxis is already specefied
+        """
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
             horizontal = []
             vertical = []
@@ -386,23 +391,31 @@ class Plot:
 
         else:
             self.untrueAxis = self.untrueAxis
+
+
+    def bake(self):
+        # finish making plot
+        # fit "plot" into window 
+        startTime = time.time()
+
+        self.__calculateWindowBorders__()
         
-        self.firstAxis = Axis(self.firstAxisVector, self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
-        self.secondAxis = Axis(self.secondAxisVector, self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
+        self.__createStandardAxis__()
+        self.firstAxis._addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
+        self.secondAxis._addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
         # computed options, padding needs to set before this point
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
         self.nullInPlot = False
 
         self.__setWindowDimensionBasedOnAxis__(self.firstAxis, self.secondAxis)
-        self.firstAxis._addMarkersToAxis_(self)
-        self.secondAxis._addMarkersToAxis_(self)
+        self.firstAxis._addMarkersToAxis(self)
+        self.secondAxis._addMarkersToAxis(self)
 
         # legend & title
-        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
-        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
+        if self.firstTitle: self.firstAxis._addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis._addTitle(self.secondTitle, self)
         self.__createLegendBox__()
-
 
         if self.untrueAxis and not self.standardBasis:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
@@ -523,6 +536,13 @@ class Plot:
         return self
 
 
+    def setAxis(self, first:Axis, second:Axis):
+        self.firstAxis = first
+        self.secondAxis = second
+        self.standardBasis = (first.v[0] == 0 or first.v[1] == 0) and (second.v[0] == 0 or second.v[1] == 0)
+
+
+    # bake functions
     def show(self, static:bool=True):
 
         if static:

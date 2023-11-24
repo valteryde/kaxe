@@ -163,13 +163,16 @@ class Line(Shape):
         img = img.crop(img.getbbox())
 
         vConnectLength = vlen(vConnect)
+
+        if vConnectLength == 0:
+            return
+
         vConnect = (vConnect[1]/vConnectLength, vConnect[0]/vConnectLength)
         if not self.centerAlign:
             vConnect = (0,0)
 
         if p1[1] > p2[1]:
             vConnect = (-1*vConnect[0], vConnect[1])
-
 
         blitImageToSurface(surface, img, (pos[0]-vConnect[0]*self.thickness//2, pos[1]-vConnect[1]*self.thickness//2))
 
