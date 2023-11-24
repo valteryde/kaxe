@@ -13,7 +13,9 @@ class Test:
     def pointPlot():
         plot = kaxe.Plot()
 
-        p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
+        plot.title('hej', 'en lang titel der strækker sig langt')
+
+        p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)]).legend('test')
         plot.add(p)
 
         plot.save('pointPlot.png')
@@ -67,13 +69,8 @@ class Test:
 if __name__ == '__main__':
     # Test.normalWithoutObjects()
     # Test.diagonalAxisWithoutObjects()
-    #Test.customAxis()
+    # Test.customAxis()
     # Test.normal()
-    Test.customAxis()
-    #Test.labels()
-
-
-
-# goals
-# fix markers så de er lidt mere konsistente
-# lave legendbox til egen klasse
+    # Test.customAxis()
+    # Test.labels()
+    Test.pointPlot()

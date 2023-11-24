@@ -6,6 +6,7 @@ import logging
 from .styles import *
 from .axis import *
 from .text import Text, getTextDimension
+from .legend import LegendBox
 from pyglet.gl import *
 from .shapes import shapes
 from .symbol import makeSymbolShapes
@@ -177,129 +178,6 @@ class Plot:
         #     i.push(left, bottom)
 
 
-    def __createLegendBox__(self): # maybe add as a seperate object
-        """
-        stadigvæk lidt skrøbelig
-        """
-
-        self.legendShapes = []
-        
-        for obj in self.objects:
-            if hasattr(obj, "legendText"): # has legend ready
-
-                symbol = makeSymbolShapes(obj.legendSymbol, self.fontSize, obj.legendColor, self.legendBatch)
-
-                self.legendObjects.append((
-                    symbol, 
-                    Text(obj.legendText,
-                        x=0,
-                        y=0,
-                        color=self.markerColor, 
-                        batch=self.legendBatch,
-                        anchor_x="left",
-                        anchor_y="top",
-                        # font_name=self.font,
-                        fontSize=self.fontSize
-                        )
-                    )
-                )
-
-
-        if len(self.legendObjects) > 0:
-            
-            # calculate grid sizes
-            legendMaxWidth = self.width * .7 # NOTE: STYLE
-            legendSizeThickness = 2 #NOTE: STYLE
-            legendGridSpacing = (int(self.fontSize/2), int(self.fontSize/2)+2) # NOTE: STYLE
-            legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top
-            legendSymbolTextSpacing = int(self.fontSize/4) # NOTE: STYLE
-            legendDrawBox = False
-
-            # legendGridSpacing = (0, 0) # NOTE: STYLE
-            # legendPadding = (0, 0, 0, 0) # NOTE: STYLE, left bottom right top
-
-            grid = [[]]
-            rowWidth = 0
-            maxGridWidth = 0
-            sumTextHeight = 0
-            rowTextHeight = 0
-            for symbol, text in self.legendObjects:
-                
-                width = text.width + symbol.getBoundingBox()[0] + legendGridSpacing[0] + legendSymbolTextSpacing
-                rowWidth += width
-                rowTextHeight = max(rowTextHeight, text.height)
-
-                if rowWidth > legendMaxWidth:
-                    grid.append([])
-                    maxGridWidth = max(maxGridWidth, rowWidth-width)
-                    rowWidth = width
-                    sumTextHeight += rowTextHeight
-
-                grid[-1].append((symbol, text))
-            sumTextHeight += rowTextHeight
-            maxGridWidth = max(maxGridWidth, rowWidth)
-            
-            maxGridWidth -= legendGridSpacing[0]
-            
-            legendBoxSize = [
-                maxGridWidth + legendPadding[0] + legendPadding[2],  
-                sumTextHeight + legendGridSpacing[1] * (len(grid)-1) + legendPadding[1] + legendPadding[3]
-            ]
-            
-            legendPos = [self.width/2 + self.padding[0] - legendBoxSize[0]/2, 0]
-
-            # draw grid
-            rowPos = 0
-            for row in grid:
-                colPos = 0
-
-                for symbol, text in row:
-                    self.legendShapes.append(symbol)
-                    self.legendShapes.append(text)
-
-                    symbolSize = symbol.getBoundingBox()
-
-                    basePos = [
-                        legendPos[0] + legendPadding[0],
-                        legendPos[1] + legendBoxSize[1] - legendPadding[1]
-                    ]
-
-                    # set base pos
-                    text.x = basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing
-                    text.y = basePos[1] - rowPos
-                    symbol.x = basePos[0] + colPos
-                    symbol.y = basePos[1] - text.height / 2 - symbolSize[1]/2 - rowPos
-
-                    colPos += symbolSize[0] + text.width + legendSymbolTextSpacing + legendGridSpacing[0]
-                
-                rowPos += text.height + legendGridSpacing[1]
-
-            # legend box
-            # legendBoxSize = [10,30]
-            if legendDrawBox:
-                self.legendShapes.append(shapes.Rectangle(
-                    legendPos[0]-legendSizeThickness,
-                    legendPos[1]-legendSizeThickness,
-                    legendBoxSize[0]+2*legendSizeThickness,
-                    legendBoxSize[1]+2*legendSizeThickness, # JEG VED IKKE HVORFOR 30
-                    batch=self.legendBoxShape,
-                    color=self.markerColor # NOTE: STYLE
-                ))
-
-                self.legendShapes.append(shapes.Rectangle(
-                    legendPos[0], 
-                    legendPos[1], 
-                    legendBoxSize[0],
-                    legendBoxSize[1], # JEG VED IKKE HVORFOR 30
-                    color=self.backgroundColor,
-                    batch=self.legendBoxShape
-                ))
-
-            self.addPaddingCondition(bottom=legendBoxSize[1]+self.fontSize)
-            self.addDrawingFunction(self.legendBoxShape)
-            self.addDrawingFunction(self.legendBatch)
-
-
     def __setWindowDimensionBasedOnAxis__(self, firstAxis:Axis, secondAxis:Axis):
         
         p1, p2 = firstAxis.getEndPoints()
@@ -420,7 +298,9 @@ class Plot:
         # legend & title
         if self.firstTitle: self.firstAxis._addTitle(self.firstTitle, self)
         if self.secondTitle: self.secondAxis._addTitle(self.secondTitle, self)
-        self.__createLegendBox__()
+        
+        self.legendbox = LegendBox(*self.objects)
+        self.legendbox.finalize(self)
 
         if self.untrueAxis and not self.standardBasis:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
