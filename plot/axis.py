@@ -84,11 +84,11 @@ class Marker:
                                   x=textPos[0], 
                                   y=textPos[1], 
                                   color=self.color, 
-                                  batch=self.batch, 
+                                #   batch=self.batch, 
                                   align="center", 
                                   anchor_x="center",
                                   anchor_y="center",
-                                #   font_name=self.font,
+                                # font_name=self.font,
                                   fontSize=self.fontSize,
         )
 
@@ -110,14 +110,17 @@ class Marker:
         self.textLabel.y += n[1] * nudge
 
         parent.addDrawingFunction(self)
+        parent.addDrawingFunction(self.textLabel, 2)
         
-        dx = min(self.textLabel.x - self.textLabel.width/2, 0)
-        dy = min(self.textLabel.y - self.textLabel.height/2, 0)
-        dxm = min(parent.width - (self.textLabel.x + self.textLabel.width/2), 0)
-        dym = min(parent.height - (self.textLabel.y + self.textLabel.height/2), 0)
+        # dx = min(self.textLabel.x - self.textLabel.width/2, 0)
+        # dy = min(self.textLabel.y - self.textLabel.height/2, 0)
+        # dxm = min(parent.width - (self.textLabel.x + self.textLabel.width/2), 0)
+        # dym = min(parent.height - (self.textLabel.y + self.textLabel.height/2), 0)
 
-        if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
-            parent.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
+        parent.include(self.textLabel.x, self.textLabel.y, self.textLabel.width, self.textLabel.height)
+
+        # if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
+        #     parent.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
 
 
     def draw(self, *args, **kwargs):
@@ -315,6 +318,7 @@ class Axis:
                 or atop_right[1] < bbottom_left[1]
                 or abottom_left[1] > btop_right[1])
 
+
     def _addTitle(self, title:str, parent) -> None:
         v = (self.v[0]*parent.scale[0], self.v[1]*parent.scale[1])
         angle = angleBetweenVectors(v, (1,0))
@@ -347,12 +351,14 @@ class Axis:
         #    |      |
         #    --------
         pos = (axisPos[0]+v[0], axisPos[1]+v[1])
-        size = getTextDimension(title, parent.fontSize)
+        self.title = Text(title, 0,0, parent.fontSize, parent.markerColor, angle)
+        size = self.title.getBoundingBox()
         v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 1)
         for _ in range(1000): # max nudge
 
             checkMarkers = [i for i in self.markers] # shallow copy (hopefully)
 
+            overlap = False
             for i, marker in enumerate(checkMarkers):
                 if not hasattr(marker, 'textLabel'):
                     # checkMarkers.pop(i)
@@ -364,32 +370,32 @@ class Axis:
 
                 if self.__boxOverlays__(marker.pos(), marker.getBoundingBox(), pos, size):
                     pos = addVector(pos, v)
+                    overlap = True
+                    break
                 # else:
                 #     checkMarkers.pop(i)
                 #     break
 
-            if len(checkMarkers) == 0:
+            if not overlap:
                 break
-
+        
         v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 5)
         pos = addVector(pos, v)
-        self.title = Text(title, *pos, parent.fontSize, parent.markerColor, angle)
+        self.title.x, self.title.y = pos
 
-        #  del addPaddingCondition
-        parent.addPaddingCondition(bottom=-min(pos[1], 0) + parent.fontSize/2, left=-min(pos[0], 0) + parent.fontSize/2)
-        parent.include(self.title)
+        parent.addDrawingFunction(self.title, 2)
+        parent.include(*pos, *self.title.getBoundingBox())
 
 
     # *** api ***
     def getPixelPos(self):
         return (self.shapeLine.x0, self.shapeLine.y0), (self.shapeLine.x1, self.shapeLine.y1)    
 
+
     def draw(self, *args, **kwargs):
         self.shapeLine.draw(*args, **kwargs)
-        if self.title: self.title.draw(*args, **kwargs)
 
 
     def push(self, x,y):
         self.shapeLine.push(x,y)
-        if self.title: self.title.push(x,y)
 

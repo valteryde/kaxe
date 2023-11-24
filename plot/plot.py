@@ -136,9 +136,15 @@ class Plot:
         return self
 
 
-    def include(self, shape):
-        """includes shape in frame by adding padding"""
-        pass
+    def include(self, cx, cy, width, height):
+        """includes cx, cy in frame by adding padding"""
+        dx = min(cx - width/2, 0)
+        dy = min(cy - height/2, 0)
+        dxm = min(self.width - (cx + width/2), 0)
+        dym = min(self.height - (cy + height/2), 0)
+
+        if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
+            self.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
 
 
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
@@ -353,7 +359,6 @@ class Plot:
         self.standardBasis = True
         self.firstAxis = Axis((1,0))
         self.secondAxis = Axis((0,1))
-
 
 
     def __calculateWindowBorders__(self):
