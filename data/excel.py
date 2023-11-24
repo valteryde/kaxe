@@ -8,6 +8,9 @@ def loadExcel(fname, sheet:str, top:tuple, bottom:tuple, flip:bool=False):
     wb = load_workbook(filename = fname)
     ws = wb[sheet]
 
+    if bottom[1] == -1:
+        bottom = [bottom[0],ws.max_row]
+
     data = []
     for i in range(top[1], bottom[1]+1):
         data.append([])

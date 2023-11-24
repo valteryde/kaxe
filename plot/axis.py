@@ -3,7 +3,6 @@ from .helper import *
 from .shapes import shapes
 from .text import Text, getTextDimension
 
-
 class Marker:
 
     def __init__(self, 
