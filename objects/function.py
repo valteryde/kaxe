@@ -5,7 +5,7 @@ from ..plot.styles import getRandomColor
 from ..plot.helper import *
 from ..plot.shapes import shapes
 from ..plot.symbol import symbol
-
+import numbers
 
 class Function:
 
@@ -39,12 +39,16 @@ class Function:
 
             try:
                 y = self.function(x)
-            except (ValueError, ZeroDivisionError):
+            except Exception as e:
+                continue
+
+            if not isinstance(x, numbers.Real) or not isinstance(y, numbers.Real):
+                continue
+            if math.isnan(x) or math.isnan(y):
                 continue
 
             x,y = parent.pixel(x,y)
             # print(x,y)
-
 
             if not lastPoint:
                 lastPoint = [x, y]

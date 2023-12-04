@@ -1,12 +1,13 @@
 
 from ..plot.styles import *
 from ..plot.shapes import shapes
-from ..plot.symbol import makeSymbolShapes, symbol
+from ..plot.symbol import makeSymbolShapes
+from ..plot.symbol import symbol as symbols
 from ..plot.helper import *
 
 
 class Points:
-    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbol.CIRCLE, connect:bool=False):
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False):
         self.batch = shapes.Batch()
         self.points = []
         self.lines = []
@@ -25,6 +26,8 @@ class Points:
         self.size = size
         self.symbol = symbol
         self.legendSymbol = self.symbol
+        if not symbol:
+            self.legendSymbol = symbols.LINE
         self.legendColor = self.color
         self.connect = connect
         
@@ -57,7 +60,7 @@ class Points:
                 continue
             
             x1, y1 = parent.pixel(self.x[i+1], self.y[i+1])
-            if vlen(vdiff((x1, y1), (x,y))) < self.size:
+            if (vlen(vdiff((x1, y1), (x,y))) < self.size) and self.symbol:
                 continue
 
             line = shapes.Line(x,y, x1, y1, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
