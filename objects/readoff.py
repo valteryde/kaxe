@@ -27,9 +27,7 @@ class ReadOff:
             # print(pos)
         
         #else: ikke testet else igennem
-
         
-
         self.line1 = shapes.Line(*pos,*p1, self.color, width=self.width, batch=self.batch)
         self.line2 = shapes.Line(*pos,*p2, self.color, width=self.width, batch=self.batch)
 

@@ -4,6 +4,7 @@ import pyglet as pg
 from .styles import *
 import os
 from .shapes import *
+from fondi import MathText
 
 basePath = os.path.join(os.path.split(os.path.abspath(__name__))[0], 'kaxe')
 
@@ -30,6 +31,8 @@ class Text(Shape):
         pilImage = pilImage.rotate(self.rotate)
         self.pilImage = pilImage.crop(pilImage.getbbox())
         
+        self.pilImage = MathText(text, self.fontSize, self.color).image
+        
         # pilImage = pilImage.transpose(Image.FLIP_TOP_BOTTOM)
         
         self.pilImage.save('.__textImage__.png')
@@ -50,7 +53,7 @@ class Text(Shape):
 
         if rotate > 0:
             pass
-
+        
 
     def __repr__(self):
         return '{}'.format(self.text)

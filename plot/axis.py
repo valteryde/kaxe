@@ -2,6 +2,7 @@
 from .helper import *
 from .shapes import shapes
 from .text import Text, getTextDimension
+from .round import koundTeX
 
 class Marker:
 
@@ -44,7 +45,7 @@ class Marker:
 
         if self.showLine:
             p1, p2 = parent.line(self.axis.get(self.x), self.axis.v)
-            self.line = shapes.Line(*p1, *p2, color=self.gridlineColor, batch=self.batch)
+            self.line = shapes.Line(*p1, *p2, color=self.gridlineColor)
         
         pos = parent.translate(*self.axis.get(self.x))
 
@@ -115,6 +116,7 @@ class Marker:
         self.textLabel.y += n[1] * nudge
 
         parent.addDrawingFunction(self, 2)
+        parent.addDrawingFunction(self.line)
         parent.addDrawingFunction(self.textLabel, 2)
         
         # dx = min(self.textLabel.x - self.textLabel.width/2, 0)
@@ -244,12 +246,12 @@ class Axis:
                 markers.append(marker)
 
             for i in range(1, ticksBeforeNull+1):
-                marker = Marker(str(round(-step*i, maxMarkerLengthStr)), -step*i, shell(self), **parent.markerOptions)
+                marker = Marker(str(koundTeX(-step*i)), -step*i, shell(self), **parent.markerOptions)
                 marker.finalize(parent)
                 markers.append(marker)
             
             for i in range(1, ticksAfterNull+1):
-                marker = Marker(str(round(step*i, maxMarkerLengthStr)), step*i, shell(self), **parent.markerOptions)
+                marker = Marker(str(koundTeX(step*i)), step*i, shell(self), **parent.markerOptions)
                 marker.finalize(parent)
                 markers.append(marker)
 
@@ -265,7 +267,7 @@ class Axis:
 
             for i in range(math.floor(lengthOverStep)+2):
                 p = direction*step*i + startPos
-                marker = Marker(str(round(p,maxMarkerLengthStr)), p, shell(self), **parent.markerOptions)
+                marker = Marker(str(koundTeX(p)), p, shell(self), **parent.markerOptions)
                 marker.finalize(parent)
                 markers.append(marker)
         
