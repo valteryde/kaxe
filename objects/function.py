@@ -9,7 +9,7 @@ import numbers
 
 class Function:
 
-    def __init__(self, f:Callable, switchAxis:bool=False, stepSize:int=10, color:tuple=None, width:int=2):
+    def __init__(self, f:Callable, switchAxis:bool=False, stepSize:int=10, color:tuple=None, width:int=2, *args, **kwargs):
         self.__call__ = f
         self.function = f
         self.switchAxis = switchAxis
@@ -25,6 +25,9 @@ class Function:
 
         self.thickness = width
 
+        self.otherArgs = args
+        self.otherKwargs = kwargs
+
 
     def finalize(self, parent):
 
@@ -38,7 +41,7 @@ class Function:
             x, _ = parent.inversepixel(n,0)
 
             try:
-                y = self.function(x)
+                y = self.function(x, *self.otherArgs, **self.otherKwargs)
             except Exception as e:
                 continue
 
