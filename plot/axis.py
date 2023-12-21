@@ -115,8 +115,8 @@ class Marker:
         self.textLabel.x += n[0] * nudge
         self.textLabel.y += n[1] * nudge
 
-        parent.addDrawingFunction(self, 2)
         parent.addDrawingFunction(self.line)
+        parent.addDrawingFunction(self, 2)
         parent.addDrawingFunction(self.textLabel, 2)
         
         # dx = min(self.textLabel.x - self.textLabel.width/2, 0)
@@ -182,8 +182,6 @@ class Axis:
 
 
     def _addMarkersToAxis(self, parent):
-        maxMarkerLengthStr = min(max(len(str(self.start)), len(str(self.end))), 10)
-
         markers = []
 
         p1 = parent.inversetranslate(*self.lineStartPoint)
@@ -226,7 +224,6 @@ class Axis:
         lengthOverStep = round(lengthOverStep)
         
         # is null in frame?
-        # NOTE: FEJL her ved start på noget underligt, fx startPos = 0.7832
         nullX, nullY = parent.pixel(0,0)
         if (parent.padding[0] <= nullX <= parent.width+parent.padding[0]) and (parent.padding[1] <= nullY <= parent.height+parent.padding[1]):
 
@@ -240,7 +237,7 @@ class Axis:
             ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
 
             # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
-            if not parent.standardBasis: 
+            if not parent.standardBasis:
                 marker = Marker("0", 0, shell(self), **parent.markerOptions)
                 marker.finalize(parent)
                 markers.append(marker)

@@ -21,23 +21,38 @@ class Text(Shape):
         super().__init__()
         if batch: batch.add(self)
 
+        # translate str "$math$ + normaltext" to "math + \\text{normaltext}"
+        res = ''
+        open_ = 0
+        word = ''
+        for char in text:
+
+            if char == '$' and open_:
+                open_ = False
+                if len(word) > 0: res += '\\text{' + word + '}'
+                word = ''
+                continue
+            elif char == '$' and not open_:
+                open_ = True
+                continue
+        
+            if open_:
+                res += char
+            else:
+                word += char
+        
+        if len(word) > 0: res += '\\text{' + word + '}'
+
+        text = res
+
         # make pil image
-        winSize = (self.fontSize*2*len(text),self.fontSize*2*len(text))
-        pilImage = Image.new("RGBA", winSize, color=(0,0,0,0))
-        draw = ImageDraw.Draw(pilImage)
-        font = ImageFont.truetype(os.path.join(basePath,"resource","computer-modern-family","cmu.serif-roman.ttf"), self.fontSize)
-        #draw.fontmode = "1" # this apparently sets (anti)aliasing.
-        draw.text((winSize[0]//2, winSize[1]//2), text, color, font=font)
-        pilImage = pilImage.rotate(self.rotate)
-        self.pilImage = pilImage.crop(pilImage.getbbox())
-        
-        self.pilImage = MathText(text, self.fontSize, self.color).image
-        
-        # pilImage = pilImage.transpose(Image.FLIP_TOP_BOTTOM)
-        
+        pilImage = MathText(text, self.fontSize, self.color).image
+        self.pilImage = pilImage.rotate(self.rotate)
+        #self.pilImage = pilImage.crop(pilImage.getbbox())
+
         self.pilImage.save('.__textImage__.png')
         self.img = pg.image.load('.__textImage__.png')
-
+                
         self.width = self.img.width
         self.height = self.img.height
 
@@ -75,3 +90,6 @@ class Text(Shape):
 def getTextDimension(text, fontSize ,*args, **kwargs):
     label = Text(*args, text=str(text), x=0, y=0, fontSize=fontSize, **kwargs)
     return label.width, label.height
+
+# ads $2*x^2$ + hejsa
+# \text{ads} 2*x^2 \text{+ hejsa}

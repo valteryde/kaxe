@@ -12,8 +12,8 @@ def forceround(n:float) -> float:
 
 
 def koundTeX(num:float) -> str:
-
     #num = round(num, 5)
+    if num == 0: return "$0$"
 
     n = abs(num)
     ori = n / num > 0
@@ -36,7 +36,7 @@ def koundTeX(num:float) -> str:
     if not ori:
         s = '-' + s
 
-    return s
+    return '${}$'.format(s)
 
 # koundTeX(0.005) #-> 5*10^(-4)
 # koundTeX(732000000) #-> 732*10^(6)
