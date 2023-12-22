@@ -306,9 +306,12 @@ class Plot:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
 
         # objects
+        pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
         for obj in self.objects:
             obj.finalize(self)
+            pbar.update()
             self.addDrawingFunction(obj)
+        pbar.close()
 
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 
@@ -462,7 +465,7 @@ class Plot:
 
         self.bake()
         startTime = time.time()
-        bar = tqdm.tqdm(total=len(self.shapes))
+        pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
@@ -472,10 +475,10 @@ class Plot:
 
         for shape in self.shapes:
             shape.draw(surface)
-            bar.update()
+            pbar.update()
 
         surface.save(fname)
-        bar.close()
+        pbar.close()
         logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
         logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
     
