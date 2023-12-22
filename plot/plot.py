@@ -346,6 +346,10 @@ class Plot:
         return x*self.scale[0]-self.offset[0]+self.padding[0], y*self.scale[1]-self.offset[1]+self.padding[1]
 
 
+    def scaled(self, x, y):
+        return self.scale[0]*x, self.scale[1]*y
+
+
     def pixel(self, x:int, y:int) -> tuple:
         """
         para: abstract value
