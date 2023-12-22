@@ -146,6 +146,9 @@ class Line(Shape):
         width = max(self.x0, self.x1) - min(self.x0, self.x1)
         height = max(self.y0, self.y1) - min(self.y0, self.y1)
 
+        if width > 10000 or height > 10000:
+            return
+
         img = newImage(width+self.thickness*2, height+self.thickness*2, (0,0,0,0))
         draw = ImageDraw.Draw(img)
         

@@ -236,8 +236,9 @@ class Plot:
         if self.firstAxis: return # or self.secondAxis
 
         self.standardBasis = True
-        self.firstAxis = Axis((1,0), func=math.log, invfunc=math.exp)
-        self.secondAxis = Axis((0,1), func=math.log, invfunc=math.exp)
+        self.firstAxis = Axis((1,0))
+        self.secondAxis = Axis((0,1), func=math.log10, invfunc=lambda x: math.pow(10, x))
+        #self.secondAxis = Axis((0,1), invfunc=math.log10, func=lambda x: math.pow(10, x))
 
 
     def __calculateWindowBorders__(self):
@@ -345,8 +346,8 @@ class Plot:
         """
 
         return (
-            self.firstAxis._translate(x)*self.scale[0]-self.offset[0]+self.padding[0],
-            self.secondAxis._translate(y)*self.scale[1]-self.offset[1]+self.padding[1]
+            self.firstAxis._translate(x) * self.scale[0] - self.offset[0] + self.padding[0],
+            self.secondAxis._translate(y) * self.scale[1] - self.offset[1] + self.padding[1]
         )
 
 

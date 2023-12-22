@@ -51,7 +51,6 @@ class Function:
                 continue
 
             x,y = parent.pixel(x,y)
-            # print(x,y)
 
             if not lastPoint:
                 lastPoint = [x, y]
@@ -62,13 +61,15 @@ class Function:
             # last is inside but plot heading out
             if lastPointInside and not inside:
                 lastPointInside = False
+                continue
 
             # last is out but plot is heading in
             elif not lastPointInside and inside:
                 lastPointInside = True
+                continue
             
             # both points is inside
-            elif inside:
+            if inside:
                 lastPointInside = True
 
             else:
@@ -78,8 +79,8 @@ class Function:
 
             if (not parent.inside(*lastPoint) and not parent.inside(x,y)):
                 continue
-
-            line = shapes.Line(lastPoint[0], lastPoint[1], x, y, color=self.color, width=self.thickness*2, batch=self.batch, center=True)
+            
+            line = shapes.Line(lastPoint[0], lastPoint[1], x, y, color=self.color, width=self.thickness*2, batch=self.batch, center=True)            
             self.lineSegments.append(line)
             lastPoint = [x, y]
 

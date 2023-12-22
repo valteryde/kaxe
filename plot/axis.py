@@ -3,168 +3,33 @@ from .helper import *
 from .shapes import shapes
 from .text import Text, getTextDimension
 from .round import koundTeX
-#from scipy.optimize import fsolve
-
-class Marker:
-
-    def __init__(self, 
-                 text:str, 
-                 x:int, 
-                 axis, 
-                 color:tuple=(0,0,0,255),
-                 fontSize:int=10,
-                 showNumber:bool=True,
-                 showLine:bool=True,
-                 markerWidth:int = 1,
-                 markerLength:int = 15,
-                 gridlineColor:tuple=(0,0,0,75),
-                 font:str="Times New Roman",
-                ):
-        """
-        marker with line
-        """
-
-        self.text = text
-        self.x = x
-        self.axis = axis
-        self.batch = shapes.Batch()
-        
-        self.markerLength = markerLength
-        self.markerWidth = markerWidth
-        self.showNumber = showNumber
-        self.showLine = showLine
-        self.fontSize = fontSize
-        self.font = font
-        self.color = color
-        self.gridlineColor = gridlineColor
-
-
-    def finalize(self, parent, visualOffset:tuple=(0,0)):
-        self.axis = self.axis()
-
-        self.visualOffset = addVector(visualOffset, self.axis.visualOffset) #inherit
-
-        if self.showLine:
-            p1, p2 = parent.line(self.axis.get(self.x), self.axis.v)
-            self.line = shapes.Line(*p1, *p2, color=self.gridlineColor)
-        
-        pos = parent.translate(*self.axis.get(self.x))
-
-        n = (self.axis.n[0]/parent.scale[0], self.axis.n[1]/parent.scale[1])
-        nlen = vlen(n)
-        n = (n[0]/nlen, n[1]/nlen)
-
-        halfMarkerLength = self.markerLength/2
-        
-        pos = addVector(pos, self.visualOffset)
-
-        p1 = (pos[0]+n[0]*halfMarkerLength, pos[1]+n[1]*halfMarkerLength)
-        p2 = (pos[0]-n[0]*halfMarkerLength, pos[1]-n[1]*halfMarkerLength)
-
-        distanceFromMarker = self.markerLength
-        r = 1
-
-        # special case, marker is vertical or horizontal
-        if n[0] == 0:
-            r = -1
-        if n[1] == 0:
-            r = 1
-        
-        self.directionFromAxis = r
-        textPos = (pos[0]+r*n[0]*distanceFromMarker, pos[1]+r*n[1]*distanceFromMarker)
-        
-        if (not parent.inside(*pos)):
-            self.line = None
-            return
-
-        self.tickLine = shapes.Line(*p1, *p2, color=self.color, width=self.markerWidth, batch=self.batch, center=True)
-        if not self.showNumber:
-            return
-
-        # how long away for text box not to hit marker
-        self.textLabel = Text(self.text,
-                                  x=textPos[0], 
-                                  y=textPos[1], 
-                                  color=self.color, 
-                                #   batch=self.batch, 
-                                  align="center", 
-                                  anchor_x="center",
-                                  anchor_y="center",
-                                # font_name=self.font,
-                                  fontSize=self.fontSize,
-        )
-
-        box = [
-            textPos[0]-self.textLabel.width/2,
-            textPos[1]-self.textLabel.height/2,
-            textPos[0]+self.textLabel.width/2,
-            textPos[1]+self.textLabel.height/2
-        ]
-
-        nudge = 0
-        if r == -1 and insideBox(box, p2):
-            nudge = - (distPointLine(n, p2, box[2:4]))
-        
-        if r == 1 and insideBox(box, p1):
-            nudge = distPointLine(n, p1, box[2:4])
-
-        if r == 1:
-            nudge += 5
-        elif r == -1:
-            nudge -= 5
-
-        self.textLabel.x += n[0] * nudge
-        self.textLabel.y += n[1] * nudge
-
-        parent.addDrawingFunction(self.line)
-        parent.addDrawingFunction(self, 2)
-        parent.addDrawingFunction(self.textLabel, 2)
-        
-        # dx = min(self.textLabel.x - self.textLabel.width/2, 0)
-        # dy = min(self.textLabel.y - self.textLabel.height/2, 0)
-        # dxm = min(parent.width - (self.textLabel.x + self.textLabel.width/2), 0)
-        # dym = min(parent.height - (self.textLabel.y + self.textLabel.height/2), 0)
-
-        parent.include(self.textLabel.x, self.textLabel.y, self.textLabel.width, self.textLabel.height)
-
-        # if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
-        #     parent.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
-
-
-    def draw(self, *args, **kwargs):
-        self.batch.draw(*args, **kwargs)
-
-
-    def push(self, x, y):
-        self.batch.push(x,y)
-
-
-    def getBoundingBox(self):
-        if hasattr(self, 'textLabel'):
-            return self.textLabel.getBoundingBox()
-        return [0,0]
-    
-
-    def pos(self):
-        if hasattr(self, 'textLabel'):
-            return self.textLabel.x, self.textLabel.y
-
+from .marker import Marker
+import sys
 
 class Axis:
     def __init__(self, 
                  directionVector:tuple, 
                  color=(0,0,0,255),
-                 func=lambda v: v,
-                 invfunc=lambda v: v):
+                 func=None,
+                 invfunc=None):
         """
         offset:bool If graph should be offset with equvalient of start value
         """
-        
 
         self.directionVector = directionVector
         self.vLen = math.sqrt(directionVector[0]**2+directionVector[1]**2)
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
+        
+        # tjek 
+        if ((int(self.v[0]) == 0 and int(self.v[1]) == 1) or (int(self.v[0]) == 1 and int(self.v[1]) == 0)) == func:
+            print('Custom Axis and non standard basis is not supported')
+            sys.exit()
+
+        if func is None:
+            func = lambda x: x
+            invfunc = lambda x: x
+        
         self.func = func
         self.invfunc = invfunc
         self._translate = lambda x: x
@@ -182,6 +47,7 @@ class Axis:
             return self.invfunc(x)
         except (ValueError, OverflowError):
             return 0
+
 
     def invtranslate(self, x):
         """
@@ -313,7 +179,8 @@ class Axis:
         
         self.markers = markers
 
-        self._translate = lambda x: self.invtranslate(x)
+        # only use new translate after plot basis is made
+        self._translate = self.invtranslate
 
 
     def _addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
