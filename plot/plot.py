@@ -25,7 +25,7 @@ To be done:
 """
 
 class Plot:
-    def __init__(self,  window:list=None, trueAxis:bool=None): # |
+    def __init__(self,  window:list=None, trueAxis:bool=None, logarithmic=[None, None]): # |
         """
         trueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
 
@@ -39,6 +39,7 @@ class Plot:
         self.secondAxis = None
         self.axis = [lambda: self.firstAxis, lambda: self.secondAxis]
         self.untrueAxis = not trueAxis
+        self.logarithmic = logarithmic
 
         # options
         self.windowAxis = window
@@ -235,8 +236,8 @@ class Plot:
         if self.firstAxis: return # or self.secondAxis
 
         self.standardBasis = True
-        self.firstAxis = Axis((1,0))
-        self.secondAxis = Axis((0,1))
+        self.firstAxis = Axis((1,0), func=math.log, invfunc=math.exp)
+        self.secondAxis = Axis((0,1), func=math.log, invfunc=math.exp)
 
 
     def __calculateWindowBorders__(self):
@@ -343,7 +344,10 @@ class Plot:
         return: translated value
         """
 
-        return x*self.scale[0]-self.offset[0]+self.padding[0], y*self.scale[1]-self.offset[1]+self.padding[1]
+        return (
+            self.firstAxis._translate(x)*self.scale[0]-self.offset[0]+self.padding[0],
+            self.secondAxis._translate(y)*self.scale[1]-self.offset[1]+self.padding[1]
+        )
 
 
     def scaled(self, x, y):

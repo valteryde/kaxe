@@ -3,6 +3,7 @@ from .helper import *
 from .shapes import shapes
 from .text import Text, getTextDimension
 from .round import koundTeX
+#from scipy.optimize import fsolve
 
 class Marker:
 
@@ -152,19 +153,44 @@ class Marker:
 class Axis:
     def __init__(self, 
                  directionVector:tuple, 
-                 color=(0,0,0,255)):
+                 color=(0,0,0,255),
+                 func=lambda v: v,
+                 invfunc=lambda v: v):
         """
         offset:bool If graph should be offset with equvalient of start value
         """
         
+
         self.directionVector = directionVector
         self.vLen = math.sqrt(directionVector[0]**2+directionVector[1]**2)
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
+        self.func = func
+        self.invfunc = invfunc
+        self._translate = lambda x: x
 
         # styles
         self.color = color
         self.width = 2
+
+
+    def translate(self, x):
+        """
+        translate value
+        """
+        try:
+            return self.invfunc(x)
+        except (ValueError, OverflowError):
+            return 0
+
+    def invtranslate(self, x):
+        """
+        inverse translate value
+        """
+        try:
+            return self.func(x)
+        except (ValueError, OverflowError):
+            return 0
 
 
     def get(self, x:int) -> tuple:
@@ -236,6 +262,8 @@ class Axis:
             ticksBeforeNull = math.ceil(lengthOverStep*procentBeforeNull)
             ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
 
+            print(ticksBeforeNull, ticksAfterNull)
+
             # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
             if not parent.standardBasis:
                 marker = Marker("0", 0, shell(self), **parent.markerOptions)
@@ -243,12 +271,22 @@ class Axis:
                 markers.append(marker)
 
             for i in range(1, ticksBeforeNull+1):
-                marker = Marker(str(koundTeX(-step*i)), -step*i, shell(self), **parent.markerOptions)
+                marker = Marker(
+                    str(koundTeX(self.translate(-step*i))), 
+                    -step*i, 
+                    shell(self), 
+                    **parent.markerOptions
+                )
                 marker.finalize(parent)
                 markers.append(marker)
             
             for i in range(1, ticksAfterNull+1):
-                marker = Marker(str(koundTeX(step*i)), step*i, shell(self), **parent.markerOptions)
+                marker = Marker(
+                    str(koundTeX(self.translate(step*i))), 
+                    step*i, 
+                    shell(self), 
+                    **parent.markerOptions
+                )
                 marker.finalize(parent)
                 markers.append(marker)
 
@@ -264,20 +302,35 @@ class Axis:
 
             for i in range(math.floor(lengthOverStep)+2):
                 p = direction*step*i + startPos
-                marker = Marker(str(koundTeX(p)), p, shell(self), **parent.markerOptions)
+                marker = Marker(
+                    str(koundTeX(self.translate(p))), 
+                    p, 
+                    shell(self), 
+                    **parent.markerOptions
+                )
                 marker.finalize(parent)
                 markers.append(marker)
         
         self.markers = markers
 
+        self._translate = lambda x: self.invtranslate(x)
+
 
     def _addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
-        # computed 
-        self.start = start
-        self.end = end
+        
+        # computed
+        # self.start = fsolve(lambda x: self.func(x) - start, start)[0]
+        # self.end = fsolve(lambda x: self.func(x) - end, end)[0]
+
+        self.start = self.invtranslate(start)
+        self.end = self.invtranslate(end)
+
+        print(self.start, self.end)
+        
         self.offset = 0
         if makeOffsetAvaliable:
             self.offset = self.start
+
         self.title = None
         self.hasNull = (self.start <= 0 and self.end >= 0)
         self.pos = self.getEndPoints()[0]
