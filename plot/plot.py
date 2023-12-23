@@ -236,9 +236,16 @@ class Plot:
         if self.firstAxis: return # or self.secondAxis
 
         self.standardBasis = True
-        self.firstAxis = Axis((1,0))
-        self.secondAxis = Axis((0,1), func=math.log10, invfunc=lambda x: math.pow(10, x))
-        #self.secondAxis = Axis((0,1), invfunc=math.log10, func=lambda x: math.pow(10, x))
+        
+        if self.logarithmic[0]:
+            self.firstAxis = Axis((1,0), func=math.log10, invfunc=lambda x: math.pow(10, x))
+        else:
+            self.firstAxis = Axis((1,0))
+        
+        if self.logarithmic[1]:
+            self.secondAxis = Axis((0,1), func=math.log10, invfunc=lambda x: math.pow(10, x))
+        else:
+            self.secondAxis = Axis((0,1))
 
 
     def __calculateWindowBorders__(self):

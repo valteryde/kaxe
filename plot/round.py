@@ -26,7 +26,7 @@ def koundTeX(num:float) -> str:
 
     elif n > 1000:
 
-        c = countZeros(reversed(str(n)))
+        c = countZeros(reversed(str(int(n))))
         s = '{}*10^<{}>'.format(forceround(n/(10**(c))), c)
 
     else:
