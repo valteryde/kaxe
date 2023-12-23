@@ -138,6 +138,15 @@ class Plot:
         return self
 
 
+    def theme(self, theme):
+        """
+        use a defined theme
+        
+        calls self.style
+        """
+        self.style(**theme)
+
+
     def include(self, cx, cy, width, height):
         """includes cx, cy in frame by adding padding"""
         dx = min(cx - width/2, 0)
@@ -418,8 +427,8 @@ class Plot:
         """
 
         p = [None, None]
-        if not x is None: p[0] = (x+self.offset[0]-self.padding[0])/self.scale[0]
-        if not y is None: p[1] = (y+self.offset[1]-self.padding[1])/self.scale[1]
+        if not x is None: p[0] = (self.firstAxis._invtranslate(x)+self.offset[0]-self.padding[0])/self.scale[0]
+        if not y is None: p[1] = (self.secondAxis._invtranslate(y)+self.offset[1]-self.padding[1])/self.scale[1]
 
         return p
 

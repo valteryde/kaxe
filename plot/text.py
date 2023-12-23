@@ -5,8 +5,10 @@ from .styles import *
 import os
 from .shapes import *
 from fondi import MathText
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.rotate.html
+from scipy.ndimage import rotate as rotate_image
+import numpy as np
 
-basePath = os.path.join(os.path.split(os.path.abspath(__name__))[0], 'kaxe')
 
 class Text(Shape):
     
@@ -47,7 +49,10 @@ class Text(Shape):
 
         # make pil image
         pilImage = MathText(text, self.fontSize, self.color).image
-        self.pilImage = pilImage.rotate(self.rotate)
+        
+        iarr = np.array(pilImage)
+        self.pilImage = Image.fromarray(rotate_image(iarr, self.rotate))
+        #self.pilImage = pilImage.rotate(self.rotate)
         #self.pilImage = pilImage.crop(pilImage.getbbox())
 
         self.pilImage.save('.__textImage__.png')

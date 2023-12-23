@@ -248,6 +248,29 @@ class ImageShape(Shape):
         return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
 
 
+class ImageArrayShape(Shape):
+    def __init__(self, imarr:np.ndarray, x:int, y:int, batch:Batch=None):
+        self.file = imarr
+        self.x = x
+        self.y = y
+        if batch: batch.add(self)
+        super().__init__()
+        self.img = Image.fromarray(imarr)
+
+
+    def centerAlign(self): #rimlig sikker på det her kun virker for pillow
+        self.y -= self.img.height/2
+        self.x -= self.img.width/2
+
+    
+    def getBoundingBox(self):
+        return [self.img.width, self.img.height]
+
+
+    def drawPillow(self, surface):
+        return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
+
+
 
 # NAMESPACE
 class shapes:
@@ -255,5 +278,5 @@ class shapes:
     Line = Line
     Circle = Circle
     Image = ImageShape
-
+    ImageArray = ImageArrayShape
     Batch = Batch

@@ -33,6 +33,7 @@ class Axis:
         self.func = func
         self.invfunc = invfunc
         self._translate = lambda x: x
+        self._invtranslate = lambda x: x
 
         # styles
         self.color = color
@@ -128,8 +129,6 @@ class Axis:
             ticksBeforeNull = math.ceil(lengthOverStep*procentBeforeNull)
             ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
 
-            print(ticksBeforeNull, ticksAfterNull)
-
             # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
             if not parent.standardBasis:
                 marker = Marker("0", 0, shell(self), **parent.markerOptions)
@@ -181,6 +180,7 @@ class Axis:
 
         # only use new translate after plot basis is made
         self._translate = self.invtranslate
+        self._invtranslate = self.translate
 
 
     def _addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
@@ -191,8 +191,6 @@ class Axis:
 
         self.start = self.invtranslate(start)
         self.end = self.invtranslate(end)
-
-        print(self.start, self.end)
         
         self.offset = 0
         if makeOffsetAvaliable:
