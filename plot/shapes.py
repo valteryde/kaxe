@@ -271,12 +271,93 @@ class ImageArrayShape(Shape):
         return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
 
 
+class Triangle(Shape):
+
+    def __init__(self, p1, p2, p3, color:tuple=BLACK, batch:Batch=None, *args, **kwargs):
+        self.p1 = p1
+        self.p2 = p2
+        self.p3 = p3
+        self.color = color
+        self.batch = batch
+        super().__init__()
+        if batch: batch.add(self)
+
+        p1, p2, p3 = map(lambda p: (int(p[0]), int(p[1])), [self.p1, self.p2, self.p3])
+        
+        maxcorner = (max(p1[0], p2[0], p3[0]), max(p1[1], p2[1], p3[1]))
+        mincorner = (min(p1[0], p2[0], p3[0]), min(p1[1], p2[1], p3[1]))
+        
+        self.x = mincorner[0]
+        self.y = mincorner[1]
+        self.width = maxcorner[0] - mincorner[0]
+        self.height = maxcorner[1] - mincorner[1]
+
+        self.img = Image.new('RGBA', size=(maxcorner[0]-mincorner[0], maxcorner[1]-mincorner[1]), color=(0,0,0,0))
+        imgdraw = ImageDraw.ImageDraw(self.img)
+        
+        p1, p2, p3 = map(lambda p: (p[0]-mincorner[0], p[1]-mincorner[1]), [self.p1, self.p2, self.p3])
+
+        imgdraw.polygon([p1, p2, p3], fill = self.color)
+
+    
+    def drawPillow(self, surface:Image):
+        [y] = flipHorizontal(surface, self.y)
+        img = self.img.transpose(Image.FLIP_TOP_BOTTOM)
+        blitImageToSurface(surface, img, (self.x, y - self.height))
+
+    
+    def getBoundingBox(self):
+        return [self.width, self.height]
+
+
+class Polygon(Shape):
+
+    def __init__(self, *points, color:tuple=BLACK, batch:Batch=None):
+        self.color = color
+        self.batch = batch
+        super().__init__()
+        if batch: batch.add(self)
+
+        points = list(map(lambda p: tuple(map(int, p)), points))
+
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+
+        maxcorner = (max(*xs), max(*ys))
+        mincorner = (min(*xs), min(*ys))
+        
+        self.x = mincorner[0]
+        self.y = mincorner[1]
+        self.width = maxcorner[0] - mincorner[0]
+        self.height = maxcorner[1] - mincorner[1]
+
+        self.img = Image.new('RGBA', size=(maxcorner[0]-mincorner[0], maxcorner[1]-mincorner[1]), color=(0,0,0,0))
+        imgdraw = ImageDraw.ImageDraw(self.img)
+        
+        self.points = list(map(lambda p: (p[0]-mincorner[0], p[1]-mincorner[1]), points))
+
+        imgdraw.polygon(self.points, fill = self.color)
+
+    
+    def drawPillow(self, surface:Image):
+        [y] = flipHorizontal(surface, self.y)
+        img = self.img.transpose(Image.FLIP_TOP_BOTTOM)
+        blitImageToSurface(surface, img, (self.x, y - self.height))
+
+    
+    def getBoundingBox(self):
+        return [self.width, self.height]
+
+
+
 
 # NAMESPACE
 class shapes:
     Rectangle = Rectangle
     Line = Line
     Circle = Circle
+    Triangle=Triangle
+    Polygon=Polygon
     Image = ImageShape
     ImageArray = ImageArrayShape
     Batch = Batch

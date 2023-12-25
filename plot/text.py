@@ -1,5 +1,5 @@
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import pyglet as pg
 from .styles import *
 import os
