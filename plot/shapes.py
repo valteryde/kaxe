@@ -146,6 +146,9 @@ class Line(Shape):
         width = max(self.x0, self.x1) - min(self.x0, self.x1)
         height = max(self.y0, self.y1) - min(self.y0, self.y1)
 
+        if width > 10000 or height > 10000:
+            return
+
         img = newImage(width+self.thickness*2, height+self.thickness*2, (0,0,0,0))
         draw = ImageDraw.Draw(img)
         
@@ -245,6 +248,29 @@ class ImageShape(Shape):
         return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
 
 
+class ImageArrayShape(Shape):
+    def __init__(self, imarr:np.ndarray, x:int, y:int, batch:Batch=None):
+        self.file = imarr
+        self.x = x
+        self.y = y
+        if batch: batch.add(self)
+        super().__init__()
+        self.img = Image.fromarray(imarr)
+
+
+    def centerAlign(self): #rimlig sikker på det her kun virker for pillow
+        self.y -= self.img.height/2
+        self.x -= self.img.width/2
+
+    
+    def getBoundingBox(self):
+        return [self.img.width, self.img.height]
+
+
+    def drawPillow(self, surface):
+        return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
+
+
 
 # NAMESPACE
 class shapes:
@@ -252,5 +278,5 @@ class shapes:
     Line = Line
     Circle = Circle
     Image = ImageShape
-
+    ImageArray = ImageArrayShape
     Batch = Batch

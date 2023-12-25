@@ -1,10 +1,13 @@
 
+import numpy as np
 from .mapdata import heatcolormap
 import math
 from ..plot.styles import getRandomColor
 # from ..plot.helper import *
 from ..plot.shapes import shapes
 # from ..plot.symbol import symbol
+from ..plot.text import Text
+from ..plot.round import koundTeX
 
 def mapTempToColor(col, minColor:float|int, maxColor:float|int, colors:list=heatcolormap):
 
@@ -52,7 +55,7 @@ class ColorMap:
 
     
     def finalize(self, parent):
-        
+
         width, height = parent.scaled(1, 1)
         width, height = math.ceil(width), math.ceil(height)
         for rowNum, row in enumerate(self.data):
@@ -65,11 +68,49 @@ class ColorMap:
                     color=tuple(mapTempToColor(cell, self.minValue, self.maxValue)), 
                     batch=self.batch
                 )
+            
+        # scale
+        windowHeight = (parent.windowBox[3] - parent.windowBox[1])
+        height = int(windowHeight * 0.85)
+        width = parent.fontSize*3
+        scaleLeftMargin = parent.fontSize
+        scaleStartPos = parent.windowBox[2]+scaleLeftMargin, parent.windowBox[1] + 1/2*windowHeight - height//2
 
+        # spild af CPU her, men nemmere at læse, 
+        # altså det ville jo være bedre at lave et billed og bare loade det hver gang
+        arr = [[mapTempToColor(self.maxValue - (i / height) * (self.maxValue - self.minValue), self.minValue, self.maxValue) for _ in range(width)] for i in range(height)]
+
+        # bottom text
+        self.topText = Text(
+            str(koundTeX(self.minValue)), 
+            scaleStartPos[0]+width/2, 
+            scaleStartPos[1]-parent.fontSize/4, 
+            batch=self.batch, 
+            anchor_x='center', 
+            anchor_y='',
+            fontSize=parent.fontSize
+        )
+        
+        # top text
+        self.bottomText = Text(
+            str(koundTeX(self.maxValue)),
+            scaleStartPos[0]+width/2, 
+            scaleStartPos[1]+height, 
+            batch=self.batch, 
+            anchor_x='center', 
+            anchor_y='',
+            fontSize=parent.fontSize
+        )
+        
+        self.bottomText.y += self.bottomText.height + parent.fontSize/4
+
+        self.img = shapes.ImageArray(np.array(arr, np.uint8), *scaleStartPos, batch=self.batch)
+        parent.addPaddingCondition(right=width+scaleLeftMargin)
+        #parent.hasColorScale = True 
 
     def push(self, x, y):
         self.batch.push(x, y)
 
-    
+
     def draw(self, *args, **kwargs):
         self.batch.draw(*args, **kwargs)
