@@ -7,15 +7,26 @@ from ..plot.shapes import shapes
 from ..plot.symbol import symbol
 import numbers
 
+
 class Function:
 
-    def __init__(self, f:Callable, switchAxis:bool=False, stepSize:int=10, color:tuple=None, width:int=2, *args, **kwargs):
-        self.__call__ = f
+    def __init__(self, 
+                 f:Callable, 
+                 color:tuple=None, 
+                 width:int=2, 
+                 dotted:bool=False,
+                 *args, 
+                 **kwargs
+                ):
+        
         self.function = f
-        self.switchAxis = switchAxis
-        self.stepSize = stepSize
         self.batch = shapes.Batch()
         self.legendSymbol = symbol.LINE
+        self.tangentFunction = None
+        self.dotted = dotted
+        self.fillAreasBorders = []
+        self.fillAreas = []
+        self.fills = []
 
         if color is None:
             self.color = getRandomColor()
@@ -24,10 +35,17 @@ class Function:
         self.legendColor = self.color
 
         self.thickness = width
+        if len(self.color) > 3:
+            self.fillcolor = (*self.color[:3], int(self.color[3]*0.5))
+        else:
+            self.fillcolor = (*self.color, 175)
 
         self.otherArgs = args
         self.otherKwargs = kwargs
 
+
+    def __call__(self, x):
+        return self.function(x)
 
     def finalize(self, parent):
 
@@ -35,8 +53,10 @@ class Function:
         # lastPointOutside = True
         lastPointInside = True
         self.lineSegments = []
-        
-        for n in range(0, parent.windowBox[2], 2):
+        fills = []
+
+        firstaxisy = parent.pixel(0,0)[1]
+        for n in range(0, parent.windowBox[2]):
 
             x, _ = parent.inversepixel(n,0)
 
@@ -50,40 +70,77 @@ class Function:
             if math.isnan(x) or math.isnan(y):
                 continue
 
-            x,y = parent.pixel(x,y)
+            px, py = parent.pixel(x,y)
 
             if not lastPoint:
-                lastPoint = [x, y]
+                lastPoint = [px, py]
                 continue
+                        
+            # add fill areas under curve
+            for x0, x1 in self.fillAreasBorders:
+                if x0 <= x <= x1:
+                    fills.append(
+                        (
+                            firstaxisy < py, 
+                            (px, parent.clamp(y=py)[1]), 
+                            (lastPoint[0], parent.clamp(y=lastPoint[1])[1])
+                        )
+                    )
 
-            inside = parent.inside(x,y)
-            
-            # last is inside but plot heading out
-            if lastPointInside and not inside:
-                lastPointInside = False
-                continue
+            if parent.inside(px, py) or parent.inside(*lastPoint):
+                line = shapes.Line(
+                    *parent.clamp(lastPoint[0], lastPoint[1]), 
+                    *parent.clamp(px, py), 
+                    color=self.color, 
+                    width=self.thickness*2, 
+                    batch=self.batch, 
+                    center=True
+                )
+                self.lineSegments.append(line)
+        
+            lastPoint = [px, py]
 
-            # last is out but plot is heading in
-            elif not lastPointInside and inside:
-                lastPointInside = True
-                continue
-            
-            # both points is inside
-            if inside:
-                lastPointInside = True
+        # add tangent
+        if self.tangentFunction: parent.add(self.tangentFunction)
 
-            else:
-                lastPointInside = False
-                lastPoint = [x,y]
-                continue
+        # new fills
+        fillAreas = []
+        last = None
+        for top, p1, p2 in fills:
 
-            if (not parent.inside(*lastPoint) and not parent.inside(x,y)):
-                continue
-            
-            line = shapes.Line(lastPoint[0], lastPoint[1], x, y, color=self.color, width=self.thickness*2, batch=self.batch, center=True)            
-            self.lineSegments.append(line)
-            lastPoint = [x, y]
+            if top != last:                
+                fillAreas.append({"top":top,"points":[]})
+                last = top
 
+            fillAreas[-1]["points"].append(p1)
+            fillAreas[-1]["points"].append(p2)
+
+        for area in fillAreas:
+            area["points"].append((area["points"][len(area["points"])-1][0], firstaxisy))
+            area["points"].insert(0, (area["points"][0][0], firstaxisy))
+
+        for area in fillAreas:
+            shapes.Polygon(*area["points"], color=self.fillcolor, batch=self.batch)
+
+
+    def tangent(self, x, dx=10**(-5)):
+         
+        # central diff quo
+        dy = self.function(x+dx/2) - self.function(x-dx/2)
+        
+        a = dy/dx
+ 
+        self.tangentFunction = Function(
+            lambda x, a, x0, y0: a*(x - x0) + y0, a=a, x0=x, y0=self.function(x),
+            width=self.thickness,
+            color=self.color,
+            dotted=True
+        )
+
+    
+    def fill(self, x0, x1): 
+        self.fillAreasBorders.append((x0,x1))
+        
 
     def draw(self, *args, **kwargs):
         self.batch.draw(*args, **kwargs)

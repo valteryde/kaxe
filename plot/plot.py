@@ -419,6 +419,13 @@ class Plot:
         """
         return insideBox(self.windowBox, (x,y))
 
+    
+    def clamp(self, x:int=0, y:int=0):
+        return (
+            min(max(self.windowBox[0], x), self.windowBox[2]),
+            min(max(self.windowBox[1], y), self.windowBox[3])
+        )
+
 
     def inversetranslate(self, x:int=None, y:int=None):
         """
