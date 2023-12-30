@@ -1,6 +1,7 @@
 
 # polar plot
 from .window import Window
+from .shapes import shapes
 from .axis import Axis
 from .helper import *
 import logging
@@ -25,11 +26,15 @@ class PolarPlot(Window):
 
         self.scale = (1,1)
         self.radiusTitle = None
-        self.radiusAxis = Axis(
-            (1,0), 
-        )
+        self.radiusAxis = Axis((1,0))
 
-        self.style(__overwrite__=False, markerStepSizeBand=[100, 30])
+        self.angleAxis = PolarAxis()
+
+        self.style(__overwrite__=False, 
+                   markerStepSizeBand=[100, 30], 
+                   windowWidth=1500, 
+                   windowHeight=1500
+        )
 
 
     # creating plotting window
@@ -40,6 +45,8 @@ class PolarPlot(Window):
     def __prepare__(self):
         # finish making plot
         # fit "plot" into window 
+
+        assert self.height == self.width
 
         self.radiusAxis.addStartAndEnd(0, 100)
         xLength = 100
@@ -53,9 +60,9 @@ class PolarPlot(Window):
         
         self.radiusAxis.addMarkersToAxis(self)
 
-        #self.radiusAxis.addTitle('hejsa', self)
+        self.radiusAxis.addTitle('hejsa', self)
         
-        # klar til at færdiggøre
+        self.angleAxis.finalize(self)
 
     # special api
     def title(self, first=None, second=None):
@@ -98,38 +105,25 @@ class PolarPlot(Window):
         return self.scale[0]*x, self.scale[1]*y
 
 
-    def pixel(self, x:int, y:int) -> tuple:
+    def pixel(self, angle:int|float, radius:int|float) -> tuple:
         """
         para: abstract value
         return: pixel values according to axis
         """
 
+        x, y = math.cos(angle)*radius, math.sin(angle)*radius
+
         return self.translate(x,y)
 
 
-    def inversepixel(self, x:int, y:int):
-        """
-        para: pixel values according to axis
-        return abstract value
-        """
-
-        x, y = self.inversetranslate(x,y)
+    def inversepixel(self, angle:int|float, radius:int|float):
         
-        x += self.firstAxis.offset
-        y += self.secondAxis.offset
+        x, y = math.acos(angle)/radius, math.asin(angle)/radius
 
-        v1 = self.firstAxis.directionVector
-        v2 = self.secondAxis.directionVector
-
-        #b = (-r__b*v__1a + r__a)/(v__1a*v__2b + v__1b*v__2a)
-        b = (v1[0]*y - v2[0]*x)/(v1[0]*v2[1] - v1[1]*v2[0])
-
-        #a = (-b*v__1b + r__a)/v__1a
-        a = (-b*v1[1] + x)/v1[0]
-
-        return a, b
+        return self.inversetranslate(x, y)
 
 
+    # SKAL SKRIVES OM
     def pointOnWindowBorderFromLine(self, pos, n): # -> former def line(...)
         """
         para: x,y position according to basis (1,0), (0,1) in abstract space
@@ -137,3 +131,14 @@ class PolarPlot(Window):
         """
         
         return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
+
+
+class PolarAxis:
+
+    def __init__(self):
+        self.batch = shapes.Batch()
+
+
+    def finalize(self, parent:PolarPlot): #virker kun til polarplot
+        self.circle = shapes.Circle(*parent.center, parent.height/2, fill=False, batch=self.batch, width=2)
+        parent.addDrawingFunction(self.batch, 2)

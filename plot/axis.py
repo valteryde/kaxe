@@ -203,7 +203,7 @@ class Axis:
         self.pos = self.getEndPoints()[0]
 
 
-    def finalize(self, parent, visualOffset:tuple=(0,0), poss:tuple()=((0,0),(0,0))):
+    def finalize(self, parent, visualOffset:tuple=(0,0), poss:tuple|None=None):
         self.visualOffset = visualOffset
         
         if not poss:
