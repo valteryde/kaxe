@@ -4,8 +4,9 @@ from .window import Window
 from .shapes import shapes
 from .axis import Axis
 from .helper import *
+from .text import Text
 import logging
-from math import sin, cos, acos, asin
+from math import sin, cos, acos, asin, radians, sqrt, pow
 
 POLARPLOT = 'polar'
 
@@ -29,11 +30,12 @@ class PolarPlot(Window):
         self.radiusAxis = Axis((1,0))
 
         self.angleAxis = PolarAxis()
+        self.batch = shapes.Batch()
 
         self.style(__overwrite__=False, 
                    markerStepSizeBand=[100, 30], 
                    windowWidth=1500, 
-                   windowHeight=1500
+                   windowHeight=1500,
         )
 
 
@@ -42,10 +44,29 @@ class PolarPlot(Window):
         pass
 
 
+    def __addRoundLines__(self):
+        """
+        from markers of radius axis
+        """
+        for marker in self.radiusAxis.markers:
+            
+            if not marker.shown: continue
+            
+            shapes.Circle(*self.center, 
+                          radius=self.translate(marker.x, 0)[0]-self.center[0], 
+                          fill=False,
+                          width=self.markerWidth,
+                          color=self.gridLineColor,
+                          batch=self.batch
+                        )
+        
+        self.addDrawingFunction(self.batch)
+
+
     def __prepare__(self):
         # finish making plot
         # fit "plot" into window 
-
+        
         assert self.height == self.width
 
         self.radiusAxis.addStartAndEnd(0, 100)
@@ -58,21 +79,20 @@ class PolarPlot(Window):
         self.center = (halfWay([self.windowBox[0]], [self.windowBox[2]])[0], y)
         self.radiusAxis.finalize(self, poss=(*self.center, self.windowBox[2] + self.windowBox[0], y))
         
+        self.markerOptions["showLine"] = False
         self.radiusAxis.addMarkersToAxis(self)
+        self.__addRoundLines__()
 
         self.radiusAxis.addTitle('hejsa', self)
         
         self.angleAxis.finalize(self)
+
 
     # special api
     def title(self, first=None, second=None):
         self.firstTitle = first
         self.secondTitle = second
         return self
-
-
-    def setAxis(self, axis:Axis):
-        self.radiusAxis = axis
 
 
     # translations
@@ -111,14 +131,14 @@ class PolarPlot(Window):
         return: pixel values according to axis
         """
 
-        x, y = math.cos(angle)*radius, math.sin(angle)*radius
+        x, y = cos(angle)*radius, sin(angle)*radius
 
         return self.translate(x,y)
 
 
     def inversepixel(self, angle:int|float, radius:int|float):
         
-        x, y = math.acos(angle)/radius, math.asin(angle)/radius
+        x, y = acos(angle)/radius, asin(angle)/radius
 
         return self.inversetranslate(x, y)
 
@@ -133,12 +153,83 @@ class PolarPlot(Window):
         return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
 
 
-class PolarAxis:
+class PolarAxis(Axis):
 
-    def __init__(self):
+    def __init__(self, degrees:bool=False):
+        super()
+        
         self.batch = shapes.Batch()
+        self.width = 2
+
+        self.markers = [
+            (0, '0'),
+            (45, '$\\frac{\\pi}{4}$'),
+            (90, '$\\frac{\\pi}{2}$'),
+            (135, '$\\frac{3\\pi}{4}$'),
+            (180, '$\\pi$'),
+            (225, '$\\frac{5\\pi}{4}$'),
+            (270, '$\\frac{3\\pi}{2}$'),
+            (315, '$\\frac{7\\pi}{4}$'),
+        ]
+        if degrees:
+            self.markers = [
+                (0, '0'),
+                (45, '45'),
+                (90, '90'),
+                (135, '135'),
+                (180, '180'),
+                (225, '225'),
+                (270, '270'),
+                (315, '315'),
+            ]
 
 
     def finalize(self, parent:PolarPlot): #virker kun til polarplot
-        self.circle = shapes.Circle(*parent.center, parent.height/2, fill=False, batch=self.batch, width=2)
-        parent.addDrawingFunction(self.batch, 2)
+        self.radius = parent.height/2
+        self.circle = shapes.Circle(*parent.center, self.radius, fill=False, width=self.width)
+        self.texts = []
+
+        # marker
+        for angle, text in self.markers:
+            v = (cos(radians(angle)), sin(radians(angle)))
+            pos = addVector(parent.center, vectorScalar(v, self.radius))
+            shapes.Line(*parent.center, 
+                        *pos,
+                        batch=self.batch,
+                        width=self.width,
+                        color=parent.gridLineColor,
+                    )
+
+            # check for overlap
+            textShape = Text(
+                text,
+                *pos,
+                batch=self.batch, 
+                anchor_x="center", 
+                anchor_y="center", 
+                fontSize=int(parent.fontSize*1.5), 
+                color=parent.markerColor
+            )
+
+            poss = [
+                (textShape.x+textShape.width/2, textShape.y),
+                (textShape.x+textShape.width/2, textShape.y-textShape.height/2),
+                (textShape.x-textShape.width/2, textShape.y),
+                (textShape.x-textShape.width/2, textShape.y+textShape.height/2),
+            ]
+
+            maxDist = 0
+            for p in poss:
+                vn = (parent.center[0]-p[0], parent.center[1]-p[1])
+                d = sqrt(pow(vn[0], 2)+pow(vn[1], 2))
+                maxDist = max(d - self.radius, maxDist)
+
+            maxDist += parent.fontSize
+
+            textShape.x, textShape.y = addVector(vectorScalar(v, maxDist), pos)
+            self.texts.append(textShape)
+
+        parent.addDrawingFunction(self.batch)
+        parent.addDrawingFunction(self.circle, 2)
+        for textShape in self.texts:
+            parent.include(textShape.x, textShape.y, textShape.width, textShape.height)

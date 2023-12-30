@@ -1,4 +1,5 @@
 
+from random import randint
 from PIL import Image, ImageDraw
 from .styles import *
 from .helper import *
