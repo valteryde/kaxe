@@ -5,6 +5,7 @@ from ..plot.symbol import makeSymbolShapes
 from ..plot.symbol import symbol as symbols
 from ..plot.helper import *
 
+#identities
 
 class Points:
     def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False):

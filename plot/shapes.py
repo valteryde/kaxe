@@ -349,8 +349,6 @@ class Polygon(Shape):
         return [self.width, self.height]
 
 
-
-
 # NAMESPACE
 class shapes:
     Rectangle = Rectangle

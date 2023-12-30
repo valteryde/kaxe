@@ -106,6 +106,10 @@ def distPointLine(n, pos, point):
     return abs(n[0] * point[0] + n[1] * point[1] + c) / math.sqrt(n[0]**2+n[1]**2)
 
 
+def halfWay(v1, v2):
+    return addVector(v1, vectorScalar(vdiff(v1, v2), 1/2))
+
+
 
 def insideBox(box, point):
     if point[0] < box[0]:
