@@ -16,48 +16,31 @@ from random import randint
 import os
 
 """
-structure to parent + child
-
-Axis is diffrent from other objects
-
-To be done:
-    pass
+Alle translationer fra pixel til inverse pixel skal ske i Plot og ikke i vinduet
+Vinduet er bare til at lægge ting til og ved ikke hvor og hvodan den skal lægge ting til
+Den hjælper lidt med legender og ensarte api til nye plots
+Vinduet er altså det midterste af skærmen og holder også styr på padding og forskellige stil 
+Det gør at bruger skal arbejde med de samme funktioner hver gang der arbejdes med et plot 
+Ligeledes hvilkte plot der arbejdes på
 """
 
-class Plot:
-    def __init__(self,  window:list=None, trueAxis:bool=None): # |
+class Window:
+    def __init__(self): # |
         """
-        trueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
-
-        window:tuple [x0, x1, y0, y1] axis
-
         left to right is always positive
         bottom to top is always positive
         """
         
-        self.firstAxis = None
-        self.secondAxis = None
-        self.axis = [lambda: self.firstAxis, lambda: self.secondAxis]
-        self.untrueAxis = not trueAxis
-        self.translateFunction = lambda x,y: (x,y)
-        self.readyForTranslation = True
-
         # options
-        self.windowAxis = window
-        if self.windowAxis is None: self.windowAxis = [None, None, None, None]
-
         self.shapes = []
         self.objects = []
         self.legendObjects = []
         self.legendBatch = shapes.Batch()
         self.legendBoxShape = shapes.Batch()
         
-        self.scale = (0,0)
         self.offset = [0,0]
         self.padding = [0,0,0,0] #computed padding
-        self.firstTitle = None
-        self.secondTitle = None
-
+        
         # styles
         self.width = None
         self.height = None
@@ -72,7 +55,8 @@ class Plot:
         self.markerStepSizeBand = None
         self.outerPadding = None
 
-        
+    
+    # styles        
     def style(
             self, 
             __overwrite__:tuple=True,
@@ -125,7 +109,6 @@ class Plot:
         if self.width and self.fontSize is None: self.fontSize = int(self.width/70)
         if self.fontSize and self.markerStepSizeBand is None: self.markerStepSizeBand = [int(self.fontSize*7), int(self.fontSize*4)]
 
-
         # package options
         self.markerOptions = {
             "color":self.markerColor,
@@ -148,6 +131,7 @@ class Plot:
         self.style(**theme)
 
 
+    # paddings 
     def include(self, cx, cy, width, height):
         """includes cx, cy in frame by adding padding"""
         dx = min(cx - width/2, 0)
@@ -189,6 +173,169 @@ class Plot:
         #     i.push(left, bottom)
 
 
+    # if point is inside window
+    def inside(self, x, y):
+        """
+        para: translated
+        (pixels)
+        """
+        return insideBox(self.windowBox, (x,y))
+
+    
+    def clamp(self, x:int=0, y:int=0):
+        """
+        clamps value to window max and min
+        para: pixels
+        """
+        return (
+            min(max(self.windowBox[0], x), self.windowBox[2]),
+            min(max(self.windowBox[1], y), self.windowBox[3])
+        )
+
+
+    # baking
+    def __bake__(self):
+        # finish making plot
+        # fit "plot" into window 
+        startTime = time.time()        
+
+        self.__prepare__()
+        self.__addInnerContent__()
+        self.__addOuterContent__()
+
+        # add style padding
+        self.addPaddingCondition(*self.outerPadding)
+
+        logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
+
+
+    def __addOuterContent__(self):
+        
+        # legend
+        self.legendbox = LegendBox(*self.objects)
+        self.legendbox.finalize(self)
+
+
+    def __addInnerContent__(self):
+        
+        # finalizeing objects
+        pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
+        for obj in self.objects:
+            obj.finalize(self)
+            pbar.update()
+            self.addDrawingFunction(obj)
+        pbar.close()
+
+        self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
+
+
+    def __pillowPaint__(self, fname):
+        startTime = time.time()
+        pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
+
+        winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
+        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
+        surface = Image.new('RGBA', winSize)
+
+        background.draw(surface)
+
+        for shape in self.shapes:
+            shape.draw(surface)
+            pbar.update()
+
+        surface.save(fname)
+        pbar.close()
+        logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
+
+
+    def __paint__(self, *args, **kwargs):
+        
+        if True: # self.engine == 'PILLOW':
+            self.__pillowPaint__(*args, **kwargs)
+
+
+    # save and show    
+    def save(self, fname):
+        
+        totStartTime = time.time()
+
+        self.style(
+            windowWidth=2000,
+            windowHeight=1500,
+            # padding=(100,100,100,100),
+            padding=(20,20,20,20),
+            backgroundColor=WHITE,
+            markerColor=BLACK,
+            markerLength=20,
+            markerWidth=3,
+            # fontSize=10,
+            font = "Times New Roman",
+            gridLineColor=(200,200,200,255),
+            gridLines = True,
+            # markerStepSizeBand=[200, 150],
+            __overwrite__=False
+        )
+
+        self.__bake__()
+        self.__paint__(fname)
+        
+        logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
+    
+    
+    def show(self, static:bool=True):
+
+        if static:
+            fname = '.__tempImage{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
+            self.save(fname)
+            pilImage = Image.open(fname)
+            pilImage.show()
+            os.remove(fname)
+            return
+
+    # shape
+    def addDrawingFunction(self, shape, z=0):
+        self.shapes.append((shape, z))
+
+
+    # api
+    def add(self, o):
+        self.objects.append(o)
+
+
+#__eq__ (equal)
+#__ne__ (not equal)
+
+class Plot(Window):
+    
+    def __init__(self,  window:list=None, trueAxis:bool=None): # |
+        super().__init__()
+
+        """
+        trueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
+
+        window:tuple [x0, x1, y0, y1] axis
+
+        left to right is always positive
+        bottom to top is always positive
+        """
+        
+        self.firstAxis = None
+        self.secondAxis = None
+        self.axis = [lambda: self.firstAxis, lambda: self.secondAxis]
+        self.untrueAxis = not trueAxis
+        self.translateFunction = lambda x,y: (x,y)
+        self.readyForTranslation = True
+
+        # options
+        self.windowAxis = window
+        if self.windowAxis is None: self.windowAxis = [None, None, None, None]
+
+        self.scale = (0,0)
+        self.firstTitle = None
+        self.secondTitle = None
+
+
+    # creating plotting window
     def __setWindowDimensionBasedOnAxis__(self, firstAxis:Axis, secondAxis:Axis):
         
         p1, p2 = firstAxis.getEndPoints()
@@ -287,22 +434,16 @@ class Plot:
             self.untrueAxis = self.untrueAxis
 
 
-    def setTranslateFunction(self, f:callable):
-        self.translateFunction = f
-
-
-    def bake(self):
+    def __prepare__(self):
         # finish making plot
         # fit "plot" into window 
-        startTime = time.time()
 
         self.__calculateWindowBorders__()
-        
         self.__createStandardAxis__()
+
         self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
         self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
-        # computed options, padding needs to set before this point
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
         self.nullInPlot = False
 
@@ -310,31 +451,26 @@ class Plot:
         self.firstAxis.addMarkersToAxis(self)
         self.secondAxis.addMarkersToAxis(self)
 
-        # legend & title
+        # title
         if self.firstTitle: self.firstAxis._addTitle(self.firstTitle, self)
         if self.secondTitle: self.secondAxis._addTitle(self.secondTitle, self)
         
-        self.legendbox = LegendBox(*self.objects)
-        self.legendbox.finalize(self)
-
         if self.untrueAxis and not self.standardBasis:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
 
-        # objects
-        self.readyForTranslation = True
-        pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
-        for obj in self.objects:
-            obj.finalize(self)
-            pbar.update()
-            self.addDrawingFunction(obj)
-        pbar.close()
+        # klar til at færdiggøre
 
-        self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
+    # special api
+    def title(self, first=None, second=None):
+        self.firstTitle = first
+        self.secondTitle = second
+        return self
 
-        # add back outerPadding
-        self.addPaddingCondition(*self.outerPadding)
 
-        logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
+    def setAxis(self, first:Axis, second:Axis):
+        self.firstAxis = first
+        self.secondAxis = second
+        self.standardBasis = (first.v[0] == 0 or first.v[1] == 0) and (second.v[0] == 0 or second.v[1] == 0)
 
 
     # translations
@@ -346,9 +482,6 @@ class Plot:
         
         x -= self.firstAxis.offset
         y -= self.secondAxis.offset
-
-        if self.readyForTranslation: # ready when base plot is in place
-            x, y = self.translateFunction(x, y)
 
         return (
             self.firstAxis.directionVector[0] * x + self.secondAxis.directionVector[0] * y,
@@ -405,7 +538,7 @@ class Plot:
         return a, b
 
 
-    def line(self, pos, n): # -> name e.g lineOnWindowBorder
+    def pointOnWindowBorderFromLine(self, pos, n): # -> former def line(...)
         """
         para: x,y position according to basis (1,0), (0,1) in abstract space
         return: two translated values on border of plot
@@ -414,20 +547,6 @@ class Plot:
         return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
 
     
-    def inside(self, x, y):
-        """
-        para: translated
-        """
-        return insideBox(self.windowBox, (x,y))
-
-    
-    def clamp(self, x:int=0, y:int=0):
-        return (
-            min(max(self.windowBox[0], x), self.windowBox[2]),
-            min(max(self.windowBox[1], y), self.windowBox[3])
-        )
-
-
     def inversetranslate(self, x:int=None, y:int=None):
         """
         para: translated value
@@ -439,83 +558,3 @@ class Plot:
         if not y is None: p[1] = (self.secondAxis._invtranslate(y)+self.offset[1]-self.padding[1])/self.scale[1]
 
         return p
-
-
-    # shape
-    def addDrawingFunction(self, shape, z=0):
-        self.shapes.append((shape, z))
-
-
-    # api
-    def add(self, o):
-        self.objects.append(o)
-
-    
-    def title(self, first=None, second=None):
-        self.firstTitle = first
-        self.secondTitle = second
-        return self
-
-
-    def setAxis(self, first:Axis, second:Axis):
-        self.firstAxis = first
-        self.secondAxis = second
-        self.standardBasis = (first.v[0] == 0 or first.v[1] == 0) and (second.v[0] == 0 or second.v[1] == 0)
-
-
-    # bake functions
-    def show(self, static:bool=True):
-
-        if static:
-            fname = '.__tempImage{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
-            self.save(fname)
-            pilImage = Image.open(fname)
-            pilImage.show()
-            os.remove(fname)
-            return
-
-
-    def save(self, fname):
-        
-        totStartTime = time.time()
-
-        self.style(
-            windowWidth=2000,
-            windowHeight=1500,
-            # padding=(100,100,100,100),
-            padding=(20,20,20,20),
-            backgroundColor=WHITE,
-            markerColor=BLACK,
-            markerLength=20,
-            markerWidth=3,
-            # fontSize=10,
-            font = "Times New Roman",
-            gridLineColor=(200,200,200,255),
-            gridLines = True,
-            # markerStepSizeBand=[200, 150],
-            __overwrite__=False
-        )
-
-        self.bake()
-        startTime = time.time()
-        pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
-
-        winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
-        surface = Image.new('RGBA', winSize)
-
-        background.draw(surface)
-
-        for shape in self.shapes:
-            shape.draw(surface)
-            pbar.update()
-
-        surface.save(fname)
-        pbar.close()
-        logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
-        logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
-
-
-# class ClassicPlot(Plot):
-#     pass
-

@@ -43,7 +43,7 @@ class Marker:
         self.visualOffset = addVector(visualOffset, self.axis.visualOffset) #inherit
 
         if self.showLine:
-            p1, p2 = parent.line(self.axis.get(self.x), self.axis.v)
+            p1, p2 = parent.pointOnWindowBorderFromLine(self.axis.get(self.x), self.axis.v)
             self.line = shapes.Line(*p1, *p2, color=self.gridlineColor)
         
         pos = parent.translate(*self.axis.get(self.x))
@@ -146,4 +146,3 @@ class Marker:
     def pos(self):
         if hasattr(self, 'textLabel'):
             return self.textLabel.x, self.textLabel.y
-
