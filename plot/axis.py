@@ -74,7 +74,7 @@ class Axis:
         return self.get(self.start), self.get(self.end)
 
 
-    def _addMarkersToAxis(self, parent):
+    def addMarkersToAxis(self, parent):
         markers = []
 
         p1 = parent.inversetranslate(*self.lineStartPoint)
@@ -183,7 +183,7 @@ class Axis:
         self._invtranslate = self.translate
 
 
-    def _addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
+    def addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
         
         # computed
         # self.start = fsolve(lambda x: self.func(x) - start, start)[0]
@@ -241,7 +241,7 @@ class Axis:
                 or abottom_left[1] > btop_right[1])
 
 
-    def _addTitle(self, title:str, parent) -> None:
+    def addTitle(self, title:str, parent) -> None:
         v = (self.v[0]*parent.scale[0], self.v[1]*parent.scale[1])
         angle = angleBetweenVectors(v, (1,0))
 

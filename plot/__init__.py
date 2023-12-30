@@ -7,3 +7,4 @@ from .styles import resetColor
 from .axis import Axis
 from .round import koundTeX
 from .themes import Themes
+from .special import LogPlot, PolarPlot

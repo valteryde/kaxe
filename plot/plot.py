@@ -25,7 +25,7 @@ To be done:
 """
 
 class Plot:
-    def __init__(self,  window:list=None, trueAxis:bool=None, logarithmic=[None, None]): # |
+    def __init__(self,  window:list=None, trueAxis:bool=None): # |
         """
         trueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
 
@@ -39,7 +39,8 @@ class Plot:
         self.secondAxis = None
         self.axis = [lambda: self.firstAxis, lambda: self.secondAxis]
         self.untrueAxis = not trueAxis
-        self.logarithmic = logarithmic
+        self.translateFunction = lambda x,y: (x,y)
+        self.readyForTranslation = True
 
         # options
         self.windowAxis = window
@@ -245,16 +246,8 @@ class Plot:
         if self.firstAxis: return # or self.secondAxis
 
         self.standardBasis = True
-        
-        if self.logarithmic[0]:
-            self.firstAxis = Axis((1,0), func=math.log10, invfunc=lambda x: math.pow(10, x))
-        else:
-            self.firstAxis = Axis((1,0))
-        
-        if self.logarithmic[1]:
-            self.secondAxis = Axis((0,1), func=math.log10, invfunc=lambda x: math.pow(10, x))
-        else:
-            self.secondAxis = Axis((0,1))
+        self.firstAxis = Axis((1,0))
+        self.secondAxis = Axis((0,1))
 
 
     def __calculateWindowBorders__(self):
@@ -294,6 +287,10 @@ class Plot:
             self.untrueAxis = self.untrueAxis
 
 
+    def setTranslateFunction(self, f:callable):
+        self.translateFunction = f
+
+
     def bake(self):
         # finish making plot
         # fit "plot" into window 
@@ -302,16 +299,16 @@ class Plot:
         self.__calculateWindowBorders__()
         
         self.__createStandardAxis__()
-        self.firstAxis._addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
-        self.secondAxis._addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
+        self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
+        self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
         # computed options, padding needs to set before this point
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
         self.nullInPlot = False
 
         self.__setWindowDimensionBasedOnAxis__(self.firstAxis, self.secondAxis)
-        self.firstAxis._addMarkersToAxis(self)
-        self.secondAxis._addMarkersToAxis(self)
+        self.firstAxis.addMarkersToAxis(self)
+        self.secondAxis.addMarkersToAxis(self)
 
         # legend & title
         if self.firstTitle: self.firstAxis._addTitle(self.firstTitle, self)
@@ -324,6 +321,7 @@ class Plot:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
 
         # objects
+        self.readyForTranslation = True
         pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
         for obj in self.objects:
             obj.finalize(self)
@@ -348,6 +346,9 @@ class Plot:
         
         x -= self.firstAxis.offset
         y -= self.secondAxis.offset
+
+        if self.readyForTranslation: # ready when base plot is in place
+            x, y = self.translateFunction(x, y)
 
         return (
             self.firstAxis.directionVector[0] * x + self.secondAxis.directionVector[0] * y,
@@ -513,5 +514,8 @@ class Plot:
         pbar.close()
         logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
         logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
-    
-    
+
+
+# class ClassicPlot(Plot):
+#     pass
+
