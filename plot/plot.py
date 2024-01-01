@@ -247,3 +247,22 @@ class Plot(Window):
         """
         
         return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
+
+
+    def inside(self, x, y):
+        """
+        para: translated
+        (pixels)
+        """
+        return insideBox(self.windowBox, (x,y))
+
+    
+    def clamp(self, x:int=0, y:int=0):
+        """
+        clamps value to window max and min
+        para: pixels
+        """
+        return (
+            min(max(self.windowBox[0], x), self.windowBox[2]),
+            min(max(self.windowBox[1], y), self.windowBox[3])
+        )

@@ -5,6 +5,7 @@ from ..plot.styles import getRandomColor
 from ..plot.helper import *
 from ..plot.shapes import shapes
 from ..plot.symbol import symbol
+from ..plot import identities
 import numbers
 
 
@@ -43,39 +44,34 @@ class Function:
         self.otherArgs = args
         self.otherKwargs = kwargs
 
+        self.supports = [identities.XYPLOT, identities.POLAR]
+
 
     def __call__(self, x):
         return self.function(x)
 
-    def finalize(self, parent):
 
-        lastPoint = None
-        # lastPointOutside = True
-        lastPointInside = True
-        self.lineSegments = []
-        fills = []
+    def __setPoint__(self, x, parent, firstaxisy:int|None=None, fills:list|None=None):
+        try:
+            y = self.function(x, *self.otherArgs, **self.otherKwargs)
+        except Exception as e:
+            return
 
-        firstaxisy = parent.pixel(0,0)[1]
-        for n in range(0, parent.windowBox[2]):
+        if not isinstance(x, numbers.Real) or not isinstance(y, numbers.Real):
+            return
+        if math.isnan(x) or math.isnan(y):
+            return
 
-            x, _ = parent.inversepixel(n,0)
+        px, py = parent.pixel(x,y)
 
-            try:
-                y = self.function(x, *self.otherArgs, **self.otherKwargs)
-            except Exception as e:
-                continue
+        if not px or not py:
+            return
 
-            if not isinstance(x, numbers.Real) or not isinstance(y, numbers.Real):
-                continue
-            if math.isnan(x) or math.isnan(y):
-                continue
-
-            px, py = parent.pixel(x,y)
-
-            if not lastPoint:
-                lastPoint = [px, py]
-                continue
+        if not self.__lastPoint__:
+            self.__lastPoint__ = [px, py]
+            return
                         
+        if fills != None:
             # add fill areas under curve
             for x0, x1 in self.fillAreasBorders:
                 if x0 <= x <= x1:
@@ -83,22 +79,46 @@ class Function:
                         (
                             firstaxisy < py, 
                             (px, parent.clamp(y=py)[1]), 
-                            (lastPoint[0], parent.clamp(y=lastPoint[1])[1])
+                            (self.__lastPoint__[0], parent.clamp(y=self.__lastPoint__[1])[1])
                         )
                     )
 
-            if parent.inside(px, py) or parent.inside(*lastPoint):
-                line = shapes.Line(
-                    *parent.clamp(lastPoint[0], lastPoint[1]), 
-                    *parent.clamp(px, py), 
-                    color=self.color, 
-                    width=self.thickness*2, 
-                    batch=self.batch, 
-                    center=True
-                )
-                self.lineSegments.append(line)
+        if parent.inside(px, py) or parent.inside(*self.__lastPoint__):
+            line = shapes.Line(
+                *parent.clamp(self.__lastPoint__[0], self.__lastPoint__[1]), 
+                *parent.clamp(px, py), 
+                color=self.color, 
+                width=self.thickness*2, 
+                batch=self.batch,
+                center=True
+            )
+            self.lineSegments.append(line)
         
-            lastPoint = [px, py]
+        self.__lastPoint__ = [px, py]
+
+
+
+    def finalize(self, parent):
+
+        self.lineSegments = []
+        fills = []
+        self.__lastPoint__ = []
+
+        if parent == identities.XYPLOT:
+        
+            firstaxisy = parent.pixel(0,0)[1]
+            for n in range(0, parent.windowBox[2]):
+                x, _ = parent.inversepixel(n,0)
+                self.__setPoint__(x, parent, firstaxisy, fills)
+        
+        elif parent == identities.POLAR:
+        
+            fidelity = 100
+            for angle in range(0, 360*fidelity):
+                angle = math.radians(angle / fidelity)
+                self.__setPoint__(angle, parent)
+
+
 
         # add tangent
         if self.tangentFunction: parent.add(self.tangentFunction)

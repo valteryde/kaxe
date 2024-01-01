@@ -178,32 +178,13 @@ class Window:
         #     i.push(left, bottom)
 
 
-    # if point is inside window
-    def inside(self, x, y):
-        """
-        para: translated
-        (pixels)
-        """
-        return insideBox(self.windowBox, (x,y))
-
-    
-    def clamp(self, x:int=0, y:int=0):
-        """
-        clamps value to window max and min
-        para: pixels
-        """
-        return (
-            min(max(self.windowBox[0], x), self.windowBox[2]),
-            min(max(self.windowBox[1], y), self.windowBox[3])
-        )
-
-
     # baking
     def __bake__(self):
         # finish making plot
         # fit "plot" into window 
         startTime = time.time()        
 
+        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
         self.__prepare__()
         self.__addInnerContent__()
         self.__addOuterContent__()
@@ -304,4 +285,7 @@ class Window:
 
     # api
     def add(self, o):
-        self.objects.append(o)
+        if self.identity in o.supports:
+            self.objects.append(o)
+        else:
+            logging.error(f'{o}, is not supported in {self}')

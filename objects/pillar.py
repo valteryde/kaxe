@@ -4,6 +4,7 @@ from ..plot.shapes import shapes
 from ..plot.symbol import makeSymbolShapes
 from ..plot.symbol import symbol as symbols
 from ..plot.helper import *
+from ..plot import identities
 
 class Pillars:
 
@@ -32,6 +33,8 @@ class Pillars:
         self.farRight = max(self.x) + 1
         self.farTop = max(self.heights)
         self.farBottom = 0
+
+        self.supports = [identities.XYPLOT]
 
     
     def finalize(self, parent):

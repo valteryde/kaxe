@@ -1,5 +1,7 @@
 
 # polar plot
+from random import randint
+import sys
 from .window import Window
 from .shapes import shapes
 from .axis import Axis
@@ -23,7 +25,7 @@ class PolarPlot(Window):
 
         # options
         self.windowAxis = window
-        if self.windowAxis is None: self.windowAxis = [None, None, None, None]
+        if self.windowAxis is None: self.windowAxis = [None, None]
 
         self.scale = (1,1)
         self.radiusTitle = None
@@ -41,7 +43,8 @@ class PolarPlot(Window):
 
     # creating plotting window
     def __calculateWindowBorders__(self):
-        pass
+        if self.windowAxis[0] is None: self.windowAxis[0] = 0
+        if self.windowAxis[1] is None: self.windowAxis[1] = 10
 
 
     def __addRoundLines__(self):
@@ -68,12 +71,13 @@ class PolarPlot(Window):
         # fit "plot" into window 
         
         assert self.height == self.width
+        self.__calculateWindowBorders__()
 
-        self.radiusAxis.addStartAndEnd(0, 100)
-        xLength = 100
+        self.radius = self.height/2
+        self.radiusAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1])
+        xLength = self.windowAxis[1] - self.windowAxis[0]
         yLength = xLength
         self.scale = ((self.width/2) / xLength, (self.height/2) / yLength)
-        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
 
         y = halfWay([self.windowBox[1]], [self.windowBox[3]])[0]
         self.center = (halfWay([self.windowBox[0]], [self.windowBox[2]])[0], y)
@@ -115,8 +119,8 @@ class PolarPlot(Window):
         """
 
         p = [None, None]
-        if not x is None: p[0] = (x+self.offset[0]-self.padding[0] - self.center[0])/self.scale[0]
-        if not y is None: p[1] = (x+self.offset[1]-self.padding[1] - self.center[1])/self.scale[1]
+        if not x is None: p[0] = (x+self.offset[0]-self.padding[0]-self.center[0])/self.scale[0]
+        if not y is None: p[1] = (y+self.offset[1]-self.padding[1]-self.center[1])/self.scale[1]
 
         return p
 
@@ -131,16 +135,66 @@ class PolarPlot(Window):
         return: pixel values according to axis
         """
 
+        if radius < 0:
+            return None, None
+
         x, y = cos(angle)*radius, sin(angle)*radius
 
         return self.translate(x,y)
 
 
-    def inversepixel(self, angle:int|float, radius:int|float):
+    def inversepixel(self, x:int|float, y:int|float):
         
-        x, y = acos(angle)/radius, asin(angle)/radius
+        x, y = self.inversetranslate(x, y)
 
-        return self.inversetranslate(x, y)
+        # special cases
+        vl = vlen((x,y))
+        if vl == 0:
+            return 0, 0
+
+        if -0.001 < y < 0.001:
+            
+            if x > 0:
+                return x, 0
+
+            else:
+                return -x, math.pi
+
+        # general cases
+        if y > 0:
+            angle = acos(x/vl)
+        else:
+            angle = acos(-x/vl)
+            angle += radians(180)
+        
+        radius = max(x/cos(angle), y/sin(angle))
+    
+        # special case again
+        if -0.001 < x < 0.001:
+            return y/sin(angle), angle
+
+        return angle, radius
+
+
+    def inside(self, px:int, py:int):
+        if px is None or py is None: return False
+
+        return self.radius > vlen(vdiff((
+            px-self.offset[0]-self.padding[0], 
+            py-self.offset[1]-self.padding[1]
+            ), self.center)
+        )
+
+
+    def clamp(self, x:int=0, y:int=0):
+        """
+        clamps value to window max and min
+        para: pixels
+        """
+        return (
+            min(max(self.windowBox[0], x), self.windowBox[2]),
+            min(max(self.windowBox[1], y), self.windowBox[3])
+        )
 
 
     # SKAL SKRIVES OM
@@ -151,6 +205,7 @@ class PolarPlot(Window):
         """
         
         return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
+
 
 
 class PolarAxis(Axis):

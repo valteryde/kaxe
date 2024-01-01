@@ -2,12 +2,10 @@
 import numpy as np
 from .mapdata import heatcolormap
 import math
-from ..plot.styles import getRandomColor
-# from ..plot.helper import *
 from ..plot.shapes import shapes
-# from ..plot.symbol import symbol
 from ..plot.text import Text
 from ..plot.round import koundTeX
+from ..plot import identities
 
 def mapTempToColor(col, minColor:float|int, maxColor:float|int, colors:list=heatcolormap):
 
@@ -52,6 +50,8 @@ class ColorMap:
         self.farRight = 0
         self.farTop = len(data)
         self.farBottom = 0
+        
+        self.supports = [identities.XYPLOT]
 
     
     def finalize(self, parent):
