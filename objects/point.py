@@ -4,7 +4,7 @@ from ..plot.shapes import shapes
 from ..plot.symbol import makeSymbolShapes
 from ..plot.symbol import symbol as symbols
 from ..plot.helper import *
-
+from ..plot import identities
 
 class Points:
     def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False):
@@ -36,6 +36,8 @@ class Points:
         self.farTop = max(self.y)
         self.farBottom = min(self.y)
 
+        self.supports = [identities.XYPLOT, identities.POLAR]
+
     
     def finalize(self, parent):
         
@@ -60,6 +62,9 @@ class Points:
                 continue
             
             x1, y1 = parent.pixel(self.x[i+1], self.y[i+1])
+            if x1 is None or y1 is None or x is None or y is None:
+                continue
+            
             if (vlen(vdiff((x1, y1), (x,y))) < self.size) and self.symbol:
                 continue
 

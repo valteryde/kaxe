@@ -1,31 +1,17 @@
 
-import math
-import time
 from .helper import *
 import logging
-from .styles import *
 from .axis import *
-from .text import Text, getTextDimension
-from .legend import LegendBox
-from pyglet.gl import *
-from .shapes import shapes
-from .symbol import makeSymbolShapes
-from PIL import Image
-import tqdm
-from random import randint
-import os
+from .window import Window
 
-"""
-structure to parent + child
+XYPLOT = 'xy'
 
-Axis is diffrent from other objects
+class Plot(Window):
+    
+    def __init__(self,  window:list=None, trueAxis:bool=None): # |
+        super().__init__()
+        self.identity = XYPLOT
 
-To be done:
-    pass
-"""
-
-class Plot:
-    def __init__(self,  window:list=None, trueAxis:bool=None, logarithmic=[None, None]): # |
         """
         trueAxis:bool dictates if line intersection should be (0,0), only works with standard basis
 
@@ -39,155 +25,17 @@ class Plot:
         self.secondAxis = None
         self.axis = [lambda: self.firstAxis, lambda: self.secondAxis]
         self.untrueAxis = not trueAxis
-        self.logarithmic = logarithmic
 
         # options
         self.windowAxis = window
         if self.windowAxis is None: self.windowAxis = [None, None, None, None]
 
-        self.shapes = []
-        self.objects = []
-        self.legendObjects = []
-        self.legendBatch = shapes.Batch()
-        self.legendBoxShape = shapes.Batch()
-        
         self.scale = (0,0)
-        self.offset = [0,0]
-        self.padding = [0,0,0,0] #computed padding
         self.firstTitle = None
         self.secondTitle = None
 
-        # styles
-        self.width = None
-        self.height = None
-        self.backgroundColor = None
-        self.markerColor = None
-        self.markerWidth = None
-        self.markerLength = None
-        self.font = None
-        self.gridLines = None
-        self.gridLineColor = None
-        self.fontSize = None
-        self.markerStepSizeBand = None
-        self.outerPadding = None
 
-        
-    def style(
-            self, 
-            __overwrite__:tuple=True,
-            windowWidth:int=None,
-            windowHeight:int=None,
-            padding:list=None,
-            backgroundColor:tuple=None, 
-            markerColor:tuple=None,
-            markerWidth:int=None,
-            markerLength:int=None,
-            fontSize:int=None,
-            font:str=None,
-            gridLines:bool=None,
-            gridLineColor:tuple=None,
-            markerStepSizeBand:tuple=None
-        ):
-        """
-        change style on plotting window
-        padding: left, bottom, top, right
-        """
-
-        if not __overwrite__:
-            if not windowWidth is None and self.width is None: self.width = windowWidth
-            if not windowHeight is None and self.height is None: self.height = windowHeight
-            if not padding is None and self.outerPadding is None: self.outerPadding = list(padding)
-            if not backgroundColor is None and self.backgroundColor is None: self.backgroundColor = backgroundColor
-            if not markerColor is None and self.markerColor is None: self.markerColor = markerColor
-            if not markerWidth is None and self.markerWidth is None: self.markerWidth = markerWidth
-            if not markerLength is None and self.markerLength is None: self.markerLength = markerLength
-            if not font is None and self.font is None: self.font = font
-            if not gridLines is None and self.gridLines is None: self.gridLines = gridLines
-            if not gridLineColor is None and self.gridLineColor is None: self.gridLineColor = gridLineColor
-            if not fontSize is None and self.fontSize is None: self.fontSize = fontSize
-            if not markerStepSizeBand is None and self.markerStepSizeBand is None: self.markerStepSizeBand = markerStepSizeBand
-
-        else:
-            if not windowWidth is None: self.width = windowWidth
-            if not windowHeight is None: self.height = windowHeight
-            if not padding is None: self.outerPadding = list(padding)
-            if not backgroundColor is None: self.backgroundColor = backgroundColor
-            if not markerColor is None: self.markerColor = markerColor
-            if not markerWidth is None: self.markerWidth = markerWidth
-            if not markerLength is None: self.markerLength = markerLength
-            if not font is None: self.font = font
-            if not gridLines is None: self.gridLines = gridLines
-            if not gridLineColor is None: self.gridLineColor = gridLineColor
-            if not fontSize is None: self.fontSize = fontSize
-            if not markerStepSizeBand is None: self.markerStepSizeBand = markerStepSizeBand
-
-        if self.width and self.fontSize is None: self.fontSize = int(self.width/70)
-        if self.fontSize and self.markerStepSizeBand is None: self.markerStepSizeBand = [int(self.fontSize*7), int(self.fontSize*4)]
-
-
-        # package options
-        self.markerOptions = {
-            "color":self.markerColor,
-            "fontSize":self.fontSize, 
-            "markerWidth":self.markerWidth,
-            "markerLength":self.markerLength,
-            "gridlineColor":self.gridLineColor,
-            "showLine":self.gridLines
-        }
-
-        return self
-
-
-    def theme(self, theme):
-        """
-        use a defined theme
-        
-        calls self.style
-        """
-        self.style(**theme)
-
-
-    def include(self, cx, cy, width, height):
-        """includes cx, cy in frame by adding padding"""
-        dx = min(cx - width/2, 0)
-        dy = min(cy - height/2, 0)
-        dxm = min(self.width - (cx + width/2), 0)
-        dym = min(self.height - (cy + height/2), 0)
-
-        if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
-            self.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
-
-
-    def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
-        # could be a problem depending on where padding is calcualted
-        left = int(left)
-        right = int(right)
-        bottom = int(bottom)
-        top = int(top)
-
-        self.padding = (
-            self.padding[0] + left,
-            self.padding[1] + bottom,
-            self.padding[2] + right,
-            self.padding[3] + top,
-        )
-
-        # opdater ikke disse. Forskellen er indlejret i padding
-        # self.offset[0] += left
-        # self.offset[1] += bottom
-
-        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
-
-        for i in self.shapes:
-            if type(i) is tuple: # list is still unsorted
-                i[0].push(left, bottom)
-                continue
-            i.push(left, bottom)
-        
-        # for i in self.objects:
-        #     i.push(left, bottom)
-
-
+    # creating plotting window
     def __setWindowDimensionBasedOnAxis__(self, firstAxis:Axis, secondAxis:Axis):
         
         p1, p2 = firstAxis.getEndPoints()
@@ -245,16 +93,8 @@ class Plot:
         if self.firstAxis: return # or self.secondAxis
 
         self.standardBasis = True
-        
-        if self.logarithmic[0]:
-            self.firstAxis = Axis((1,0), func=math.log10, invfunc=lambda x: math.pow(10, x))
-        else:
-            self.firstAxis = Axis((1,0))
-        
-        if self.logarithmic[1]:
-            self.secondAxis = Axis((0,1), func=math.log10, invfunc=lambda x: math.pow(10, x))
-        else:
-            self.secondAxis = Axis((0,1))
+        self.firstAxis = Axis((1,0))
+        self.secondAxis = Axis((0,1))
 
 
     def __calculateWindowBorders__(self):
@@ -294,65 +134,48 @@ class Plot:
             self.untrueAxis = self.untrueAxis
 
 
-    def bake(self):
+    def __prepare__(self):
         # finish making plot
         # fit "plot" into window 
-        startTime = time.time()
 
         self.__calculateWindowBorders__()
-        
         self.__createStandardAxis__()
-        self.firstAxis._addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
-        self.secondAxis._addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
-        # computed options, padding needs to set before this point
+        self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
+        self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
+
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
         self.nullInPlot = False
 
         self.__setWindowDimensionBasedOnAxis__(self.firstAxis, self.secondAxis)
-        self.firstAxis._addMarkersToAxis(self)
-        self.secondAxis._addMarkersToAxis(self)
+        self.firstAxis.addMarkersToAxis(self)
+        self.secondAxis.addMarkersToAxis(self)
 
-        # legend & title
-        if self.firstTitle: self.firstAxis._addTitle(self.firstTitle, self)
-        if self.secondTitle: self.secondAxis._addTitle(self.secondTitle, self)
+        # title
+        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
         
-        self.legendbox = LegendBox(*self.objects)
-        self.legendbox.finalize(self)
-
         if self.untrueAxis and not self.standardBasis:
             logging.warn('untrueAxis is on, but Axis+Axis is not a standard basis')
 
-        # objects
-        pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
-        for obj in self.objects:
-            obj.finalize(self)
-            pbar.update()
-            self.addDrawingFunction(obj)
-        pbar.close()
+        # klar til at færdiggøre
 
-        self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
-
-        # add back outerPadding
-        self.addPaddingCondition(*self.outerPadding)
-
-        logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
+    # special api
+    def title(self, first=None, second=None):
+        self.firstTitle = first
+        self.secondTitle = second
+        return self
 
 
-    # translations
-    def pos(self, x:int, y:int) -> tuple:
-        """
-        para: abstract value
-        return: abstract value
-        """
-        
-        x -= self.firstAxis.offset
-        y -= self.secondAxis.offset
+    def setAxis(self, first:Axis, second:Axis):
+        self.firstAxis = first
+        self.secondAxis = second
+        self.standardBasis = (first.v[0] == 0 or first.v[1] == 0) and (second.v[0] == 0 or second.v[1] == 0)
 
-        return (
-            self.firstAxis.directionVector[0] * x + self.secondAxis.directionVector[0] * y,
-            self.firstAxis.directionVector[1] * x + self.secondAxis.directionVector[1] * y
-        )
+
+    # translations    
+    def scaled(self, x, y):
+        return self.scale[0]*x, self.scale[1]*y
 
 
     def translate(self, x:int, y:int) -> tuple:
@@ -366,10 +189,18 @@ class Plot:
             self.secondAxis._translate(y) * self.scale[1] - self.offset[1] + self.padding[1]
         )
 
+    
+    def inversetranslate(self, x:int=None, y:int=None):
+        """
+        para: translated value
+        return: x,y position according to basis (1,0), (0,1) in abstract space
+        """
 
-    def scaled(self, x, y):
-        return self.scale[0]*x, self.scale[1]*y
+        p = [None, None]
+        if not x is None: p[0] = (self.firstAxis._invtranslate(x)+self.offset[0]-self.padding[0])/self.scale[0]
+        if not y is None: p[1] = (self.secondAxis._invtranslate(y)+self.offset[1]-self.padding[1])/self.scale[1]
 
+        return p
 
     def pixel(self, x:int, y:int) -> tuple:
         """
@@ -377,7 +208,12 @@ class Plot:
         return: pixel values according to axis
         """
 
-        x, y = self.pos(x, y)
+        x -= self.firstAxis.offset
+        y -= self.secondAxis.offset
+
+        x = self.firstAxis.directionVector[0] * x + self.secondAxis.directionVector[0] * y
+        y = self.firstAxis.directionVector[1] * x + self.secondAxis.directionVector[1] * y
+
         return self.translate(x,y)
 
 
@@ -404,7 +240,7 @@ class Plot:
         return a, b
 
 
-    def line(self, pos, n): # -> name e.g lineOnWindowBorder
+    def pointOnWindowBorderFromLine(self, pos, n): # -> former def line(...)
         """
         para: x,y position according to basis (1,0), (0,1) in abstract space
         return: two translated values on border of plot
@@ -412,106 +248,21 @@ class Plot:
         
         return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
 
-    
+
     def inside(self, x, y):
         """
         para: translated
+        (pixels)
         """
         return insideBox(self.windowBox, (x,y))
 
     
     def clamp(self, x:int=0, y:int=0):
+        """
+        clamps value to window max and min
+        para: pixels
+        """
         return (
             min(max(self.windowBox[0], x), self.windowBox[2]),
             min(max(self.windowBox[1], y), self.windowBox[3])
         )
-
-
-    def inversetranslate(self, x:int=None, y:int=None):
-        """
-        para: translated value
-        return: x,y position according to basis (1,0), (0,1) in abstract space
-        """
-
-        p = [None, None]
-        if not x is None: p[0] = (self.firstAxis._invtranslate(x)+self.offset[0]-self.padding[0])/self.scale[0]
-        if not y is None: p[1] = (self.secondAxis._invtranslate(y)+self.offset[1]-self.padding[1])/self.scale[1]
-
-        return p
-
-
-    # shape
-    def addDrawingFunction(self, shape, z=0):
-        self.shapes.append((shape, z))
-
-
-    # api
-    def add(self, o):
-        self.objects.append(o)
-
-    
-    def title(self, first=None, second=None):
-        self.firstTitle = first
-        self.secondTitle = second
-        return self
-
-
-    def setAxis(self, first:Axis, second:Axis):
-        self.firstAxis = first
-        self.secondAxis = second
-        self.standardBasis = (first.v[0] == 0 or first.v[1] == 0) and (second.v[0] == 0 or second.v[1] == 0)
-
-
-    # bake functions
-    def show(self, static:bool=True):
-
-        if static:
-            fname = '.__tempImage{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
-            self.save(fname)
-            pilImage = Image.open(fname)
-            pilImage.show()
-            os.remove(fname)
-            return
-
-
-    def save(self, fname):
-        
-        totStartTime = time.time()
-
-        self.style(
-            windowWidth=2000,
-            windowHeight=1500,
-            # padding=(100,100,100,100),
-            padding=(20,20,20,20),
-            backgroundColor=WHITE,
-            markerColor=BLACK,
-            markerLength=20,
-            markerWidth=3,
-            # fontSize=10,
-            font = "Times New Roman",
-            gridLineColor=(200,200,200,255),
-            gridLines = True,
-            # markerStepSizeBand=[200, 150],
-            __overwrite__=False
-        )
-
-        self.bake()
-        startTime = time.time()
-        pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
-
-        winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
-        surface = Image.new('RGBA', winSize)
-
-        background.draw(surface)
-
-        for shape in self.shapes:
-            shape.draw(surface)
-            pbar.update()
-
-        surface.save(fname)
-        pbar.close()
-        logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
-        logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
-    
-    

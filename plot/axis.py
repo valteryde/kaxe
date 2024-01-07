@@ -10,6 +10,7 @@ class Axis:
     def __init__(self, 
                  directionVector:tuple, 
                  color=(0,0,0,255),
+                 pos:tuple|None=None, 
                  func=None,
                  invfunc=None):
         """
@@ -74,11 +75,12 @@ class Axis:
         return self.get(self.start), self.get(self.end)
 
 
-    def _addMarkersToAxis(self, parent):
+    def addMarkersToAxis(self, parent):
         markers = []
 
         p1 = parent.inversetranslate(*self.lineStartPoint)
         p2 = parent.inversetranslate(*self.lineEndPoint)
+
         pixelLength = vlen(vdiff(self.lineStartPoint, self.lineEndPoint))
         length = vlen(vdiff(p1, p2))
 
@@ -130,7 +132,7 @@ class Axis:
             ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
 
             # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
-            if not parent.standardBasis:
+            if hasattr(parent, 'standardBasis') and not parent.standardBasis:
                 marker = Marker("0", 0, shell(self), **parent.markerOptions)
                 marker.finalize(parent)
                 markers.append(marker)
@@ -183,7 +185,7 @@ class Axis:
         self._invtranslate = self.translate
 
 
-    def _addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
+    def addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
         
         # computed
         # self.start = fsolve(lambda x: self.func(x) - start, start)[0]
@@ -201,22 +203,30 @@ class Axis:
         self.pos = self.getEndPoints()[0]
 
 
-    def finalize(self, parent, visualOffset:tuple=(0,0)):
+    def finalize(self, parent, visualOffset:tuple=(0,0), poss:tuple|None=None):
         self.visualOffset = visualOffset
         
-        p1, p2 = self.getEndPoints()
-        self.p1 = (p1[0]*parent.scale[0]-parent.offset[0], p1[1]*parent.scale[1]-parent.offset[1])
-        self.p2 = (p2[0]*parent.scale[0]-parent.offset[0], p2[1]*parent.scale[1]-parent.offset[1])
+        if not poss:
 
-        v = (self.p1[0] - self.p2[0], self.p1[1] - self.p2[1])
-        n = (-v[1], v[0])
+            p1, p2 = self.getEndPoints()
+            
+            self.p1 = (p1[0]*parent.scale[0]-parent.offset[0], p1[1]*parent.scale[1]-parent.offset[1])
+            self.p2 = (p2[0]*parent.scale[0]-parent.offset[0], p2[1]*parent.scale[1]-parent.offset[1])
 
-        p1, p2 = boxIntersectWithLine((0, 0, parent.width, parent.height), n, self.p1)
+            v = (self.p1[0] - self.p2[0], self.p1[1] - self.p2[1])
+            n = (-v[1], v[0])
 
-        self.p1 = (self.p1[0]+parent.padding[0], self.p1[1]+parent.padding[1])
-        self.p2 = (self.p2[0]+parent.padding[0], self.p2[1]+parent.padding[1])
-        p1 = (p1[0]+parent.padding[0]+visualOffset[0], p1[1]+parent.padding[1]+visualOffset[1])
-        p2 = (p2[0]+parent.padding[0]+visualOffset[0], p2[1]+parent.padding[1]+visualOffset[1])
+            p1, p2 = boxIntersectWithLine((0, 0, parent.width, parent.height), n, self.p1)
+
+            self.p1 = (self.p1[0]+parent.padding[0], self.p1[1]+parent.padding[1])
+            self.p2 = (self.p2[0]+parent.padding[0], self.p2[1]+parent.padding[1])
+
+            p1 = (p1[0]+parent.padding[0]+visualOffset[0], p1[1]+parent.padding[1]+visualOffset[1])
+            p2 = (p2[0]+parent.padding[0]+visualOffset[0], p2[1]+parent.padding[1]+visualOffset[1])
+                    
+        else:
+            poss = (poss[0], poss[1]), (poss[2], poss[3])
+            self.p1, self.p2 = p1, p2 = poss
         
         self.lineStartPoint = p1
         self.lineEndPoint = p2
@@ -241,7 +251,7 @@ class Axis:
                 or abottom_left[1] > btop_right[1])
 
 
-    def _addTitle(self, title:str, parent) -> None:
+    def addTitle(self, title:str, parent) -> None:
         v = (self.v[0]*parent.scale[0], self.v[1]*parent.scale[1])
         angle = angleBetweenVectors(v, (1,0))
 
@@ -320,4 +330,3 @@ class Axis:
 
     def push(self, x,y):
         self.shapeLine.push(x,y)
-

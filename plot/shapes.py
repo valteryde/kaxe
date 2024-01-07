@@ -1,4 +1,5 @@
 
+from random import randint
 from PIL import Image, ImageDraw
 from .styles import *
 from .helper import *
@@ -182,12 +183,14 @@ class Line(Shape):
 
 class Circle(Shape):
 
-    def __init__(self, x:int, y:int, radius:int=5, color:tuple=BLACK, batch:Batch=None, cornerAlign:bool=False):
+    def __init__(self, x:int, y:int, radius:int=5, color:tuple=BLACK, batch:Batch=None, cornerAlign:bool=False, fill:bool=True, width:int=5):
         self.x = x
         self.y = y
         self.radius = radius
         self.color = color
         self.cornerAlign = cornerAlign
+        self.fill = fill
+        self.width = width
         super().__init__()
         if batch: batch.add(self)
 
@@ -208,7 +211,10 @@ class Circle(Shape):
         doubleRadius = self.radius*2 # FIX
         img = newImage(doubleRadius*2, doubleRadius*2, (0,0,0,0))
         draw = ImageDraw.Draw(img)
-        draw.ellipse((0, 0, doubleRadius, doubleRadius), fill=self.color)
+        if self.fill:
+            draw.ellipse((0, 0, doubleRadius, doubleRadius), fill=self.color)
+        else:
+            draw.ellipse((0, 0, doubleRadius, doubleRadius), outline=self.color, width=self.width)
         img = img.crop(img.getbbox())
         blitImageToSurface(surface, img, (self.x - self.radius, y))
 
@@ -347,8 +353,6 @@ class Polygon(Shape):
     
     def getBoundingBox(self):
         return [self.width, self.height]
-
-
 
 
 # NAMESPACE

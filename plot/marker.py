@@ -39,11 +39,12 @@ class Marker:
 
     def finalize(self, parent, visualOffset:tuple=(0,0)):
         self.axis = self.axis()
+        self.shown = True
 
         self.visualOffset = addVector(visualOffset, self.axis.visualOffset) #inherit
 
         if self.showLine:
-            p1, p2 = parent.line(self.axis.get(self.x), self.axis.v)
+            p1, p2 = parent.pointOnWindowBorderFromLine(self.axis.get(self.x), self.axis.v)
             self.line = shapes.Line(*p1, *p2, color=self.gridlineColor)
         
         pos = parent.translate(*self.axis.get(self.x))
@@ -73,6 +74,7 @@ class Marker:
         
         if (not parent.inside(*pos)):
             self.line = None
+            self.shown = False
             return
 
         self.tickLine = shapes.Line(*p1, *p2, color=self.color, width=self.markerWidth, batch=self.batch, center=True)
@@ -114,27 +116,11 @@ class Marker:
         self.textLabel.x += n[0] * nudge
         self.textLabel.y += n[1] * nudge
 
-        parent.addDrawingFunction(self.line)
-        parent.addDrawingFunction(self, 2)
+        if self.showLine: parent.addDrawingFunction(self.line)
+        parent.addDrawingFunction(self.batch, 2)
         parent.addDrawingFunction(self.textLabel, 2)
         
-        # dx = min(self.textLabel.x - self.textLabel.width/2, 0)
-        # dy = min(self.textLabel.y - self.textLabel.height/2, 0)
-        # dxm = min(parent.width - (self.textLabel.x + self.textLabel.width/2), 0)
-        # dym = min(parent.height - (self.textLabel.y + self.textLabel.height/2), 0)
-
         parent.include(self.textLabel.x, self.textLabel.y, self.textLabel.width, self.textLabel.height)
-
-        # if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
-        #     parent.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
-
-
-    def draw(self, *args, **kwargs):
-        self.batch.draw(*args, **kwargs)
-
-
-    def push(self, x, y):
-        self.batch.push(x,y)
 
 
     def getBoundingBox(self):
@@ -146,4 +132,3 @@ class Marker:
     def pos(self):
         if hasattr(self, 'textLabel'):
             return self.textLabel.x, self.textLabel.y
-
