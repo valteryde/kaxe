@@ -1,21 +1,35 @@
 
 from .helper import *
 from .shapes import shapes
+from .styles import StyleShape
 from .text import Text, getTextDimension
 from .round import koundTeX
 from .marker import Marker
 import sys
 
-class Axis:
-    def __init__(self, 
+class Axis(StyleShape):
+    
+    defaults = {
+        "stepSizeBand" : [200, 350],
+        "showLine": True,
+        "width": 2,
+    }
+
+    inheritable = {
+        "fontSize"
+    }
+
+    name = "Axis"
+
+    def __init__(self,
                  directionVector:tuple, 
-                 color=(0,0,0,255),
                  pos:tuple|None=None, 
                  func=None,
                  invfunc=None):
         """
         offset:bool If graph should be offset with equvalient of start value
         """
+        super().__init__()
 
         self.directionVector = directionVector
         self.vLen = math.sqrt(directionVector[0]**2+directionVector[1]**2)
@@ -36,11 +50,7 @@ class Axis:
         self._translate = lambda x: x
         self._invtranslate = lambda x: x
 
-        # styles
-        self.color = color
-        self.width = 2
-
-
+    
     def translate(self, x):
         """
         translate value
@@ -84,7 +94,7 @@ class Axis:
         pixelLength = vlen(vdiff(self.lineStartPoint, self.lineEndPoint))
         length = vlen(vdiff(p1, p2))
 
-        MARKERSTEPSIZE = parent.markerStepSizeBand
+        MARKERSTEPSIZE = self.getStyleAttr('stepSizeBand')
         MARKERSTEP = [2, 5, 10]
         acceptence = [math.floor(pixelLength/MARKERSTEPSIZE[0]),math.floor(pixelLength/MARKERSTEPSIZE[1])]
 
@@ -142,7 +152,6 @@ class Axis:
                     str(koundTeX(self.translate(-step*i))), 
                     -step*i, 
                     shell(self), 
-                    **parent.markerOptions
                 )
                 marker.finalize(parent)
                 markers.append(marker)
@@ -152,7 +161,6 @@ class Axis:
                     str(koundTeX(self.translate(step*i))), 
                     step*i, 
                     shell(self), 
-                    **parent.markerOptions
                 )
                 marker.finalize(parent)
                 markers.append(marker)
@@ -173,7 +181,6 @@ class Axis:
                     str(koundTeX(self.translate(p))), 
                     p, 
                     shell(self), 
-                    **parent.markerOptions
                 )
                 marker.finalize(parent)
                 markers.append(marker)
@@ -204,6 +211,8 @@ class Axis:
 
 
     def finalize(self, parent, visualOffset:tuple=(0,0), poss:tuple|None=None):
+        self.__inherit__(parent)
+
         self.visualOffset = visualOffset
         
         if not poss:
@@ -231,7 +240,7 @@ class Axis:
         self.lineStartPoint = p1
         self.lineEndPoint = p2
 
-        self.shapeLine = shapes.Line(p1[0], p1[1], p2[0], p2[1], color=self.color, width=self.width)
+        self.shapeLine = shapes.Line(p1[0], p1[1], p2[0], p2[1], color=self.getStyleAttr('color'), width=self.getStyleAttr('width'))
         parent.addDrawingFunction(self, 2)
 
     
@@ -267,7 +276,7 @@ class Axis:
         maxDist = [distPointLine(nscaled, p1, marker.pos()) for marker in self.markers if hasattr(marker, 'textLabel')]
         maxDist = max(maxDist)
 
-        textDimension = getTextDimension(title, parent.fontSize)
+        textDimension = getTextDimension(title, self.getStyleAttr('fontSize'))
         v = vectorScalar(nscaled, (textDimension[1]/2 + maxDist) * self.markers[-1].directionFromAxis)
 
         # nudge out of marker spots
@@ -283,7 +292,7 @@ class Axis:
         #    |      |
         #    --------
         pos = (axisPos[0]+v[0], axisPos[1]+v[1])
-        self.title = Text(title, 0,0, parent.fontSize, parent.markerColor, angle)
+        self.title = Text(title, 0,0, self.getStyleAttr('fontSize'), parent.markerColor, angle)
         size = self.title.getBoundingBox()
         v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 1)
         for _ in range(1000): # max nudge

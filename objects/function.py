@@ -1,10 +1,10 @@
 
 from typing import Callable
 from .point import Points
-from ..plot.styles import getRandomColor
-from ..plot.helper import *
-from ..plot.shapes import shapes
-from ..plot.symbol import symbol
+from ..plot.core.styles import getRandomColor
+from ..plot.core.helper import *
+from ..plot.core.shapes import shapes
+from ..plot.core.symbol import symbol
 from ..plot import identities
 import numbers
 

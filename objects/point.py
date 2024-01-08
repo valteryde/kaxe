@@ -1,9 +1,9 @@
 
-from ..plot.styles import *
-from ..plot.shapes import shapes
-from ..plot.symbol import makeSymbolShapes
-from ..plot.symbol import symbol as symbols
-from ..plot.helper import *
+from ..plot.core.styles import *
+from ..plot.core.shapes import shapes
+from ..plot.core.symbol import makeSymbolShapes
+from ..plot.core.symbol import symbol as symbols
+from ..plot.core.helper import *
 from ..plot import identities
 
 class Points:

@@ -1,11 +1,11 @@
 
 #22.1285s
 
-from ..plot.shapes import shapes
-from ..plot.styles import getRandomColor
-from ..plot.symbol import symbol
+from ..plot.core.shapes import shapes
+from ..plot.core.styles import getRandomColor
+from ..plot.core.symbol import symbol
 from ..plot import identities
-from ..plot.helper import vdiff, vlen
+from ..plot.core.helper import vdiff, vlen
 from sympy import solve
 import math
 

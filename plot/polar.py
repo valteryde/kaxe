@@ -1,12 +1,11 @@
 
 # polar plot
 from random import randint
-import sys
-from .window import Window
-from .shapes import shapes
-from .axis import Axis
-from .helper import *
-from .text import Text
+from .core.window import Window
+from .core.shapes import shapes
+from .core.axis import Axis
+from .core.helper import *
+from .core.text import Text
 import logging
 from math import sin, cos, acos, asin, radians, sqrt, pow
 

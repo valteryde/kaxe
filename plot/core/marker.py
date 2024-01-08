@@ -2,56 +2,66 @@
 from .helper import *
 from .shapes import shapes
 from .text import Text
+from .styles import StyleShape
 
-class Marker:
+class Marker(StyleShape):
+
+    defaults = {
+        "showNumber":True,
+        "showLine":True,
+        "tickWidth": 1,
+        "tickLength": 15,
+        "gridlineColor":(0,0,0,75),
+    }
+
+    inheritable = {
+        "color",
+        "fontSize",
+    }
+
+    name = "Marker"
 
     def __init__(self, 
                  text:str, 
                  x:int, 
                  axis, 
-                 color:tuple=(0,0,0,255),
-                 fontSize:int=10,
-                 showNumber:bool=True,
-                 showLine:bool=True,
-                 markerWidth:int = 1,
-                 markerLength:int = 15,
-                 gridlineColor:tuple=(0,0,0,75),
-                 font:str="Times New Roman",
                 ):
         """
         marker with line
         """
+        super().__init__()
 
         self.text = text
         self.x = x
         self.axis = axis
         self.batch = shapes.Batch()
-        
-        self.markerLength = markerLength
-        self.markerWidth = markerWidth
-        self.showNumber = showNumber
-        self.showLine = showLine
-        self.fontSize = fontSize
-        self.font = font
-        self.color = color
-        self.gridlineColor = gridlineColor
 
 
     def finalize(self, parent, visualOffset:tuple=(0,0)):
+        self.__inherit__(parent)
+
         self.axis = self.axis()
         self.shown = True
 
+        # styles
+        color = self.getStyleAttr('color')
+        markerWidth = self.getStyleAttr('tickWidth')
+        fontSize = self.getStyleAttr('fontSize')
+        showLine = self.getStyleAttr('showLine')
+
         self.visualOffset = addVector(visualOffset, self.axis.visualOffset) #inherit
 
-        if self.showLine:
+        if showLine:
             p1, p2 = parent.pointOnWindowBorderFromLine(self.axis.get(self.x), self.axis.v)
-            self.line = shapes.Line(*p1, *p2, color=self.gridlineColor)
+            self.line = shapes.Line(*p1, *p2, color=self.getStyleAttr('gridlineColor'))
         
         pos = parent.translate(*self.axis.get(self.x))
 
         n = (self.axis.n[0]/parent.scale[0], self.axis.n[1]/parent.scale[1])
         nlen = vlen(n)
         n = (n[0]/nlen, n[1]/nlen)
+
+        self.markerLength = self.getStyleAttr('tickLength')
 
         halfMarkerLength = self.markerLength/2
         
@@ -77,21 +87,21 @@ class Marker:
             self.shown = False
             return
 
-        self.tickLine = shapes.Line(*p1, *p2, color=self.color, width=self.markerWidth, batch=self.batch, center=True)
-        if not self.showNumber:
+        self.tickLine = shapes.Line(*p1, *p2, color=color, width=markerWidth, batch=self.batch, center=True)
+        if not self.getStyleAttr('showNumber'):
             return
 
         # how long away for text box not to hit marker
         self.textLabel = Text(self.text,
                                   x=textPos[0], 
                                   y=textPos[1], 
-                                  color=self.color, 
+                                  color=color, 
                                 #   batch=self.batch, 
                                   align="center", 
                                   anchor_x="center",
                                   anchor_y="center",
                                 # font_name=self.font,
-                                  fontSize=self.fontSize,
+                                  fontSize=fontSize,
         )
 
         box = [
@@ -116,7 +126,7 @@ class Marker:
         self.textLabel.x += n[0] * nudge
         self.textLabel.y += n[1] * nudge
 
-        if self.showLine: parent.addDrawingFunction(self.line)
+        if showLine: parent.addDrawingFunction(self.line)
         parent.addDrawingFunction(self.batch, 2)
         parent.addDrawingFunction(self.textLabel, 2)
         

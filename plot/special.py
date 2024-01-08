@@ -1,7 +1,7 @@
 
 # special cases of base plot
 from .plot import Plot
-from .axis import Axis
+from .core.axis import Axis
 import math
 
 class LogPlot:

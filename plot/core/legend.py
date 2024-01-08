@@ -2,10 +2,21 @@
 from .symbol import makeSymbolShapes
 from .text import Text
 from .shapes import shapes
+from .styles import StyleShape
 
-class LegendBox:
+class LegendBox(StyleShape):
+
+    defaults = {}
+
+    inheritable = {
+        "fontSize",
+        "color"
+    }
+
+    name = "LegendBox"
 
     def __init__(self, *obj):
+        super()
         self.objects = obj
         self.batch = shapes.Batch()
         self.boxshape = shapes.Batch()

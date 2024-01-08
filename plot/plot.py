@@ -1,8 +1,8 @@
 
-from .helper import *
+from .core.helper import *
 import logging
-from .axis import *
-from .window import Window
+from .core.axis import *
+from .core.window import Window
 
 XYPLOT = 'xy'
 
@@ -144,9 +144,19 @@ class Plot(Window):
         self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
         self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
-        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
+        # get styles
+        self.width = self.getStyleAttr('width')
+        self.height = self.getStyleAttr('height')
+
+        self.windowBox = (
+            self.padding[0], 
+            self.padding[1], 
+            self.width+self.padding[0], 
+            self.height+self.padding[1]
+        )
         self.nullInPlot = False
 
+        # NOTE: burde nok være omvendt
         self.__setWindowDimensionBasedOnAxis__(self.firstAxis, self.secondAxis)
         self.firstAxis.addMarkersToAxis(self)
         self.secondAxis.addMarkersToAxis(self)

@@ -9,6 +9,8 @@ from PIL import Image
 import tqdm
 from random import randint
 import os
+from .axis import Axis
+from .marker import Marker
 
 """
 Alle translationer fra pixel til inverse pixel skal ske i Plot og ikke i vinduet
@@ -19,12 +21,25 @@ Det gør at bruger skal arbejde med de samme funktioner hver gang der arbejdes m
 Ligeledes hvilkte plot der arbejdes på
 """
 
-class Window:
+class Window(StyleShape):
+    
+    defaults = {
+        "width": 2000,
+        "height": 1500,
+        "backgroundColor": (255,255,255,255),
+        "outerPadding": [100, 100, 100, 100],
+        "fontSize": 50,
+        "color": (0,0,0,255)
+    }
+
+    name = "Window"
+
     def __init__(self): # |
         """
         left to right is always positive
         bottom to top is always positive
         """
+        super().__init__()
         self.identity = None
         
         # options
@@ -37,100 +52,32 @@ class Window:
         self.offset = [0,0]
         self.padding = [0,0,0,0] #computed padding
 
-        # styles
-        self.width = None
-        self.height = None
-        self.backgroundColor = None
-        self.markerColor = None
-        self.markerWidth = None
-        self.markerLength = None
-        self.font = None
-        self.gridLines = None
-        self.gridLineColor = None
-        self.fontSize = None
-        self.markerStepSizeBand = None
-        self.outerPadding = None
-
+        # styles        
+        self.__expose__(Marker)
+        self.__expose__(Axis)
+        self.__expose__(LegendBox)
     
+
     def __eq__(self, s):
         if not self.identity: return False
         return self.identity == s
+
 
     def __ne__(self, s):
         if not self.identity: return True
         return self.identity != s
 
 
-    # styles        
-    def style(
-            self, 
-            __overwrite__:tuple=True,
-            windowWidth:int=None,
-            windowHeight:int=None,
-            padding:list=None,
-            backgroundColor:tuple=None, 
-            markerColor:tuple=None,
-            markerWidth:int=None,
-            markerLength:int=None,
-            fontSize:int=None,
-            font:str=None,
-            gridLines:bool=None,
-            gridLineColor:tuple=None,
-            markerStepSizeBand:tuple=None
-        ):
-        """
-        change style on plotting window
-        padding: left, bottom, top, right
-        """
-
-        if not __overwrite__:
-            if not windowWidth is None and self.width is None: self.width = windowWidth
-            if not windowHeight is None and self.height is None: self.height = windowHeight
-            if not padding is None and self.outerPadding is None: self.outerPadding = list(padding)
-            if not backgroundColor is None and self.backgroundColor is None: self.backgroundColor = backgroundColor
-            if not markerColor is None and self.markerColor is None: self.markerColor = markerColor
-            if not markerWidth is None and self.markerWidth is None: self.markerWidth = markerWidth
-            if not markerLength is None and self.markerLength is None: self.markerLength = markerLength
-            if not font is None and self.font is None: self.font = font
-            if not gridLines is None and self.gridLines is None: self.gridLines = gridLines
-            if not gridLineColor is None and self.gridLineColor is None: self.gridLineColor = gridLineColor
-            if not fontSize is None and self.fontSize is None: self.fontSize = fontSize
-            if not markerStepSizeBand is None and self.markerStepSizeBand is None: self.markerStepSizeBand = markerStepSizeBand
-
-        else:
-            if not windowWidth is None: self.width = windowWidth
-            if not windowHeight is None: self.height = windowHeight
-            if not padding is None: self.outerPadding = list(padding)
-            if not backgroundColor is None: self.backgroundColor = backgroundColor
-            if not markerColor is None: self.markerColor = markerColor
-            if not markerWidth is None: self.markerWidth = markerWidth
-            if not markerLength is None: self.markerLength = markerLength
-            if not font is None: self.font = font
-            if not gridLines is None: self.gridLines = gridLines
-            if not gridLineColor is None: self.gridLineColor = gridLineColor
-            if not fontSize is None: self.fontSize = fontSize
-            if not markerStepSizeBand is None: self.markerStepSizeBand = markerStepSizeBand
-
-        if self.width and self.fontSize is None: self.fontSize = int(self.width/70)
-        if self.fontSize and self.markerStepSizeBand is None: self.markerStepSizeBand = [int(self.fontSize*7), int(self.fontSize*4)]
-
-        # package options
-        self.markerOptions = {
-            "color":self.markerColor,
-            "fontSize":self.fontSize, 
-            "markerWidth":self.markerWidth,
-            "markerLength":self.markerLength,
-            "gridlineColor":self.gridLineColor,
-            "showLine":self.gridLines
-        }
-
-        return self
+    # styles
+    # """
+    # padding: left, bottom, top, right
+    # """
 
 
     def theme(self, theme):
         """
         use a defined theme
-        
+
         calls self.style
         """
         self.style(**theme)
@@ -184,7 +131,7 @@ class Window:
         # fit "plot" into window 
         startTime = time.time()        
 
-        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
+        self.windowBox = (self.padding[0], self.padding[1], self.getStyleAttr('width')+self.padding[0], self.getStyleAttr('height')+self.padding[1])
         self.__prepare__()
         self.__addInnerContent__()
         self.__addOuterContent__()
@@ -192,7 +139,7 @@ class Window:
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 
         # add style padding
-        self.addPaddingCondition(*self.outerPadding)
+        self.addPaddingCondition(*self.getStyleAttr('outerPadding'))
 
         logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
 
@@ -220,7 +167,7 @@ class Window:
         pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.backgroundColor)
+        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.getStyleAttr('backgroundColor'))
         surface = Image.new('RGBA', winSize)
 
         background.draw(surface)
@@ -244,23 +191,6 @@ class Window:
     def save(self, fname):
         
         totStartTime = time.time()
-
-        self.style(
-            windowWidth=2000,
-            windowHeight=1500,
-            # padding=(100,100,100,100),
-            padding=(20,20,20,20),
-            backgroundColor=WHITE,
-            markerColor=BLACK,
-            markerLength=20,
-            markerWidth=3,
-            # fontSize=10,
-            font = "Times New Roman",
-            gridLineColor=(200,200,200,255),
-            gridLines = True,
-            # markerStepSizeBand=[200, 150],
-            __overwrite__=False
-        )
 
         self.__bake__()
         self.__paint__(fname)
