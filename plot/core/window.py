@@ -9,8 +9,6 @@ from PIL import Image
 import tqdm
 from random import randint
 import os
-from .axis import Axis
-from .marker import Marker
 
 """
 Alle translationer fra pixel til inverse pixel skal ske i Plot og ikke i vinduet
@@ -21,16 +19,16 @@ Det gør at bruger skal arbejde med de samme funktioner hver gang der arbejdes m
 Ligeledes hvilkte plot der arbejdes på
 """
 
-class Window(StyleShape):
+class Window(AttrObject):
     
-    defaults = {
-        "width": 2000,
-        "height": 1500,
-        "backgroundColor": (255,255,255,255),
-        "outerPadding": [100, 100, 100, 100],
-        "fontSize": 50,
-        "color": (0,0,0,255)
-    }
+    # defaults = MappingProxyType({
+    #     "width": 2000,
+    #     "height": 1500,
+    #     "backgroundColor": (255,255,255,255),
+    #     "outerPadding": [100, 100, 100, 100],
+    #     "fontSize": 50,
+    #     "color": (0,0,0,255)
+    # })
 
     name = "Window"
 
@@ -42,6 +40,17 @@ class Window(StyleShape):
         super().__init__()
         self.identity = None
         
+        self.attrmap = AttrMap()
+        self.attrmap.default(attr='width', value=2000)
+        self.attrmap.default(attr='height', value=1500)
+        self.attrmap.default(attr='backgroundColor', value=(255,255,255,255))
+        self.attrmap.default(attr='outerPadding', value=[50,50,50,50])
+        self.attrmap.default(attr='fontSize', value=50)
+        self.attrmap.default(attr='color', value=(0,0,0,255))
+        self.setAttrMap(self.attrmap)
+
+        self.attrmap.submit(LegendBox)
+
         # options
         self.shapes = []
         self.objects = []
@@ -52,11 +61,8 @@ class Window(StyleShape):
         self.offset = [0,0]
         self.padding = [0,0,0,0] #computed padding
 
-        # styles        
-        self.__expose__(Marker)
-        self.__expose__(Axis)
-        self.__expose__(LegendBox)
-    
+        self.style = self.attrmap.styles
+
 
     def __eq__(self, s):
         if not self.identity: return False
@@ -124,6 +130,8 @@ class Window(StyleShape):
         # for i in self.objects:
         #     i.push(left, bottom)
 
+        self.setAttrMap(self.attrmap)
+
 
     # baking
     def __bake__(self):
@@ -131,7 +139,7 @@ class Window(StyleShape):
         # fit "plot" into window 
         startTime = time.time()        
 
-        self.windowBox = (self.padding[0], self.padding[1], self.getStyleAttr('width')+self.padding[0], self.getStyleAttr('height')+self.padding[1])
+        self.windowBox = (self.padding[0], self.padding[1], self.getAttr('width')+self.padding[0], self.getAttr('height')+self.padding[1])
         self.__prepare__()
         self.__addInnerContent__()
         self.__addOuterContent__()
@@ -139,7 +147,7 @@ class Window(StyleShape):
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 
         # add style padding
-        self.addPaddingCondition(*self.getStyleAttr('outerPadding'))
+        self.addPaddingCondition(*self.getAttr('outerPadding'))
 
         logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
 
@@ -167,7 +175,7 @@ class Window(StyleShape):
         pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.getStyleAttr('backgroundColor'))
+        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
         surface = Image.new('RGBA', winSize)
 
         background.draw(surface)

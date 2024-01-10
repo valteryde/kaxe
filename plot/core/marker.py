@@ -2,24 +2,21 @@
 from .helper import *
 from .shapes import shapes
 from .text import Text
-from .styles import StyleShape
+from .styles import AttrObject
+from types import MappingProxyType
 
-class Marker(StyleShape):
-
-    defaults = {
-        "showNumber":True,
-        "showLine":True,
-        "tickWidth": 1,
-        "tickLength": 15,
-        "gridlineColor":(0,0,0,75),
-    }
-
-    inheritable = {
-        "color",
-        "fontSize",
-    }
+class Marker(AttrObject):
 
     name = "Marker"
+
+    defaults = MappingProxyType({
+        "showNumber": True,
+        "showLine": True,
+        "tickWidth" : 3,
+        "tickLength": 15,
+        "gridlineColor" : (255,0,0,75),
+        "gridlineWidth": 3
+    })
 
     def __init__(self, 
                  text:str, 
@@ -38,22 +35,22 @@ class Marker(StyleShape):
 
 
     def finalize(self, parent, visualOffset:tuple=(0,0)):
-        self.__inherit__(parent)
+        self.setAttrMap(parent.attrmap)
 
         self.axis = self.axis()
         self.shown = True
 
         # styles
-        color = self.getStyleAttr('color')
-        markerWidth = self.getStyleAttr('tickWidth')
-        fontSize = self.getStyleAttr('fontSize')
-        showLine = self.getStyleAttr('showLine')
+        color = self.getAttr('color')
+        markerWidth = self.getAttr('tickWidth')
+        fontSize = self.getAttr('fontSize')
+        showLine = self.getAttr('showLine')
 
         self.visualOffset = addVector(visualOffset, self.axis.visualOffset) #inherit
 
         if showLine:
             p1, p2 = parent.pointOnWindowBorderFromLine(self.axis.get(self.x), self.axis.v)
-            self.line = shapes.Line(*p1, *p2, color=self.getStyleAttr('gridlineColor'))
+            self.line = shapes.Line(*p1, *p2, color=self.getAttr('gridlineColor'), width=self.getAttr('gridlineWidth'))
         
         pos = parent.translate(*self.axis.get(self.x))
 
@@ -61,7 +58,7 @@ class Marker(StyleShape):
         nlen = vlen(n)
         n = (n[0]/nlen, n[1]/nlen)
 
-        self.markerLength = self.getStyleAttr('tickLength')
+        self.markerLength = self.getAttr('tickLength')
 
         halfMarkerLength = self.markerLength/2
         
@@ -88,7 +85,7 @@ class Marker(StyleShape):
             return
 
         self.tickLine = shapes.Line(*p1, *p2, color=color, width=markerWidth, batch=self.batch, center=True)
-        if not self.getStyleAttr('showNumber'):
+        if not self.getAttr('showNumber'):
             return
 
         # how long away for text box not to hit marker

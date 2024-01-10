@@ -42,7 +42,7 @@ class Points:
     def finalize(self, parent):
         
         # set style 
-        if self.size is None: self.size = round(parent.fontSize / 3)
+        if self.size is None: self.size = round(parent.getAttr('fontSize') / 3)
 
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)

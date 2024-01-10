@@ -34,6 +34,9 @@ class Plot(Window):
         self.firstTitle = None
         self.secondTitle = None
 
+        self.attrmap.submit(Axis)
+        self.attrmap.submit(Marker)
+
 
     # creating plotting window
     def __setWindowDimensionBasedOnAxis__(self, firstAxis:Axis, secondAxis:Axis):
@@ -136,7 +139,7 @@ class Plot(Window):
 
     def __prepare__(self):
         # finish making plot
-        # fit "plot" into window 
+        # fit "plot" into window
 
         self.__calculateWindowBorders__()
         self.__createStandardAxis__()
@@ -145,8 +148,8 @@ class Plot(Window):
         self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
         # get styles
-        self.width = self.getStyleAttr('width')
-        self.height = self.getStyleAttr('height')
+        self.width = self.getAttr('width')
+        self.height = self.getAttr('height')
 
         self.windowBox = (
             self.padding[0], 

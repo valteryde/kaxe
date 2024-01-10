@@ -1,23 +1,20 @@
 
 from .helper import *
 from .shapes import shapes
-from .styles import StyleShape
+from .styles import AttrObject
 from .text import Text, getTextDimension
 from .round import koundTeX
 from .marker import Marker
 import sys
+from types import MappingProxyType
 
-class Axis(StyleShape):
+class Axis(AttrObject):
     
-    defaults = {
-        "stepSizeBand" : [200, 350],
-        "showLine": True,
-        "width": 2,
-    }
-
-    inheritable = {
-        "fontSize"
-    }
+    defaults = MappingProxyType({
+        "stepSizeBand": [200, 350],
+        "showLine": True, # bliver ikke brugt pt
+        "width": 2
+    })
 
     name = "Axis"
 
@@ -87,6 +84,7 @@ class Axis(StyleShape):
 
     def addMarkersToAxis(self, parent):
         markers = []
+        self.setAttrMap(parent.attrmap)
 
         p1 = parent.inversetranslate(*self.lineStartPoint)
         p2 = parent.inversetranslate(*self.lineEndPoint)
@@ -94,7 +92,7 @@ class Axis(StyleShape):
         pixelLength = vlen(vdiff(self.lineStartPoint, self.lineEndPoint))
         length = vlen(vdiff(p1, p2))
 
-        MARKERSTEPSIZE = self.getStyleAttr('stepSizeBand')
+        MARKERSTEPSIZE = self.getAttr('stepSizeBand')
         MARKERSTEP = [2, 5, 10]
         acceptence = [math.floor(pixelLength/MARKERSTEPSIZE[0]),math.floor(pixelLength/MARKERSTEPSIZE[1])]
 
@@ -143,7 +141,7 @@ class Axis(StyleShape):
 
             # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
             if hasattr(parent, 'standardBasis') and not parent.standardBasis:
-                marker = Marker("0", 0, shell(self), **parent.markerOptions)
+                marker = Marker("0", 0, shell(self))
                 marker.finalize(parent)
                 markers.append(marker)
 
@@ -211,7 +209,7 @@ class Axis(StyleShape):
 
 
     def finalize(self, parent, visualOffset:tuple=(0,0), poss:tuple|None=None):
-        self.__inherit__(parent)
+        self.setAttrMap(parent.attrmap)
 
         self.visualOffset = visualOffset
         
@@ -240,7 +238,7 @@ class Axis(StyleShape):
         self.lineStartPoint = p1
         self.lineEndPoint = p2
 
-        self.shapeLine = shapes.Line(p1[0], p1[1], p2[0], p2[1], color=self.getStyleAttr('color'), width=self.getStyleAttr('width'))
+        self.shapeLine = shapes.Line(p1[0], p1[1], p2[0], p2[1], color=self.getAttr('color'), width=self.getAttr('width'))
         parent.addDrawingFunction(self, 2)
 
     
@@ -276,7 +274,7 @@ class Axis(StyleShape):
         maxDist = [distPointLine(nscaled, p1, marker.pos()) for marker in self.markers if hasattr(marker, 'textLabel')]
         maxDist = max(maxDist)
 
-        textDimension = getTextDimension(title, self.getStyleAttr('fontSize'))
+        textDimension = getTextDimension(title, self.getAttr('fontSize'))
         v = vectorScalar(nscaled, (textDimension[1]/2 + maxDist) * self.markers[-1].directionFromAxis)
 
         # nudge out of marker spots
@@ -292,7 +290,7 @@ class Axis(StyleShape):
         #    |      |
         #    --------
         pos = (axisPos[0]+v[0], axisPos[1]+v[1])
-        self.title = Text(title, 0,0, self.getStyleAttr('fontSize'), parent.markerColor, angle)
+        self.title = Text(title, 0,0, self.getAttr('fontSize'), self.getAttr('color'), angle)
         size = self.title.getBoundingBox()
         v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 1)
         for _ in range(1000): # max nudge

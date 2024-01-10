@@ -1,4 +1,7 @@
 
+import copy
+from types import MappingProxyType
+
 # COLORS
 WHITE = (255,255,255,255)
 BLACK = (0,0,0,255)
@@ -26,7 +29,6 @@ COLORS = [
     (33, 104, 105),
 ]
 
-
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -40,114 +42,163 @@ class bcolors:
 
 
 lowerFirstLetter = lambda s: s[:1].lower() + s[1:] if s else ''
-class StyleShape:
 
-    """"
-    HVIS DEN IKKE ER defineret i defaults så brug parent. Og hvis parent hellere ikke har den i defaults
-    så brug parents parent og så videre indtil der findes en
-    """
 
-    # defaults = {}
-    # inheritable = {}
+# ********* NEW ************
+class AttrMap:
+    
+    def __init__(self):
+        self.__attrs__ = {}
+        self.__defaults__ = {'global':{}}
 
-    styles = {}
-    name = None
+    
+    def submit(self, obj):
+        """
+        submit whole object and append use default method on all defaults in object
+        """
+
+        for attr in obj.defaults:
+            self.default(attr, obj.defaults[attr], obj=obj)
+
+
+
+
+    def __set__(self, d, key, attr, val):
+        if d.get(key):
+            d[key][attr] = val
+        else:
+            d[key] = {attr:val}
+
+    
+    def default(self, attr:str, value, obj=None):
+
+        if type(obj) is str:
+            self.__set__(self.__defaults__,obj, attr, value)
+            
+        elif obj:
+            self.__set__(self.__defaults__, obj.name, attr, value)
+        
+        else:            
+            self.__defaults__['global'][attr] = value
+    
+
+    def print(self):
+        print(self.__defaults__)
+        print(self.__attrs__)
+
+
+    def setAttr(self, attr, value, obj=None):
+        """
+        either sumbit by passing an object and retrieve global style
+        """
+
+        if type(obj) is str:
+            self.__set__(self.__attrs__,obj, attr, value)
+            
+        elif obj:
+            self.__set__(self.__attrs__, obj.name, attr, value)
+        
+        elif '.' in attr:            
+            key, attr = attr.split('.')
+            self.__set__(self.__attrs__, key, attr, value)
+
+        else:
+            self.__attrs__['global'][attr] = value
+
+
+    # retrieve a style
+    def getAttr(self, attr:str, obj=None):
+        """
+        either passing an object and retrieve global type stylesheet
+        or pass and global variable and retrieve global setting
+        """
+
+        # simple quick parse
+        if '.' in attr:
+            key, attr = attr.split('.')
+
+        else:
+            key, attr = 'global', attr
+
+        
+        # check object first
+        if obj and key == 'global':
+
+            rattr = self.__attrs__.get(obj, {}).get(attr)
+            if rattr is not None: return rattr
+
+
+        # check global from attribute map
+        rattr = self.__attrs__.get(key, {}).get(attr)
+        if rattr is not None: return rattr
+
+
+        # object default
+        if obj and key == 'global':
+        
+            rattr = self.__defaults__.get(obj, {}).get(attr)
+            if rattr is not None: return rattr
+
+
+        # global default
+        rattr = self.__defaults__.get(key, {}).get(attr)
+        if rattr is not None: return rattr
+
+    
+    # API to pass along to user
+    def styles(self, styles:dict={}, **kstyles):
+        print('hejsa')
+
+
+
+class AttrObject:
+    defaults = {}
 
     def __init__(self):
-        
-        self.styles["base"] = {}
-        for style in self.defaults:
-            self.styles["base"][style] = None
+        self.__attrs__ = {}
+        self.attrmapRef = None
+
+    def setAttrMap(self, attrmap):
+        self.attrmapRef = attrmap
 
 
-    def style(self, styles:dict={}, **kstyles):
-        
-        def set(styles, args, val):
-            if len(args) == 1:
-                styles[args[0]] = val
-                return
-            set(styles[args[0]], args[1:], val)
-
-
-        styles = {**styles, **kstyles}
-        for key in styles:
-            
-            style = key.split('.')
-
-            if len(style) == 1:
-                style = ('base', style[0])
-
-            set(self.styles, style, styles[key])
-            
-        print(self.styles)
-        
-        return self
-
-
-    def getStyleAttr(self, attr):
+    def getAttr(self, attr:str, attrmap:AttrMap|None=None):
         """
-        return value from attribute
+        check own stylesheet
+        check global stylesheet
+        prioritize own attributes
         """
-        # tjek om objektet selv har attributen
-        if self.styles["base"].get(attr) and self.styles["base"][attr] is not None:
-            return self.styles["base"][attr]
 
-        # tjek om parent har attributen
-        if (
-            self.styles.get('parent') and  
-            self.styles["parent"].styles.get(self.name) and 
-            self.styles["parent"].styles[self.name].get(attr) and 
-            self.styles["parent"].styles[self.name][attr] is not None
-            ):
-            return self.styles["parent"].styles[self.name][attr]
+        if not attrmap:
+            attrmap = self.attrmapRef
 
-        # tjek om den er i defaults
-        if self.defaults.get(attr):
-            return self.defaults[attr]
+        rattr = self.__attrs__.get(attr, None)
+        if rattr: return rattr
+
+        return attrmap.getAttr(attr, self.name)
     
-        # inherit from parents attribute
-        if self.styles.get('parent'):
-            return self.styles["parent"].getStyleAttr(attr)
+    
+    def setAttr(self, attr, value):
+        self.__attrs__[attr] = value
 
 
-    def __inherit__(self, parent):
-        """
-        get styles from parent
-        """
-        self.styles["parent"] = parent
 
+"""
+USECASES
 
-    def __expose__(self, child):
-        """
-        make style from child avaliable from parent through style method
-        """
-        
-        obj = {}
-        for style in child.defaults:
-            obj[style] = None
+obj1.setStyle('color', 'black')
+obj1.getStyle('color') -> 'black'
 
-        self.styles[child.name] = obj # shallow copy
+obj2.getStyle('color') -> defaults to global color value
 
+stylemap.setStyle('obj1.color', 'red')
+obj1.getStyle('color') -> 'black' #still defaults to own stylesheet
+obj2.getStyle('color) -> 'red'
 
-    def printStyles(self):
-        for key in self.styles:
-            print(f'{bcolors.OKBLUE}{key}{bcolors.ENDC}')
+# if an value is not set 
+obj1.getStyle('fontSize') -> return global defaults
+obj1.getStyle(obj1, 'fontSize') -> return obj defaults
 
-            for style in self.styles[key]:
-                nstyles = self.styles[key][style]
+obj1.getStyle('not-a-real-value') -> None
+"""
 
-                if key != "base" and key != "parent":
-                    stylef = f'{key}.{style}'
-                    
-                    if self.styles[key].get(style):
-                        print(f'    {bcolors.OKGREEN}{stylef}: {bcolors.OKCYAN}{self.styles[key][style]}{bcolors.ENDC}')
-                    else:
-                        print(f'    {bcolors.OKGREEN}{stylef}: {bcolors.WARNING}NaN{bcolors.ENDC}')
-                    continue
-
-                if nstyles is None:
-                    print(f'    {bcolors.OKGREEN}{style}: {bcolors.ENDC}{self.getStyleAttr(style)}')
-                else:
-                    print(f'    {bcolors.OKGREEN}{style}: {bcolors.OKCYAN}{None}{bcolors.ENDC}')
-
-        return self

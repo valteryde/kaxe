@@ -2,21 +2,14 @@
 from .symbol import makeSymbolShapes
 from .text import Text
 from .shapes import shapes
-from .styles import StyleShape
+from .styles import AttrObject
 
-class LegendBox(StyleShape):
-
-    defaults = {}
-
-    inheritable = {
-        "fontSize",
-        "color"
-    }
+class LegendBox(AttrObject):
 
     name = "LegendBox"
 
     def __init__(self, *obj):
-        super()
+        super().__init__()
         self.objects = obj
         self.batch = shapes.Batch()
         self.boxshape = shapes.Batch()
@@ -26,26 +19,28 @@ class LegendBox(StyleShape):
         """
         stadigvæk lidt skrøbelig
         """
+        self.setAttrMap(parent.attrmap)
+        fontSize = self.getAttr('fontSize')
 
         self.legendShapes = []
         objects = []
         
         for obj in self.objects:
             if hasattr(obj, "legendText"): # has legend ready
-
-                symbol = makeSymbolShapes(obj.legendSymbol, parent.fontSize, obj.legendColor, self.batch)
+                
+                symbol = makeSymbolShapes(obj.legendSymbol, fontSize, obj.legendColor, self.batch)
 
                 objects.append((
                     symbol, 
                     Text(obj.legendText,
                         x=0,
                         y=0,
-                        color=parent.markerColor, 
+                        color=self.getAttr('color'), 
                         batch=self.batch,
                         anchor_x="left",
                         anchor_y="top",
                         # font_name=self.font,
-                        fontSize=parent.fontSize
+                        fontSize=fontSize
                         )
                     )
                 )
@@ -56,9 +51,9 @@ class LegendBox(StyleShape):
             # calculate grid sizes
             legendMaxWidth = parent.width * .7 # NOTE: STYLE
             legendSizeThickness = 2 #NOTE: STYLE
-            legendGridSpacing = (int(parent.fontSize/2), int(parent.fontSize/2)+2) # NOTE: STYLE
+            legendGridSpacing = (int(fontSize/2), int(fontSize/2)+2) # NOTE: STYLE
             legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top
-            legendSymbolTextSpacing = int(parent.fontSize/4) # NOTE: STYLE
+            legendSymbolTextSpacing = int(fontSize/4) # NOTE: STYLE
             legendDrawBox = False
 
             # legendGridSpacing = (0, 0) # NOTE: STYLE
@@ -142,6 +137,6 @@ class LegendBox(StyleShape):
                     batch=self.boxshape
                 ))
 
-            parent.addPaddingCondition(bottom=legendBoxSize[1]+parent.fontSize)
+            parent.addPaddingCondition(bottom=legendBoxSize[1]+fontSize)
             parent.addDrawingFunction(self.boxshape)
             parent.addDrawingFunction(self.batch)
