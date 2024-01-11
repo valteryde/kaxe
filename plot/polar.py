@@ -86,12 +86,13 @@ class PolarPlot(Window):
         xLength = self.windowAxis[1] - self.windowAxis[0]
         yLength = xLength
         self.scale = ((self.width/2) / xLength, (self.height/2) / yLength)
+        
+        self.attrmap.setAttr('Marker.showLine', False)
 
         y = halfWay([self.windowBox[1]], [self.windowBox[3]])[0]
         self.center = (halfWay([self.windowBox[0]], [self.windowBox[2]])[0], y)
         self.radiusAxis.finalize(self, poss=(*self.center, self.windowBox[2] + self.windowBox[0], y))
         
-        self.attrmap.setAttr('Marker.showLine', False)
         self.radiusAxis.addMarkersToAxis(self)
         self.__addRoundLines__()
 

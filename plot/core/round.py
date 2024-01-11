@@ -1,4 +1,6 @@
 
+import math
+
 def countZeros(s:str):
     c = 0
     for i in s:
@@ -14,6 +16,9 @@ def forceround(n:float) -> float:
 def koundTeX(num:float) -> str:
     #num = round(num, 5)
     if num == 0: return "$0$"
+
+    if num < 100 and math.floor(int(num) - num) == math.ceil(int(num) - num):
+        return int(num)
 
     n = abs(num)
     ori = n / num > 0

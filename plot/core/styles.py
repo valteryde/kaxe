@@ -1,6 +1,6 @@
 
 import copy
-from types import MappingProxyType
+from types import MappingProxyType, FunctionType
 
 # COLORS
 WHITE = (255,255,255,255)
@@ -48,7 +48,7 @@ lowerFirstLetter = lambda s: s[:1].lower() + s[1:] if s else ''
 class AttrMap:
     
     def __init__(self):
-        self.__attrs__ = {}
+        self.__attrs__ = {'global':{}}
         self.__defaults__ = {'global':{}}
 
     
@@ -61,8 +61,6 @@ class AttrMap:
             self.default(attr, obj.defaults[attr], obj=obj)
 
 
-
-
     def __set__(self, d, key, attr, val):
         if d.get(key):
             d[key][attr] = val
@@ -72,20 +70,18 @@ class AttrMap:
     
     def default(self, attr:str, value, obj=None):
 
+        if type(value) is ComputedAttribute:
+            value.setAttrMap(self)
+
         if type(obj) is str:
-            self.__set__(self.__defaults__,obj, attr, value)
+            self.__set__(self.__defaults__, obj.lower(), attr, value)
             
         elif obj:
-            self.__set__(self.__defaults__, obj.name, attr, value)
+            self.__set__(self.__defaults__, obj.name.lower(), attr, value)
         
         else:            
             self.__defaults__['global'][attr] = value
     
-
-    def print(self):
-        print(self.__defaults__)
-        print(self.__attrs__)
-
 
     def setAttr(self, attr, value, obj=None):
         """
@@ -93,14 +89,14 @@ class AttrMap:
         """
 
         if type(obj) is str:
-            self.__set__(self.__attrs__,obj, attr, value)
+            self.__set__(self.__attrs__,obj.lower(), attr, value)
             
         elif obj:
-            self.__set__(self.__attrs__, obj.name, attr, value)
+            self.__set__(self.__attrs__, obj.name.lower(), attr, value)
         
-        elif '.' in attr:            
+        elif '.' in attr:         
             key, attr = attr.split('.')
-            self.__set__(self.__attrs__, key, attr, value)
+            self.__set__(self.__attrs__, key.lower(), attr, value)
 
         else:
             self.__attrs__['global'][attr] = value
@@ -108,6 +104,12 @@ class AttrMap:
 
     # retrieve a style
     def getAttr(self, attr:str, obj=None):
+        attrvalue = self.__getAttr__(attr, obj)
+        if type(attrvalue) is ComputedAttribute:
+            return attrvalue.get()
+        return attrvalue
+
+    def __getAttr__(self, attr:str, obj=None):
         """
         either passing an object and retrieve global type stylesheet
         or pass and global variable and retrieve global setting
@@ -120,26 +122,26 @@ class AttrMap:
         else:
             key, attr = 'global', attr
 
+        key = key.lower()
+        if obj: obj = obj.lower()
         
         # check object first
         if obj and key == 'global':
-
             rattr = self.__attrs__.get(obj, {}).get(attr)
             if rattr is not None: return rattr
-
+        
+        
+        # default object
+        if obj is not None:
+            rattr = self.__defaults__.get(obj, {}).get(attr)
+            if rattr is not None: return rattr
+        
 
         # check global from attribute map
         rattr = self.__attrs__.get(key, {}).get(attr)
         if rattr is not None: return rattr
-
-
-        # object default
-        if obj and key == 'global':
         
-            rattr = self.__defaults__.get(obj, {}).get(attr)
-            if rattr is not None: return rattr
-
-
+        
         # global default
         rattr = self.__defaults__.get(key, {}).get(attr)
         if rattr is not None: return rattr
@@ -147,8 +149,30 @@ class AttrMap:
     
     # API to pass along to user
     def styles(self, styles:dict={}, **kstyles):
-        print('hejsa')
 
+        astyles = {**styles, **kstyles}
+        for key in astyles:
+            self.setAttr(key, astyles[key])
+
+
+    def help(self):
+        print(f'{bcolors.BOLD}Styles{bcolors.ENDC}')
+
+        for key in self.__defaults__:
+            
+            print(f'{bcolors.OKBLUE}{key}{bcolors.ENDC}')
+            for attr in self.__defaults__[key]:
+                
+                if key == "global":
+                    s = attr
+                else:
+                    s = f'{key}.{attr}'
+
+                rattr = self.__attrs__.get(key, {}).get(attr)
+                if rattr is None:
+                    print(f'    {bcolors.OKGREEN}{s}:{bcolors.ENDC} {self.__defaults__[key][attr]}')
+                else:
+                    print(f'    {bcolors.OKGREEN}{s}:{bcolors.OKCYAN} {rattr}{bcolors.ENDC}')
 
 
 class AttrObject:
@@ -182,6 +206,24 @@ class AttrObject:
         self.__attrs__[attr] = value
 
 
+class ComputedAttribute:
+
+    def __init__(self, func:FunctionType):
+        self.func = func
+
+    def setAttrMap(self, attrmap):
+        self.attrmapRef = attrmap
+
+    def get(self):
+        return self.func(self.attrmapRef)
+
+    def __str__(self):
+        return str(self.get())
+
+    def __repr__(self):
+        return 'computable value'
+
+
 
 """
 USECASES
@@ -201,4 +243,3 @@ obj1.getStyle(obj1, 'fontSize') -> return obj defaults
 
 obj1.getStyle('not-a-real-value') -> None
 """
-

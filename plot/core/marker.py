@@ -14,8 +14,8 @@ class Marker(AttrObject):
         "showLine": True,
         "tickWidth" : 3,
         "tickLength": 15,
-        "gridlineColor" : (255,0,0,75),
-        "gridlineWidth": 3
+        "gridlineColor" : (0,0,0,75),
+        "gridlineWidth": 2
     })
 
     def __init__(self, 

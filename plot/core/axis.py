@@ -1,19 +1,24 @@
 
 from .helper import *
 from .shapes import shapes
-from .styles import AttrObject
+from .styles import AttrObject, ComputedAttribute
 from .text import Text, getTextDimension
 from .round import koundTeX
 from .marker import Marker
 import sys
 from types import MappingProxyType
 
+
+# AXIS COMPUTABLE STYLES
+stepSizeBandAttribute = ComputedAttribute(lambda a: [a.getAttr('fontSize')*5, a.getAttr('fontSize')*6])
+
+
 class Axis(AttrObject):
     
     defaults = MappingProxyType({
-        "stepSizeBand": [200, 350],
+        "stepSizeBand": stepSizeBandAttribute,
         "showLine": True, # bliver ikke brugt pt
-        "width": 2
+        "width": 3
     })
 
     name = "Axis"
@@ -93,6 +98,7 @@ class Axis(AttrObject):
         length = vlen(vdiff(p1, p2))
 
         MARKERSTEPSIZE = self.getAttr('stepSizeBand')
+        print(MARKERSTEPSIZE)
         MARKERSTEP = [2, 5, 10]
         acceptence = [math.floor(pixelLength/MARKERSTEPSIZE[0]),math.floor(pixelLength/MARKERSTEPSIZE[1])]
 

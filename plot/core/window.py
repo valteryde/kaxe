@@ -21,15 +21,6 @@ Ligeledes hvilkte plot der arbejdes på
 
 class Window(AttrObject):
     
-    # defaults = MappingProxyType({
-    #     "width": 2000,
-    #     "height": 1500,
-    #     "backgroundColor": (255,255,255,255),
-    #     "outerPadding": [100, 100, 100, 100],
-    #     "fontSize": 50,
-    #     "color": (0,0,0,255)
-    # })
-
     name = "Window"
 
     def __init__(self): # |
@@ -41,11 +32,11 @@ class Window(AttrObject):
         self.identity = None
         
         self.attrmap = AttrMap()
-        self.attrmap.default(attr='width', value=2000)
-        self.attrmap.default(attr='height', value=1500)
+        self.attrmap.default(attr='width', value=2500)
+        self.attrmap.default(attr='height', value=2000)
         self.attrmap.default(attr='backgroundColor', value=(255,255,255,255))
         self.attrmap.default(attr='outerPadding', value=[50,50,50,50])
-        self.attrmap.default(attr='fontSize', value=50)
+        self.attrmap.default(attr='fontSize', value=40)
         self.attrmap.default(attr='color', value=(0,0,0,255))
         self.setAttrMap(self.attrmap)
 
@@ -62,6 +53,7 @@ class Window(AttrObject):
         self.padding = [0,0,0,0] #computed padding
 
         self.style = self.attrmap.styles
+        self.help = self.attrmap.help
 
 
     def __eq__(self, s):
