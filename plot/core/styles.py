@@ -88,6 +88,9 @@ class AttrMap:
         either sumbit by passing an object and retrieve global style
         """
 
+        if type(value) is ComputedAttribute:
+            value.setAttrMap(self)
+
         if type(obj) is str:
             self.__set__(self.__attrs__,obj.lower(), attr, value)
             
@@ -106,8 +109,10 @@ class AttrMap:
     def getAttr(self, attr:str, obj=None):
         attrvalue = self.__getAttr__(attr, obj)
         if type(attrvalue) is ComputedAttribute:
+            attrvalue.setAttrMap(self)
             return attrvalue.get()
         return attrvalue
+
 
     def __getAttr__(self, attr:str, obj=None):
         """
@@ -187,14 +192,22 @@ class AttrObject:
 
 
     def getAttr(self, attr:str, attrmap:AttrMap|None=None):
+        if not attrmap:
+            attrmap = self.attrmapRef
+
+        attrvalue = self.__getAttr__(attr, attrmap)
+        if type(attrvalue) is ComputedAttribute:
+            attrvalue.setAttrMap(attrmap)
+            return attrvalue.get()
+        return attrvalue
+
+
+    def __getAttr__(self, attr:str, attrmap:AttrMap):
         """
         check own stylesheet
         check global stylesheet
         prioritize own attributes
         """
-
-        if not attrmap:
-            attrmap = self.attrmapRef
 
         rattr = self.__attrs__.get(attr, None)
         if rattr: return rattr
@@ -202,7 +215,13 @@ class AttrObject:
         return attrmap.getAttr(attr, self.name)
     
     
-    def setAttr(self, attr, value):
+    def setAttr(self, attr=None, value=None, **kwargs):
+        
+        if kwargs:
+            key = list(kwargs.keys())[0]
+            self.__attrs__[key] = kwargs[key]
+            return
+
         self.__attrs__[attr] = value
 
 

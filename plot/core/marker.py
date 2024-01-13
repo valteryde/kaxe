@@ -34,7 +34,7 @@ class Marker(AttrObject):
         self.batch = shapes.Batch()
 
 
-    def finalize(self, parent, visualOffset:tuple=(0,0)):
+    def finalize(self, parent):
         self.setAttrMap(parent.attrmap)
 
         self.axis = self.axis()
@@ -46,13 +46,11 @@ class Marker(AttrObject):
         fontSize = self.getAttr('fontSize')
         showLine = self.getAttr('showLine')
 
-        self.visualOffset = addVector(visualOffset, self.axis.visualOffset) #inherit
-
         if showLine:
-            p1, p2 = parent.pointOnWindowBorderFromLine(self.axis.get(self.x), self.axis.v)
+            p1, p2 = parent.pointOnWindowBorderFromLine(parent.inversetranslate(*self.axis.get(self.x)), self.axis.v)
             self.line = shapes.Line(*p1, *p2, color=self.getAttr('gridlineColor'), width=self.getAttr('gridlineWidth'))
         
-        pos = parent.translate(*self.axis.get(self.x))
+        pos = parent.translate(*parent.inversetranslate(*self.axis.get(self.x)))
 
         n = (self.axis.n[0]/parent.scale[0], self.axis.n[1]/parent.scale[1])
         nlen = vlen(n)
@@ -62,8 +60,6 @@ class Marker(AttrObject):
 
         halfMarkerLength = self.markerLength/2
         
-        pos = addVector(pos, self.visualOffset)
-
         p1 = (pos[0]+n[0]*halfMarkerLength, pos[1]+n[1]*halfMarkerLength)
         p2 = (pos[0]-n[0]*halfMarkerLength, pos[1]-n[1]*halfMarkerLength)
 

@@ -112,13 +112,13 @@ def halfWay(v1, v2):
 
 
 def insideBox(box, point):
-    if point[0] < box[0]:
+    if round(point[0]) < box[0]:
         return False
-    if point[0] > box[2]:
+    if round(point[0]) > box[2]:
         return False
-    if point[1] < box[1]:
+    if round(point[1]) < box[1]:
         return False
-    if point[1] > box[3]:
+    if round(point[1]) > box[3]:
         return False
     return True
 

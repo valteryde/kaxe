@@ -6,11 +6,10 @@ from .text import Text, getTextDimension
 from .round import koundTeX
 from .marker import Marker
 import sys
-from types import MappingProxyType
-
+from types import MappingProxyType, FunctionType
 
 # AXIS COMPUTABLE STYLES
-stepSizeBandAttribute = ComputedAttribute(lambda a: [a.getAttr('fontSize')*5, a.getAttr('fontSize')*6])
+stepSizeBandAttribute = ComputedAttribute(lambda a: [a.getAttr('fontSize')*7, a.getAttr('fontSize')*4])
 
 
 class Axis(AttrObject):
@@ -18,90 +17,40 @@ class Axis(AttrObject):
     defaults = MappingProxyType({
         "stepSizeBand": stepSizeBandAttribute,
         "showLine": True, # bliver ikke brugt pt
-        "width": 3
+        "width": 3,
     })
 
     name = "Axis"
 
-    def __init__(self,
-                 directionVector:tuple, 
-                 pos:tuple|None=None, 
-                 func=None,
-                 invfunc=None):
-        """
-        offset:bool If graph should be offset with equvalient of start value
-        """
+    def __init__(self, directionVector:tuple):
         super().__init__()
 
         self.directionVector = directionVector
-        self.vLen = math.sqrt(directionVector[0]**2+directionVector[1]**2)
+        self.vLen = vlen(directionVector)
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
-        
-        # tjek 
-        if ((int(self.v[0]) == 0 and int(self.v[1]) == 1) or (int(self.v[0]) == 1 and int(self.v[1]) == 0)) == func:
-            print('Custom Axis and non standard basis is not supported')
-            sys.exit()
-
-        if func is None:
-            func = lambda x: x
-            invfunc = lambda x: x
-        
-        self.func = func
-        self.invfunc = invfunc
-        self._translate = lambda x: x
-        self._invtranslate = lambda x: x
-
     
-    def translate(self, x):
-        """
-        translate value
-        """
-        try:
-            return self.invfunc(x)
-        except (ValueError, OverflowError):
-            return 0
 
+    def get(self, x):
 
-    def invtranslate(self, x):
-        """
-        inverse translate value
-        """
-        try:
-            return self.func(x)
-        except (ValueError, OverflowError):
-            return 0
+        v = vdiff(self.startPos, self.endPos)
+        v = vectorScalar(v, (x-self.startNumber)/self.realLength)
+        v = addVector(self.startPos, v)
+        return v
+    
 
-
-    def get(self, x:int) -> tuple:
-        """
-        x distance from 0
-        """
-
-        x -= self.offset
-
-        return (self.v[0]*x, self.v[1]*x)
-
-
-    def getEndPoints(self) -> tuple:
-        return self.get(self.start), self.get(self.end)
-
-
-    def addMarkersToAxis(self, parent):
+    def computeMarkersAutomatic(self, parent):
         markers = []
-        self.setAttrMap(parent.attrmap)
 
-        p1 = parent.inversetranslate(*self.lineStartPoint)
-        p2 = parent.inversetranslate(*self.lineEndPoint)
+        p1, p2 = parent.inversetranslate(*self.startPos), parent.inversetranslate(*self.endPos)
 
-        pixelLength = vlen(vdiff(self.lineStartPoint, self.lineEndPoint))
+        pixelLength = vlen(vdiff(self.startPos, self.endPos))
         length = vlen(vdiff(p1, p2))
 
         MARKERSTEPSIZE = self.getAttr('stepSizeBand')
-        print(MARKERSTEPSIZE)
         MARKERSTEP = [2, 5, 10]
         acceptence = [math.floor(pixelLength/MARKERSTEPSIZE[0]),math.floor(pixelLength/MARKERSTEPSIZE[1])]
-
+        
         c = 0
         cameFromDirection = 0
         while True:
@@ -131,120 +80,102 @@ class Axis(AttrObject):
             break
         
         lengthOverStep = round(lengthOverStep)
-        
-        # is null in frame?
-        nullX, nullY = parent.pixel(0,0)
-        if (parent.padding[0] <= nullX <= parent.width+parent.padding[0]) and (parent.padding[1] <= nullY <= parent.height+parent.padding[1]):
 
-            distBeforeNull = vlen(vdiff((nullX, nullY), self.lineStartPoint))
-            distafterNull = vlen(vdiff((nullX, nullY), self.lineEndPoint))
+        # is null in frame?
+        
+        nullX, nullY = parent.pixel(0,0)
+        if parent.inside(nullX, nullY):
+
+            distBeforeNull = vlen(vdiff((nullX, nullY), self.startPos))
+            distafterNull = vlen(vdiff((nullX, nullY), self.endPos))
 
             procentBeforeNull = distBeforeNull/pixelLength
             procentAfterNull = distafterNull/pixelLength
 
             ticksBeforeNull = math.ceil(lengthOverStep*procentBeforeNull)
             ticksAfterNull = math.ceil(lengthOverStep*procentAfterNull)
-
-            # NOTE: øhh der er et problem ved fx hjørnerne ikke bliver dækket hvis der er skrå akser
-            if hasattr(parent, 'standardBasis') and not parent.standardBasis:
-                marker = Marker("0", 0, shell(self))
-                marker.finalize(parent)
-                markers.append(marker)
-
-            for i in range(1, ticksBeforeNull+1):
-                marker = Marker(
-                    str(koundTeX(self.translate(-step*i))), 
-                    -step*i, 
-                    shell(self), 
-                )
-                marker.finalize(parent)
-                markers.append(marker)
+            
+            for i in range(0, ticksBeforeNull+1):
+                p = -step*i
+                markers.append({
+                    "text": str(koundTeX(p)),
+                    "pos" : p
+                })
             
             for i in range(1, ticksAfterNull+1):
-                marker = Marker(
-                    str(koundTeX(self.translate(step*i))), 
-                    step*i, 
-                    shell(self), 
-                )
-                marker.finalize(parent)
-                markers.append(marker)
+                p = step*i
+                markers.append({
+                    "text": str(koundTeX(p)),
+                    "pos" : p
+                })
 
-        else: # check for true axis support
+        else:
             
             direction = (-1)**(0 < nullX)
             if direction == -1:
-                startPos = self.end
+                startPos = self.endNumber
             else:
-                startPos = self.start
+                startPos = self.startNumber
 
             startPos = startPos - startPos%step
 
             for i in range(math.floor(lengthOverStep)+2):
                 p = direction*step*i + startPos
-                marker = Marker(
-                    str(koundTeX(self.translate(p))), 
-                    p, 
-                    shell(self), 
-                )
-                marker.finalize(parent)
-                markers.append(marker)
+                markers.append({
+                    "text": str(str(koundTeX(p))),
+                    "pos" : p
+                })
         
-        self.markers = markers
-
-        # only use new translate after plot basis is made
-        self._translate = self.invtranslate
-        self._invtranslate = self.translate
+        return markers
 
 
-    def addStartAndEnd(self, start:float | int, end:float | int, makeOffsetAvaliable:bool=True):
+    def addMarkersToAxis(self, markers, parent):
+        self.setAttrMap(parent.attrmap)
         
-        # computed
-        # self.start = fsolve(lambda x: self.func(x) - start, start)[0]
-        # self.end = fsolve(lambda x: self.func(x) - end, end)[0]
-
-        self.start = self.invtranslate(start)
-        self.end = self.invtranslate(end)
-        
-        self.offset = 0
-        if makeOffsetAvaliable:
-            self.offset = self.start
-
-        self.title = None
-        self.hasNull = (self.start <= 0 and self.end >= 0)
-        self.pos = self.getEndPoints()[0]
+        self.markers = []
+        for marker in markers:
+            marker = Marker(
+                marker["text"],
+                marker["pos"],
+                shell(self)
+            )
+            marker.finalize(parent)
+            self.markers.append(marker)
 
 
-    def finalize(self, parent, visualOffset:tuple=(0,0), poss:tuple|None=None):
+
+    def autoAddMarkers(self, parent):
         self.setAttrMap(parent.attrmap)
 
-        self.visualOffset = visualOffset
+        markers = self.computeMarkersAutomatic(parent)
+        self.addMarkersToAxis(markers, parent)
+
+
+    def addStartAndEnd(self, start:float|int, end:float|int):
+        self.startNumber = start
+        self.endNumber = end
+        self.hasNull = self.startNumber < 0 < self.endNumber
+        self.realLength = end - start
         
-        if not poss:
 
-            p1, p2 = self.getEndPoints()
-            
-            self.p1 = (p1[0]*parent.scale[0]-parent.offset[0], p1[1]*parent.scale[1]-parent.offset[1])
-            self.p2 = (p2[0]*parent.scale[0]-parent.offset[0], p2[1]*parent.scale[1]-parent.offset[1])
+    def setPos(self, startPos:tuple|list, endPos:tuple|list):
+        self.startPos = startPos
+        self.endPos = endPos
 
-            v = (self.p1[0] - self.p2[0], self.p1[1] - self.p2[1])
-            n = (-v[1], v[0])
+        self.pixelLength = vlen(vdiff(self.startPos, self.endPos))
 
-            p1, p2 = boxIntersectWithLine((0, 0, parent.width, parent.height), n, self.p1)
 
-            self.p1 = (self.p1[0]+parent.padding[0], self.p1[1]+parent.padding[1])
-            self.p2 = (self.p2[0]+parent.padding[0], self.p2[1]+parent.padding[1])
-
-            p1 = (p1[0]+parent.padding[0]+visualOffset[0], p1[1]+parent.padding[1]+visualOffset[1])
-            p2 = (p2[0]+parent.padding[0]+visualOffset[0], p2[1]+parent.padding[1]+visualOffset[1])
-                    
-        else:
-            poss = (poss[0], poss[1]), (poss[2], poss[3])
-            self.p1, self.p2 = p1, p2 = poss
+    def finalize(self, parent):
+        self.setAttrMap(parent.attrmap)
         
-        self.lineStartPoint = p1
-        self.lineEndPoint = p2
-
-        self.shapeLine = shapes.Line(p1[0], p1[1], p2[0], p2[1], color=self.getAttr('color'), width=self.getAttr('width'))
+        self.shapeLine = shapes.Line(
+            self.startPos[0], 
+            self.startPos[1], 
+            self.endPos[0], 
+            self.endPos[1], 
+            color=self.getAttr('color'), 
+            width=self.getAttr('width')
+        )
         parent.addDrawingFunction(self, 2)
 
     
@@ -268,7 +199,7 @@ class Axis(AttrObject):
         v = (self.v[0]*parent.scale[0], self.v[1]*parent.scale[1])
         angle = angleBetweenVectors(v, (1,0))
 
-        p1, p2 = self.getPixelPos()
+        p1, p2 = self.startPos, self.endPos
         diff = vdiff(p1, p2)
         v = vectorScalar(diff, 1/2)
         axisPos = addVector(p1, v)
@@ -333,13 +264,11 @@ class Axis(AttrObject):
 
 
     # *** api ***
-    def getPixelPos(self):
-        return (self.shapeLine.x0, self.shapeLine.y0), (self.shapeLine.x1, self.shapeLine.y1)    
-
-
     def draw(self, *args, **kwargs):
         self.shapeLine.draw(*args, **kwargs)
 
 
     def push(self, x,y):
         self.shapeLine.push(x,y)
+        self.startPos = (self.startPos[0]+x, self.startPos[1]+y)
+        self.endPos = (self.endPos[0]+x, self.endPos[1]+y)

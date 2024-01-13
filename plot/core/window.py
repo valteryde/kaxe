@@ -125,13 +125,46 @@ class Window(AttrObject):
         self.setAttrMap(self.attrmap)
 
 
+    # calculate windowAxis
+    def __calculateWindowBorders__(self):
+        """
+        where all objects is in
+        unless windowAxis is already specefied
+        """
+        if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
+            horizontal = []
+            vertical = []
+            for i in self.objects:
+                try:
+                    horizontal.append(i.farLeft)
+                    horizontal.append(i.farRight)
+                    vertical.append(i.farTop)
+                    vertical.append(i.farBottom)
+                except AttributeError:
+                    continue
+            
+            try:
+                if not self.windowAxis[0]: self.windowAxis[0] = min(horizontal)
+                if not self.windowAxis[1]: self.windowAxis[1] = max(horizontal)
+                if not self.windowAxis[2]: self.windowAxis[2] = min(vertical)
+                if not self.windowAxis[3]: self.windowAxis[3] = max(vertical)
+            except Exception as e:
+                logging.warn(e) # not tested
+                self.windowAxis = [-10, 10, -5, 5]
+
+
     # baking
     def __bake__(self):
         # finish making plot
         # fit "plot" into window 
         startTime = time.time()        
 
+        # get styles
+        self.width = self.getAttr('width')
+        self.height = self.getAttr('height')
+
         self.windowBox = (self.padding[0], self.padding[1], self.getAttr('width')+self.padding[0], self.getAttr('height')+self.padding[1])
+        self.__calculateWindowBorders__()
         self.__prepare__()
         self.__addInnerContent__()
         self.__addOuterContent__()

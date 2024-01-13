@@ -1,10 +1,11 @@
 
 from .core import *
-from .plot import Plot, Marker, XYPLOT
-from .polar import PolarPlot, POLARPLOT
-from .empty import Morten
 from .themes import Themes
-from .special import LogPlot
+from .log import LogPlot
+from .standard import Plot, XYPLOT
+from .polar import PolarPlot, POLARPLOT
+from .box import BoxPlot
+from .diagonal import AxisPlot, VectorAxis
 
 class identities:
     XYPLOT = XYPLOT
