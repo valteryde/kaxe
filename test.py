@@ -7,13 +7,12 @@ import unittest
 #class TestMethods(unittest.TestCase):
 class Test:
 
-    def normal():
+    def testNormal():
         plot = kaxe.Plot()
 
-        plot.save('normal.png')
+        plot.save('test/normal.png')
 
-
-    def pointPlot():
+    def testPointPlot():
         plot = kaxe.Plot()
 
         plot.title('en lang titel der strakker sig langt', 'en lang titel der strakker sig langt')
@@ -21,51 +20,47 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [0.25*i**2-100 for i in range(0,100)]).legend('test')
         plot.add(p)
 
-        plot.save('pointPlot.png')
+        plot.save('test/pointPlot.png')
 
 
-    def labels():
+    def testLinearPointPlot():
+        plot = kaxe.Plot()
+
+        plot.title('en lang titel der strakker sig langt', 'en lang titel der strakker sig langt')
+
+        p = kaxe.objects.Points(range(0,100), [i for i in range(0,100)]).legend('test')
+        plot.add(p)
+
+        plot.save('test/pointPlot.png')
+
+
+    def testLabels():
         plot = kaxe.Plot()
         plot.title('$f(x)=\\cases{2}{x<2}{4*x+2}{x>2}$', 'en lang titel der strækker sig langt')
 
         p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
         plot.add(p)
 
-        plot.save('labels.png')
+        plot.save('test/labels.png')
 
 
-    def customAxis():
+    def testCustomAxis():
+        return
         
-        plot = kaxe.Plot()
+        plot = kaxe.AxisPlot()
         plot.title('hej', 'en lang titel der strækker sig langt')
 
         # p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
         p = kaxe.objects.Points(range(0,100), range(0,200,2))
         plot.add(p)
 
-        first = kaxe.Axis((2,1))
-        second = kaxe.Axis((1,0))
+        first = kaxe.VectorAxis((2,1))
+        second = kaxe.VectorAxis((1,0))
 
         plot.setAxis(first, second)
 
-        plot.save('customaxis.png')
+        plot.save('test/customaxis.png')
     
-
-    def skewedTrueAxis():
-        
-        plot = kaxe.Plot(trueAxis=True)
-        plot.title('hej', 'en lang titel der strækker sig langt')
-
-        # p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
-        p = kaxe.objects.Points(range(10000,100000), range(10000,100000))
-        plot.add(p)
-
-        first = kaxe.Axis((2,1))
-        second = kaxe.Axis((1,0))
-
-        plot.setAxis(first, second)
-
-        plot.save('customaxis.png')
 
 
     def testFunction():
@@ -91,7 +86,7 @@ class Test:
         plot.add(f5)
         f5.fill(4,8)
 
-        plot.save('function.png')
+        plot.save('test/function.png')
 
     
     def testInverseProportional():
@@ -101,7 +96,7 @@ class Test:
         plot.add(f5)
         f5.fill(4,8)
 
-        plot.save('inverseprop.png')
+        plot.save('test/inverseprop.png')
 
 
     def testPiecewise():
@@ -120,7 +115,7 @@ class Test:
         f5 = kaxe.objects.Function(f)
         plot.add(f5)
 
-        plot.save('piecewise.png')
+        plot.save('test/piecewise.png')
 
 
 
@@ -142,7 +137,7 @@ class Test:
         func = kaxe.objects.Function(f)
         plot.add(func)
 
-        plot.save('pillars.png')
+        plot.save('test/pillars.png')
     
     
     def testEquation():
@@ -165,7 +160,7 @@ class Test:
         eq5 = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq5)
 
-        plot.save('equation.png')
+        plot.save('test/equation.png')
 
 
     def testColorMap():
@@ -186,12 +181,12 @@ class Test:
         cmap1 = kaxe.objects.ColorMap(data)
         plot.add(cmap1)
 
-        plot.save('colormap.png')
+        plot.save('test/colormap.png')
 
     
     def testLogarithmic():
         
-        plt = kaxe.Plot([0,100, 1, 10000000000],logarithmic=[False, True])
+        plt = kaxe.LogPlot([0, 100, 0.01, 10000000000])
 
         p = kaxe.objects.Points(range(0,100), [i*1000 for i in range(0,100)])
         f1 = kaxe.objects.Function(lambda x: 10*x)
@@ -200,7 +195,10 @@ class Test:
         plt.add(f1)
         plt.add(f2)
 
-        plt.save('logarithmic.png')
+        p1 = kaxe.objects.Points([10, 20, 30, 40, 50, 60], [0.1, 0.05, 0.075, 0.1, 1, 0.015])
+        plt.add(p1)
+
+        plt.save('test/logarithmic.png')
 
 
     def testThemes():
@@ -212,7 +210,7 @@ class Test:
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
 
-        plot.save('theme_full.png')
+        plot.save('test/theme_full.png')
 
         plot = kaxe.Plot([-10, 10, -10, 10])
         
@@ -221,22 +219,104 @@ class Test:
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
 
-        plot.save('theme_half.png')
+        plot.save('test/theme_half.png')
     
 
+    def testPolarPlot():
+        
+        plt = kaxe.PolarPlot([0,7])
+
+        f = kaxe.objects.Function(lambda x: math.sin(x)*math.cos(x))
+        plt.add(f)
+
+        f = kaxe.objects.Function(lambda x: 0.5)
+        plt.add(f)
+
+        f = kaxe.objects.Function(lambda x: x)
+        plt.add(f)
+
+        eq = kaxe.objects.Equation(lambda x,y: y, lambda x,y: 3)
+        plt.add(eq)
+
+        eq = kaxe.objects.Equation(lambda x,y: y, lambda x,y: x)
+        plt.add(eq)
+
+        steps = [(i/1000)*math.pi*2 for i in range(0, 1000)]
+        p = kaxe.objects.Points(steps, [math.cos(i) for i in steps], connect=True).legend('test')
+        plt.add(p)
+
+        # steps = [(i/1000)*math.pi*2 for i in range(0, 1000)]
+        # p = kaxe.objects.Points(steps, [math.sin(i) for i in steps], connect=True).legend('test')
+        # plt.add(p)
+        
+        # p = kaxe.objects.Points(range(0,100), [i/2 for i in range(0,100)], connect=True).legend('test')
+        # plt.add(p)
+
+        plt.save('test/polar.png')
+
+
+    def testBoxPlot():
+        
+        #plt = kaxe.Plot([-4, 4, -2, 5])
+        plt = kaxe.BoxPlot([-math.pi-1, math.pi+1, -1, 4])
+
+        def s_N(x, N):
+            if -math.pi < x < math.pi:
+                return math.pi / 4 + sum([
+                    ((1 - (-1)**n)/(n**2 * math.pi)) * (math.cos(n * x)) + 1/n * math.sin(n * x) for n in range(1, N)
+                ])
+            return math.nan
+
+        def base(x):
+            if -math.pi < x < 0:
+                return 0
+            elif 0 <= x < math.pi:
+                return math.pi - x
+
+            return math.nan
+
+        basef = kaxe.Function(base)
+        plt.add(basef)
+
+        for N in range(2, 10):
+            f = kaxe.Function(s_N, N=N)
+            plt.add(f)
+
+        f = kaxe.Function(s_N, N=1000)
+        plt.add(f)
+
+        plt.save('test/box.png')
+
+
+    def testStyles():
+        plt = kaxe.Plot()
+
+        plt.style({
+            "Marker.tickWidth":5,
+            "Marker.tickLength":30,
+            "Marker.showNumber": True
+        })
+
+        plt.style(width=1500, height=1500)
+
+        plt.help()
+
+        plt.save('test/styles.png')
+
+
 if __name__ == '__main__':
-    # Test.normal()
-    # Test.customAxis()
-    # Test.normal()
-    # Test.customAxis()
-    # Test.labels()
-    # Test.testFunction()
-    # Test.pointPlot()
-    # Test.testPillars()
-    # Test.testEquation()
-    # Test.testColorMap()
-    # Test.testLogarithmic()
-    # Test.testThemes()
-    # Test.testInverseProportional()
-    # Test.testPiecewise()
-    pass
+    if True:
+        Test.testPolarPlot()
+        Test.testLabels()
+        Test.testFunction()
+        Test.testPillars()
+        Test.testEquation()
+        Test.testColorMap()
+        Test.testThemes()
+        Test.testInverseProportional()
+        Test.testPiecewise()
+        Test.testEquation()
+        Test.testPointPlot()
+        Test.testNormal()
+        Test.testLogarithmic()
+        Test.testBoxPlot()

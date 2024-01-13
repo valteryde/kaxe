@@ -31,10 +31,11 @@ class Points:
         self.legendColor = self.color
         self.connect = connect
         
-        self.farLeft = min(self.x)
-        self.farRight = max(self.x)
-        self.farTop = max(self.y)
-        self.farBottom = min(self.y)
+        if len(self.x) > 1:
+            self.farLeft = min(self.x)
+            self.farRight = max(self.x)
+            self.farTop = max(self.y)
+            self.farBottom = min(self.y)
 
         self.supports = [identities.XYPLOT, identities.POLAR]
 
