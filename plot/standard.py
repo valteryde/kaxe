@@ -11,6 +11,10 @@ XYPLOT = 'xy'
 
 class Plot(Window):
     
+    # en måde at gøre den nemmer at ændre på er at dele tingene op i flere
+    # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
+    # akserne i nederste hjørne
+
     def __init__(self,  window:list=None): # |
         super().__init__()
         self.identity = XYPLOT

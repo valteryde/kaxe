@@ -1,27 +1,23 @@
 
 # special cases of base plot
-#from .standard import Plot, XYPLOT
+from .standard import Plot, XYPLOT
 from .core.axis import Axis
 import math
 from .core.styles import ComputedAttribute
 
-class BoxPlot:
+class BoxPlot(Plot):
     
     def __init__(self, window:list|tuple|None=None):
-        self.plot = Plot(window, None)
+        super().__init__(window)
 
-        firstEndPos = ComputedAttribute(lambda am: (am.getAttr('width'), 0))
-        secondEndPos = ComputedAttribute(lambda am: (0,am.getAttr('height')))    
+    def __setAxisPos__(self):
+        self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1])
+        self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3])
+        self.offset[0] += self.windowAxis[0] * self.scale[0]
+        self.offset[1] += self.windowAxis[2] * self.scale[1]
 
-        firstAxis = Axis((1,0))
-        firstAxis.setAttr(startPos=(0,0))
-        firstAxis.setAttr(endPos=firstEndPos)
+        self.firstAxis.setPos(self.pixel(self.windowAxis[0],self.windowAxis[2]), self.pixel(self.windowAxis[1],self.windowAxis[2]))
+        self.firstAxis.finalize(self)
 
-        secondAxis = Axis((0,1))
-        secondAxis.setAttr(startPos=(0,0))
-        secondAxis.setAttr(endPos=secondEndPos)
-
-        self.plot.setAxis(firstAxis, secondAxis)
-
-        self.add = self.plot.add
-        self.save = self.plot.save
+        self.secondAxis.setPos(self.pixel(self.windowAxis[0],self.windowAxis[2]), self.pixel(self.windowAxis[0],self.windowAxis[3]))
+        self.secondAxis.finalize(self)

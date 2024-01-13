@@ -91,9 +91,10 @@ class PolarPlot(Window):
 
         y = halfWay([self.windowBox[1]], [self.windowBox[3]])[0]
         self.center = (halfWay([self.windowBox[0]], [self.windowBox[2]])[0], y)
-        self.radiusAxis.finalize(self, poss=(*self.center, self.windowBox[2] + self.windowBox[0], y))
+        self.radiusAxis.setPos(self.center, (self.windowBox[2] + self.windowBox[0], y))
+        self.radiusAxis.finalize(self)
         
-        self.radiusAxis.addMarkersToAxis(self)
+        self.radiusAxis.autoAddMarkers(self)
         self.__addRoundLines__()
 
         self.radiusAxis.addTitle('hejsa', self)
