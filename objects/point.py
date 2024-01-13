@@ -1,9 +1,9 @@
 
-from ..plot.styles import *
-from ..plot.shapes import shapes
-from ..plot.symbol import makeSymbolShapes
-from ..plot.symbol import symbol as symbols
-from ..plot.helper import *
+from ..plot.core.styles import *
+from ..plot.core.shapes import shapes
+from ..plot.core.symbol import makeSymbolShapes
+from ..plot.core.symbol import symbol as symbols
+from ..plot.core.helper import *
 from ..plot import identities
 
 class Points:
@@ -31,10 +31,11 @@ class Points:
         self.legendColor = self.color
         self.connect = connect
         
-        self.farLeft = min(self.x)
-        self.farRight = max(self.x)
-        self.farTop = max(self.y)
-        self.farBottom = min(self.y)
+        if len(self.x) > 1:
+            self.farLeft = min(self.x)
+            self.farRight = max(self.x)
+            self.farTop = max(self.y)
+            self.farBottom = min(self.y)
 
         self.supports = [identities.XYPLOT, identities.POLAR]
 
@@ -42,7 +43,7 @@ class Points:
     def finalize(self, parent):
         
         # set style 
-        if self.size is None: self.size = round(parent.fontSize / 3)
+        if self.size is None: self.size = round(parent.getAttr('fontSize') / 3)
 
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)

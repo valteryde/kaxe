@@ -2,9 +2,9 @@
 import numpy as np
 from .mapdata import heatcolormap
 import math
-from ..plot.shapes import shapes
-from ..plot.text import Text
-from ..plot.round import koundTeX
+from ..plot.core.shapes import shapes
+from ..plot.core.text import Text
+from ..plot.core.round import koundTeX
 from ..plot import identities
 
 def mapTempToColor(col, minColor:float|int, maxColor:float|int, colors:list=heatcolormap):
@@ -72,8 +72,11 @@ class ColorMap:
         # scale
         windowHeight = (parent.windowBox[3] - parent.windowBox[1])
         height = int(windowHeight * 0.85)
-        width = parent.fontSize*3
-        scaleLeftMargin = parent.fontSize
+        
+        fontsize = parent.getAttr('fontSize')
+
+        width = fontsize*3
+        scaleLeftMargin = fontsize
         scaleStartPos = parent.windowBox[2]+scaleLeftMargin, parent.windowBox[1] + 1/2*windowHeight - height//2
 
         # spild af CPU her, men nemmere at læse, 
@@ -84,11 +87,11 @@ class ColorMap:
         self.topText = Text(
             str(koundTeX(self.minValue)), 
             scaleStartPos[0]+width/2, 
-            scaleStartPos[1]-parent.fontSize/4, 
+            scaleStartPos[1]-fontsize/4, 
             batch=self.batch, 
             anchor_x='center', 
             anchor_y='',
-            fontSize=parent.fontSize
+            fontSize=fontsize
         )
         
         # top text
@@ -99,10 +102,10 @@ class ColorMap:
             batch=self.batch, 
             anchor_x='center', 
             anchor_y='',
-            fontSize=parent.fontSize
+            fontSize=fontsize
         )
         
-        self.bottomText.y += self.bottomText.height + parent.fontSize/4
+        self.bottomText.y += self.bottomText.height + fontsize/4
 
         self.img = shapes.ImageArray(np.array(arr, np.uint8), *scaleStartPos, batch=self.batch)
         parent.addPaddingCondition(right=width+scaleLeftMargin)

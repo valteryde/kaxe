@@ -1,12 +1,35 @@
 
-from .helper import *
+"""
+Denne kodebase skal virkelig skrives om og burde anses som fortabt
+Dette er derfor legacy per 12 jan 2024 og virker ikke
+                 ______
+           _____/      \\_____
+          |  _     ___   _   ||
+          | | \     |   | \  ||
+          | |  |    |   |  | ||
+          | |_/     |   |_/  ||
+          | | \     |   |    ||
+          | |  \    |   |    ||
+          | |   \. _|_. | .  ||
+          |                  ||
+          |                  ||
+          |                  ||
+  *       | *   **    * **   |**      **
+   \))ejm97/.,(//,,..,,\||(,,.,\\,.((//
+"""
+
+"""
+copied from axis
+"""
+
+from .core.helper import *
 import logging
-from .axis import *
-from .window import Window
+from .core.window import Window
+from .standard import XYPLOT
+from .core.axis import Axis
+from .core.marker import Marker
 
-XYPLOT = 'xy'
-
-class Plot(Window):
+class AxisPlot(Window):
     
     def __init__(self,  window:list=None, trueAxis:bool=None): # |
         super().__init__()
@@ -33,6 +56,9 @@ class Plot(Window):
         self.scale = (0,0)
         self.firstTitle = None
         self.secondTitle = None
+
+        self.attrmap.submit(Axis)
+        self.attrmap.submit(Marker)
 
 
     # creating plotting window
@@ -136,7 +162,7 @@ class Plot(Window):
 
     def __prepare__(self):
         # finish making plot
-        # fit "plot" into window 
+        # fit "plot" into window
 
         self.__calculateWindowBorders__()
         self.__createStandardAxis__()
@@ -144,9 +170,19 @@ class Plot(Window):
         self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1], makeOffsetAvaliable=self.untrueAxis)
         self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3], makeOffsetAvaliable=self.untrueAxis)
 
-        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
+        # get styles
+        self.width = self.getAttr('width')
+        self.height = self.getAttr('height')
+
+        self.windowBox = (
+            self.padding[0], 
+            self.padding[1], 
+            self.width+self.padding[0], 
+            self.height+self.padding[1]
+        )
         self.nullInPlot = False
 
+        # NOTE: burde nok være omvendt
         self.__setWindowDimensionBasedOnAxis__(self.firstAxis, self.secondAxis)
         self.firstAxis.addMarkersToAxis(self)
         self.secondAxis.addMarkersToAxis(self)
@@ -201,6 +237,7 @@ class Plot(Window):
         if not y is None: p[1] = (self.secondAxis._invtranslate(y)+self.offset[1]-self.padding[1])/self.scale[1]
 
         return p
+
 
     def pixel(self, x:int, y:int) -> tuple:
         """
