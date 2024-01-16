@@ -94,6 +94,9 @@ class Plot(Window):
         self.firstAxis.autoAddMarkers(self)
         self.secondAxis.autoAddMarkers(self)
 
+        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
+
 
     # special api
     def title(self, first=None, second=None):

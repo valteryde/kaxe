@@ -97,15 +97,14 @@ class PolarPlot(Window):
         self.radiusAxis.autoAddMarkers(self)
         self.__addRoundLines__()
 
-        self.radiusAxis.addTitle('hejsa', self)
+        if self.radiusTitle: self.radiusAxis.addTitle(self.radiusTitle, self)
         
         self.angleAxis.finalize(self)
 
 
     # special api
-    def title(self, first=None, second=None):
-        self.firstTitle = first
-        self.secondTitle = second
+    def title(self, title:str):
+        self.radiusTitle = title
         return self
 
 
