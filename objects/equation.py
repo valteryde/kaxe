@@ -12,7 +12,7 @@ import math
 
 class Equation:
 
-    def __init__(self, left, right, color:tuple=None, width=2):
+    def __init__(self, left, right, color:tuple=None, width:int=2):
         self.batch = shapes.Batch()
 
         self.left = left
