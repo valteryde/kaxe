@@ -73,7 +73,7 @@ class Test:
         f2 = kaxe.objects.Function(lambda x, a: a*x, a=0, width=10)
         plot.add(f2)
 
-        f3 = kaxe.objects.Function(lambda x: math.sin(x)*2, width=2)
+        f3 = kaxe.objects.Function(lambda x: math.sin(x)*2)
         f3.tangent(2)
         f3.fill(-math.pi, math.pi)
         plot.add(f3)
@@ -245,6 +245,8 @@ class Test:
         p = kaxe.objects.Points(steps, [math.cos(i) for i in steps], connect=True).legend('test')
         plt.add(p)
 
+        plt.title('en titel på radius ting')
+
         # steps = [(i/1000)*math.pi*2 for i in range(0, 1000)]
         # p = kaxe.objects.Points(steps, [math.sin(i) for i in steps], connect=True).legend('test')
         # plt.add(p)
@@ -276,13 +278,16 @@ class Test:
             return math.nan
 
         basef = kaxe.Function(base)
+        basef.legend('f')
         plt.add(basef)
 
         for N in range(2, 10):
             f = kaxe.Function(s_N, N=N)
+            f.legend(f'N={N}')
             plt.add(f)
 
         f = kaxe.Function(s_N, N=1000)
+        f.legend('N=1000')
         plt.add(f)
 
         plt.save('test/box.png')
@@ -303,9 +308,62 @@ class Test:
 
         plt.save('test/styles.png')
 
+    
+    def testLinearFunction():
+        plt = kaxe.Plot([-5, 5, -5, 5])
+
+        func = kaxe.Function(lambda x: x)
+
+        plt.add(func)
+
+        plt.save('test/linearfunc.png')
+
+
+    def testBoxPlotNoGridLines():
+        
+        #plt = kaxe.Plot([-4, 4, -2, 5])
+        plt = kaxe.BoxPlot([-math.pi-1, math.pi+1, -1, 4])
+
+        plt.help()
+        plt.style({'marker.showLine':False})
+
+        def s_N(x, N):
+            if -math.pi < x < math.pi:
+                return math.pi / 4 + sum([
+                    ((1 - (-1)**n)/(n**2 * math.pi)) * (math.cos(n * x)) + 1/n * math.sin(n * x) for n in range(1, N)
+                ])
+            return math.nan
+
+        def base(x):
+            if -math.pi < x < 0:
+                return 0
+            elif 0 <= x < math.pi:
+                return math.pi - x
+
+            return math.nan
+
+        basef = kaxe.Function(base)
+        basef.legend('f')
+        plt.add(basef)
+
+        for N in range(2, 10):
+            f = kaxe.Function(s_N, N=N)
+            f.legend(f'N={N}')
+            plt.add(f)
+
+        f = kaxe.Function(s_N, N=1000)
+        f.legend('N=1000')
+        plt.add(f)
+
+        plt.save('test/boxnogridline.png')
+
+
+
+
 
 if __name__ == '__main__':
     if True:
+        Test.testBoxPlotNoGridLines()
         Test.testPolarPlot()
         Test.testLabels()
         Test.testFunction()
@@ -319,4 +377,5 @@ if __name__ == '__main__':
         Test.testPointPlot()
         Test.testNormal()
         Test.testLogarithmic()
+        Test.testLinearFunction()
         Test.testBoxPlot()

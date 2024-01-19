@@ -7,6 +7,7 @@ from ..plot.core.shapes import shapes
 from ..plot.core.symbol import symbol
 from ..plot import identities
 import numbers
+from random import randint
 
 
 class Function:
@@ -14,7 +15,7 @@ class Function:
     def __init__(self, 
                  f:Callable, 
                  color:tuple=None, 
-                 width:int=4, 
+                 width:int=10,
                  dotted:bool=False,
                  *args, 
                  **kwargs
@@ -109,13 +110,18 @@ class Function:
         elif parent == identities.POLAR:
         
             fidelity = 100
-            for angle in range(0, 360*fidelity):
+            for angle in range(0, 360*fidelity, 5):
                 angle = math.radians(angle / fidelity)
                 self.__setPoint__(angle, parent)
 
         # piece together linesegments
         for segment in self.lineSegments:
-            shapes.LineSegment(segment, color=self.color, width=self.thickness, batch=self.batch)
+            shapes.LineSegment(
+                segment, 
+                color=self.color, 
+                width=self.thickness, 
+                batch=self.batch, 
+            )
 
         # add tangent
         if self.tangentFunction: parent.add(self.tangentFunction)

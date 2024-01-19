@@ -376,6 +376,10 @@ class LineSegment(Shape):
     def drawPillow(self, surface:Image):
         #[y0, y1] = flipHorizontal(surface, self.y0, self.y1)
 
+        if len(self.points) <= 2:
+            return
+
+
         draw = ImageDraw.Draw(surface)
         
         newpos = []
@@ -383,7 +387,7 @@ class LineSegment(Shape):
             newpos.append(x+self.offset[0])
             newpos.append(flipHorizontal(surface, y+self.offset[1])[0])
 
-        draw.line(newpos, fill=self.color, width=self.thickness)
+        draw.line(newpos, fill=self.color, width=self.thickness, joint="curve")
 
 
 
