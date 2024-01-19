@@ -5,6 +5,12 @@ from .text import Text
 from .styles import AttrObject
 from types import MappingProxyType
 
+c = 0
+def count():
+    global c
+    c += 1
+    print(c)
+
 class Marker(AttrObject):
 
     name = "Marker"
@@ -49,7 +55,7 @@ class Marker(AttrObject):
         if showLine:
             p1, p2 = parent.pointOnWindowBorderFromLine(parent.inversetranslate(*self.axis.get(self.x)), self.axis.v)
             self.line = shapes.Line(*p1, *p2, color=self.getAttr('gridlineColor'), width=self.getAttr('gridlineWidth'))
-        
+
         pos = parent.translate(*parent.inversetranslate(*self.axis.get(self.x)))
 
         n = (self.axis.n[0]/parent.scale[0], self.axis.n[1]/parent.scale[1])

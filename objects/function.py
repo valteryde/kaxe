@@ -14,7 +14,7 @@ class Function:
     def __init__(self, 
                  f:Callable, 
                  color:tuple=None, 
-                 width:int=2, 
+                 width:int=4, 
                  dotted:bool=False,
                  *args, 
                  **kwargs
@@ -22,6 +22,7 @@ class Function:
         
         self.function = f
         self.batch = shapes.Batch()
+        self.fillbatch = shapes.Batch()
         self.legendSymbol = symbol.LINE
         self.tangentFunction = None
         self.dotted = dotted
@@ -84,23 +85,17 @@ class Function:
                     )
 
         if parent.inside(px, py) or parent.inside(*self.__lastPoint__):
-            line = shapes.Line(
-                *parent.clamp(self.__lastPoint__[0], self.__lastPoint__[1]), 
-                *parent.clamp(px, py), 
-                color=self.color, 
-                width=self.thickness*2, 
-                batch=self.batch,
-                center=True
-            )
-            self.lineSegments.append(line)
-        
-        self.__lastPoint__ = [px, py]
+            self.lineSegments[-1].append(parent.clamp(self.__lastPoint__[0], self.__lastPoint__[1]))
+            self.lineSegments[-1].append(parent.clamp(px, py))
+        else:
+            self.lineSegments.append([])
 
+        self.__lastPoint__ = [px, py]
 
 
     def finalize(self, parent):
 
-        self.lineSegments = []
+        self.lineSegments = [[]]
         fills = []
         self.__lastPoint__ = []
 
@@ -118,7 +113,9 @@ class Function:
                 angle = math.radians(angle / fidelity)
                 self.__setPoint__(angle, parent)
 
-
+        # piece together linesegments
+        for segment in self.lineSegments:
+            shapes.LineSegment(segment, color=self.color, width=self.thickness, batch=self.batch)
 
         # add tangent
         if self.tangentFunction: parent.add(self.tangentFunction)
@@ -140,7 +137,7 @@ class Function:
             area["points"].insert(0, (area["points"][0][0], firstaxisy))
 
         for area in fillAreas:
-            shapes.Polygon(*area["points"], color=self.fillcolor, batch=self.batch)
+            shapes.Polygon(*area["points"], color=self.fillcolor, batch=self.fillbatch)
 
 
     def tangent(self, x, dx=10**(-5)):
@@ -163,10 +160,12 @@ class Function:
         
 
     def draw(self, *args, **kwargs):
+        self.fillbatch.draw(*args, **kwargs)
         self.batch.draw(*args, **kwargs)
 
 
     def push(self, *args, **kwargs):
+        self.fillbatch.push(*args, **kwargs)
         self.batch.push(*args, **kwargs)
     
 

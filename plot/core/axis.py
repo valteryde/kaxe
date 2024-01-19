@@ -17,7 +17,7 @@ class Axis(AttrObject):
     defaults = MappingProxyType({
         "stepSizeBand": stepSizeBandAttribute,
         "showLine": True, # bliver ikke brugt pt
-        "width": 3,
+        "width": 4,
     })
 
     name = "Axis"

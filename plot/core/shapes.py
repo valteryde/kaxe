@@ -135,10 +135,6 @@ class Line(Shape):
         self.y1 += y
 
 
-    def drawPyglet(self):
-        pg.shapes.Line(self.x0, self.y0, self.x1, self.y1, color=self.color, width=self.thickness)
-
-
     def drawPillow(self, surface:Image):
         [y0, y1] = flipHorizontal(surface, self.y0, self.y1)
         p1, p2 = (self.x0, y0), (self.x1, y1)
@@ -355,6 +351,42 @@ class Polygon(Shape):
         return [self.width, self.height]
 
 
+
+class LineSegment(Shape):
+    
+    def __init__(self, points, color:tuple=BLACK, width=1, batch:Batch=None, center:bool=False, *args, **kwargs):
+        self.points = points
+        self.x = [x for x,y in self.points]
+        self.y = [y for x,y in self.points]
+        self.thickness = width
+        self.color = color
+        self.batch = batch
+        self.centerAlign = center
+        self.offset = [0,0]
+        super().__init__()
+        if batch: batch.add(self)
+
+
+    # overwrites push
+    def push(self, x, y):
+        self.offset[0] += x
+        self.offset[1] += y
+
+
+    def drawPillow(self, surface:Image):
+        #[y0, y1] = flipHorizontal(surface, self.y0, self.y1)
+
+        draw = ImageDraw.Draw(surface)
+        
+        newpos = []
+        for x,y in self.points:
+            newpos.append(x+self.offset[0])
+            newpos.append(flipHorizontal(surface, y+self.offset[1])[0])
+
+        draw.line(newpos, fill=self.color, width=self.thickness)
+
+
+
 # NAMESPACE
 class shapes:
     Rectangle = Rectangle
@@ -365,3 +397,4 @@ class shapes:
     Image = ImageShape
     ImageArray = ImageArrayShape
     Batch = Batch
+    LineSegment = LineSegment
