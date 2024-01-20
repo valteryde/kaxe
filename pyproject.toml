@@ -14,7 +14,11 @@ classifiers = [
 ]
 dependencies = [
   "pillow",
+  "fondi",
   "sympy",
+  "scipy",
+  "openpyxl",
+  "tqdm"
 ]
 
 [project.urls]
