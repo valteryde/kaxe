@@ -1,12 +1,11 @@
 
-import os
 from PIL import Image
 from .shapes import ImageShape, shapes, Batch
 from .styles import *
 import numpy as np
+from .fileloader import loadFile
 
-basePath = os.path.join(os.path.split(os.path.abspath(__name__))[0], 'kaxe')
-triangle = Image.open(os.path.join(basePath, 'resource', 'symboltriangle.png'))
+triangle = Image.open(loadFile('symboltriangle.png'))
 
 class CustomSymbol(ImageShape):
     def __init__(self, symbimg:Image, width:int, height:int, color:tuple=BLACK, batch:Batch=None):

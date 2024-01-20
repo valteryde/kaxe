@@ -10,7 +10,7 @@ import logging
 # ENGINE
 class engine:
     PILLOW = 'PILLOW'
-    
+
 # SET ENGINE
 currentEngine = engine.PILLOW #spaghetti
 def setEngine(engine):
@@ -75,6 +75,7 @@ class Shape:
                 self.drawPillow(*args, **kwargs)
         except AttributeError:
             logging.critical('No man')
+
 
     def push(self, x, y):
         self.x += x

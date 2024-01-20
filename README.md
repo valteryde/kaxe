@@ -3,7 +3,7 @@
 
 Kaxe is an lightweight graphing tools for functions, equations, points and more written in pure python
 
-![BoxPlot](test/box.png)
+![BoxPlot](tests/box.png)
 
 ## Plots
 
@@ -28,7 +28,7 @@ plt = kaxe.Plot(window:list)
 plt.save("plot.png")
 ```
 
-![Standard plotting window](test/theme_full.png)
+![Standard plotting window](tests/theme_full.png)
 
 Alternatively other windows can be used
 
@@ -37,7 +37,7 @@ Alternatively other windows can be used
 kaxe.PolarPlot(window:list)
 ```
 
-![Polar plot](test/polar.png)
+![Polar plot](tests/polar.png)
 
 #### Box plot
 ```python
@@ -86,7 +86,7 @@ To add a tangent to the function use the tangent method
 Function.tangent(x0)
 ```
 
-![Functions](test/function.png)
+![Functions](tests/function.png)
 
 ### Points
 
@@ -103,7 +103,7 @@ kaxe.Points(
 )
 ```
 
-![Points](test/labels.png)
+![Points](tests/labels.png)
 
 ### Equation
 
@@ -123,7 +123,7 @@ E. g
 kaxe.Equation(lambda x,y: 2*x, lambda x,y: y)
 ```
 
-![Equations](test/equation.png)
+![Equations](tests/equation.png)
 
 ## Styling
 
