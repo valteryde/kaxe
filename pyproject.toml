@@ -1,6 +1,6 @@
 [project]
 name = "kaxe"
-version = "0.0.4"
+version = "0.0.7"
 authors = [
   { name="Valter Yde Daugberg", email="valter@hotmail.com" },
 ]
@@ -24,3 +24,9 @@ Issues = "https://github.com/valteryde/kaxe/issues"
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
