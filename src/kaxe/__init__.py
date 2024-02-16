@@ -6,4 +6,12 @@ from .data import data
 from .objects import *
 from .math import math, regression
 
-logging.basicConfig(level=logging.INFO)
+try:
+    ipy_str = str(type(get_ipython()))
+    if 'zmqshell' in ipy_str:
+        logging.basicConfig(level=logging.CRITICAL)
+    if 'terminal' in ipy_str:
+        logging.basicConfig(level=logging.CRITICAL)
+except:
+    logging.basicConfig(level=logging.INFO)
+

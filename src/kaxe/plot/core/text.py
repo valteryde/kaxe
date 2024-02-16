@@ -1,6 +1,5 @@
 
 from PIL import Image
-import pyglet as pg
 from .styles import *
 import os
 from .shapes import *
@@ -56,7 +55,7 @@ class Text(Shape):
         #self.pilImage = pilImage.crop(pilImage.getbbox())
 
         self.pilImage.save('.__textImage__.png')
-        self.img = pg.image.load('.__textImage__.png')
+        self.img = Image.open('.__textImage__.png')
                 
         self.width = self.img.width
         self.height = self.img.height

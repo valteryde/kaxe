@@ -9,6 +9,10 @@ from PIL import Image
 import tqdm
 from random import randint
 import os
+try:
+    from IPython import display
+except ImportError:
+    pass
 
 """
 Alle translationer fra pixel til inverse pixel skal ske i Plot og ikke i vinduet
@@ -18,6 +22,16 @@ Vinduet er altså det midterste af skærmen og holder også styr på padding og 
 Det gør at bruger skal arbejde med de samme funktioner hver gang der arbejdes med et plot 
 Ligeledes hvilkte plot der arbejdes på
 """
+
+terminaltype = 'terminal'
+try:
+    ipy_str = str(type(get_ipython()))
+    if 'zmqshell' in ipy_str:
+        terminaltype = 'jupyter'
+    if 'terminal' in ipy_str:
+        terminaltype = 'ipython'
+except:
+    pass
 
 class Window(AttrObject):
     
@@ -231,15 +245,24 @@ class Window(AttrObject):
         logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
     
     
-    def show(self, static:bool=True):
+    def show(self):
+        fname = 'plot{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
 
-        if static:
-            fname = '.__tempImage{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
+        if terminaltype != "terminal":
+            self.save(fname)
+            i = display.Image(filename=fname, width=800, unconfined=True)
+            display.display(i)
+            os.remove(fname)
+
+
+        else:
+            
             self.save(fname)
             pilImage = Image.open(fname)
             pilImage.show()
             os.remove(fname)
-            return
+
+        return fname
 
     # shape
     def addDrawingFunction(self, shape, z=0):
