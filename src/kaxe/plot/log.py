@@ -1,7 +1,7 @@
 
-from .core.helper import *
-from .core.axis import *
-from .core.window import Window
+from ..core.helper import *
+from ..core.axis import *
+from ..core.window import Window
 import math
 from .standard import Plot
 

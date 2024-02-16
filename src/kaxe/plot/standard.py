@@ -2,10 +2,10 @@
 # a simple xy plot
 # faster than the true plot
 
-from .core.helper import *
+from ..core.helper import *
 import logging
-from .core.axis import *
-from .core.window import Window
+from ..core.axis import *
+from ..core.window import Window
 
 XYPLOT = 'xy'
 

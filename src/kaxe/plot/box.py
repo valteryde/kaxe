@@ -1,9 +1,9 @@
 
 # special cases of base plot
 from .standard import Plot, XYPLOT
-from .core.axis import Axis
+from ..core.axis import Axis
 import math
-from .core.styles import ComputedAttribute
+from ..core.styles import ComputedAttribute
 
 class BoxPlot(Plot):
     

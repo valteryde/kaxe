@@ -1,4 +1,7 @@
 
+import sys
+sys.path.append('./src')
+
 # test
 import math
 import kaxe
@@ -10,7 +13,7 @@ class Test:
     def testNormal():
         plot = kaxe.Plot()
 
-        plot.save('test/normal.png')
+        plot.save('tests/normal.png')
 
     def testPointPlot():
         plot = kaxe.Plot()
@@ -20,7 +23,7 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [0.25*i**2-100 for i in range(0,100)]).legend('test')
         plot.add(p)
 
-        plot.save('test/pointPlot.png')
+        plot.save('tests/pointPlot.png')
 
 
     def testLinearPointPlot():
@@ -31,7 +34,7 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [i for i in range(0,100)]).legend('test')
         plot.add(p)
 
-        plot.save('test/pointPlot.png')
+        plot.save('tests/pointPlot.png')
 
 
     def testLabels():
@@ -41,7 +44,7 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
         plot.add(p)
 
-        plot.save('test/labels.png')
+        plot.save('tests/labels.png')
 
 
     def testCustomAxis():
@@ -86,7 +89,7 @@ class Test:
         plot.add(f5)
         f5.fill(4,8)
 
-        plot.save('test/function.png')
+        plot.save('tests/function.png')
 
     
     def testInverseProportional():
@@ -96,7 +99,7 @@ class Test:
         plot.add(f5)
         f5.fill(4,8)
 
-        plot.save('test/inverseprop.png')
+        plot.save('tests/inverseprop.png')
 
 
     def testPiecewise():
@@ -115,7 +118,7 @@ class Test:
         f5 = kaxe.objects.Function(f)
         plot.add(f5)
 
-        plot.save('test/piecewise.png')
+        plot.save('tests/piecewise.png')
 
 
 
@@ -137,7 +140,7 @@ class Test:
         func = kaxe.objects.Function(f)
         plot.add(func)
 
-        plot.save('test/pillars.png')
+        plot.save('tests/pillars.png')
     
     
     def testEquation():
@@ -160,7 +163,7 @@ class Test:
         eq5 = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq5)
 
-        plot.save('test/equation.png')
+        plot.save('tests/equation.png')
 
 
     def testColorMap():
@@ -181,7 +184,7 @@ class Test:
         cmap1 = kaxe.objects.ColorMap(data)
         plot.add(cmap1)
 
-        plot.save('test/colormap.png')
+        plot.save('tests/colormap.png')
 
     
     def testLogarithmic():
@@ -198,7 +201,7 @@ class Test:
         p1 = kaxe.objects.Points([10, 20, 30, 40, 50, 60], [0.1, 0.05, 0.075, 0.1, 1, 0.015])
         plt.add(p1)
 
-        plt.save('test/logarithmic.png')
+        plt.save('tests/logarithmic.png')
 
 
     def testThemes():
@@ -210,7 +213,7 @@ class Test:
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
 
-        plot.save('test/theme_full.png')
+        plot.save('tests/theme_full.png')
 
         plot = kaxe.Plot([-10, 10, -10, 10])
         
@@ -219,7 +222,7 @@ class Test:
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
 
-        plot.save('test/theme_half.png')
+        plot.save('tests/theme_half.png')
     
 
     def testPolarPlot():
@@ -254,7 +257,7 @@ class Test:
         # p = kaxe.objects.Points(range(0,100), [i/2 for i in range(0,100)], connect=True).legend('test')
         # plt.add(p)
 
-        plt.save('test/polar.png')
+        plt.save('tests/polar.png')
 
 
     def testBoxPlot():
@@ -290,7 +293,7 @@ class Test:
         f.legend('N=1000')
         plt.add(f)
 
-        plt.save('test/box.png')
+        plt.save('tests/box.png')
 
 
     def testStyles():
@@ -306,7 +309,7 @@ class Test:
 
         plt.help()
 
-        plt.save('test/styles.png')
+        plt.save('tests/styles.png')
 
     
     def testLinearFunction():
@@ -316,7 +319,7 @@ class Test:
 
         plt.add(func)
 
-        plt.save('test/linearfunc.png')
+        plt.save('tests/linearfunc.png')
 
 
     def testBoxPlotNoGridLines():
@@ -355,10 +358,7 @@ class Test:
         f.legend('N=1000')
         plt.add(f)
 
-        plt.save('test/boxnogridline.png')
-
-
-
+        plt.save('tests/boxnogridline.png')
 
 
 if __name__ == '__main__':

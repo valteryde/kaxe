@@ -2,9 +2,9 @@
 import numpy as np
 from .mapdata import heatcolormap
 import math
-from ..plot.core.shapes import shapes
-from ..plot.core.text import Text
-from ..plot.core.round import koundTeX
+from ..core.shapes import shapes
+from ..core.text import Text
+from ..core.round import koundTeX
 from ..plot import identities
 
 def mapTempToColor(col, minColor:float|int, maxColor:float|int, colors:list=heatcolormap):
