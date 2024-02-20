@@ -41,7 +41,7 @@ class Text(Shape):
                 res += char
             else:
                 word += char
-        
+
         if len(word) > 0: res += '\\text{' + word + '}'
 
         text = res

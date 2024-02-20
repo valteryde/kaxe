@@ -361,8 +361,172 @@ class Test:
         plt.save('tests/boxnogridline.png')
 
 
+    def testPieChart():
+        chart = kaxe.chart.Pie()
+
+        chart.add(19, 'n1')
+        chart.add(6, 'n2')
+        chart.add(8, 'n3')
+        chart.add(58, 'n4')
+        chart.add(25, 'n4')
+
+        chart.title('$x^2$ er nu en lang lang laaaang titel')
+
+        chart.save('tests/piechart.png')
+    
+
+    def testBarChart():
+        chart = kaxe.chart.Bar()
+
+        chart.add(2013, 2.8)
+        chart.add(2014, 3.1)
+        chart.add(2015, 3.3)
+        chart.add(2016, 3.6)
+        chart.add(2017, [4, 1])
+        chart.add(2018, 4.3)
+        chart.add(2019, 4.6)
+        chart.add(2020, 5)
+        chart.add(2021, [5.5, 2, 1])
+        chart.add(2022, [5.9, 1])
+        chart.add(2023, [6.4, 0, 1])
+
+        chart.legends('Profit', 'Marked', 'Andre buzzwords')
+
+        chart.title('$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel')
+
+        chart.style(rotateLabel=45)
+
+        chart.save('tests/barchart.png')
+
+
+        # rotate
+        chart = kaxe.chart.Bar(True)
+
+        chart.add(2013, 2.8)
+        chart.add(2014, 3.1)
+        chart.add(2015, 3.3)
+        chart.add(2016, 3.6)
+        chart.add(2017, [4, 1])
+        chart.add(2018, 4.3)
+        chart.add(2019, 4.6)
+        chart.add(2020, 5)
+        chart.add(2021, [5.5, 2, 1])
+        chart.add(2022, [5.9, 1])
+        chart.add(2023, [6.4, 0, 1])
+
+        chart.legends('Profit', 'Marked', 'Andre buzzwords')
+
+        chart.title('$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel')
+
+        chart.save('tests/barchart_rotate.png')
+
+
+    def testCarsten():
+        c1 = kaxe.chart.Bar()
+
+        c1.add(2013, 2.8*6.89)
+        c1.add(2014, 3.1*6.89)
+        c1.add(2015, 3.3*6.89)
+        c1.add(2016, 3.6*6.89)
+        c1.add(2017, 4*6.89)
+        c1.add(2018, 4.3*6.89)
+        c1.add(2019, 4.6*6.89)
+        c1.add(2020, 5*6.89)
+        c1.add(2021, 5.5*6.89)
+        c1.add(2022, 5.9*6.89)
+        c1.add(2023, 6.4*6.89)
+
+        c1.title(secondAxis='Markedsværdi i milliarder DKK')
+
+        c1.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+
+        c1.save('tests/carsten_1.png')
+
+        # c2
+        c2 = kaxe.chart.Bar()
+
+        c2.add(2023, 19460)
+        c2.add(2024, 22120)
+        c2.add(2025, 23630)
+        c2.add(2026, 29380)
+        c2.add(2027, 34850)
+
+        c2.title(secondAxis='Forventet antal installerede vindmøller')
+
+        c2.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+
+        c2.save('tests/carsten_2.png')
+
+        # c3
+        c3 = kaxe.chart.Bar(True)
+
+        c3.add("Personbiler", 61598.65)
+        c3.add("Lette kommercielle køretøjer", 19860.13)
+        c3.add("Tunge kommercielle køretøjer", 3304.75)
+        c3.add("Tunge busser", 253.2)
+
+        c3.style(barColor=(111, 196, 119, 255))
+
+        #c3.title(secondAxis='Produktion i tusinde enheder')
+
+        c3.style(pieColor=[
+            (111, 196, 119, 255),
+            (0, 0, 0, 255),
+            (111, 196, 119, 50),
+            (255,0,0,255)
+        ], height=1000)
+
+        #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+
+        c3.save('tests/carsten_3.png')
+
+        # c4
+        c4 = kaxe.chart.Pie()
+
+        c4.add(35, "Andre", '35%')
+        c4.add(30, "Luftfartsindustrien og forsvaret", '30%')
+        c4.add(13, "Bilindustrien", '13%')
+        c4.add(22, "Vindenergi", '22%')
+
+        #c3.title(secondAxis='Produktion i tusinde enheder')
+
+        c4.style(pieColor=[
+            (111, 196, 119, 255),
+            (0, 0, 0, 255),
+            (111, 196, 119, 50),
+            (37, 91, 42, 255)
+        ])
+
+        #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+
+        c4.save('tests/carsten_4.png')
+
+        # c5
+        c5 = kaxe.chart.Pie()
+
+        c5.add(96.7, "Snor", '96,7s')
+        c5.add(14.1, "Ring på aksel", '14.1s')
+        c5.add(14.4, "Sok", '14,4s')
+        c5.add(31.2, "Afmontering ring", '31,2s')
+        c5.add(9.6, "Huggepipe", '9,6s')
+
+        #c3.title(secondAxis='Produktion i tusinde enheder')
+
+        c5.style(pieColor=[
+            (111, 196, 119, 255),
+            (0, 0, 0, 255),
+            (37, 91, 42, 255),
+            (111, 196, 119, 125),
+            (183,225,187, 255)
+        ], phaseshift=60)
+
+        #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+
+        c5.save('tests/carsten_5.png')
+
+        
 if __name__ == '__main__':
-    if True:
+    if not True:
         Test.testBoxPlotNoGridLines()
         Test.testPolarPlot()
         Test.testLabels()
@@ -379,3 +543,6 @@ if __name__ == '__main__':
         Test.testLogarithmic()
         Test.testLinearFunction()
         Test.testBoxPlot()
+        Test.testPieChart()
+    #Test.testCarsten()
+    Test.testBarChart()

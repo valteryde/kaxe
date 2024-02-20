@@ -136,7 +136,7 @@ class Line(Shape):
         self.y1 += y
 
 
-    def drawPillow(self, surface:Image):
+    def drawPillowOld(self, surface:Image):
         [y0, y1] = flipHorizontal(surface, self.y0, self.y1)
         p1, p2 = (self.x0, y0), (self.x1, y1)
         (mnx, _), (mny, _) = findMinMax((p1[0], p2[0]), (p1[1], p2[1]))
@@ -176,6 +176,14 @@ class Line(Shape):
             vConnect = (-1*vConnect[0], vConnect[1])
 
         blitImageToSurface(surface, img, (pos[0]-vConnect[0]*self.thickness//2, pos[1]-vConnect[1]*self.thickness//2))
+
+
+    def drawPillow(self, surface:Image):
+        [y0, y1] = flipHorizontal(surface, self.y0, self.y1)
+
+        draw = ImageDraw.Draw(surface)
+
+        draw.line((self.x0, y0, self.x1, y1), fill=self.color, width=self.thickness)
 
 
 class Circle(Shape):
@@ -378,8 +386,8 @@ class LineSegment(Shape):
         #[y0, y1] = flipHorizontal(surface, self.y0, self.y1)
 
         if len(self.points) <= 2:
+            print('For få punkter')
             return
-
 
         draw = ImageDraw.Draw(surface)
         
@@ -390,6 +398,39 @@ class LineSegment(Shape):
 
         draw.line(newpos, fill=self.color, width=self.thickness, joint="curve")
 
+
+
+class Arc(Shape):
+    
+    def __init__(self, phaseshift:int, angle:int, center:tuple, radius:int, color:tuple=BLACK, batch:Batch=None, *args, **kwargs):
+        self.phaseshift = phaseshift
+        self.angle = angle
+        self.radius = int(radius)
+        self.center = [center[0], center[1]]
+        
+        self.color = color
+        self.batch = batch
+        
+        super().__init__()
+        if batch: batch.add(self)
+
+
+    # overwrites push
+    def push(self, x, y):
+        self.center[0] += x
+        self.center[1] += y
+
+
+    def drawPillow(self, surface:Image):
+        [self.center[1]] = flipHorizontal(surface, self.center[1])
+
+        doubleRadius = self.radius*2
+        img = newImage(doubleRadius, doubleRadius, (0,0,0,0))
+        draw = ImageDraw.Draw(img)
+        
+        draw.pieslice((0,0, doubleRadius, doubleRadius), -self.angle-self.phaseshift, -self.phaseshift, fill=self.color)
+
+        blitImageToSurface(surface, img, (self.center[0]-self.radius, self.center[1]-self.radius))
 
 
 # NAMESPACE
@@ -403,3 +444,4 @@ class shapes:
     ImageArray = ImageArrayShape
     Batch = Batch
     LineSegment = LineSegment
+    Arc = Arc

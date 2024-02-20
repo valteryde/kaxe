@@ -50,7 +50,7 @@ class Window(AttrObject):
         self.attrmap.default(attr='height', value=2000)
         self.attrmap.default(attr='backgroundColor', value=(255,255,255,255))
         self.attrmap.default(attr='outerPadding', value=[50,50,50,50])
-        self.attrmap.default(attr='fontSize', value=40)
+        self.attrmap.default(attr='fontSize', value=50)
         self.attrmap.default(attr='color', value=(0,0,0,255))
         self.setAttrMap(self.attrmap)
 
@@ -63,11 +63,14 @@ class Window(AttrObject):
         self.legendBatch = shapes.Batch()
         self.legendBoxShape = shapes.Batch()
         
-        self.offset = [0,0]
         self.padding = [0,0,0,0] #computed padding
 
         self.style = self.attrmap.styles
         self.help = self.attrmap.help
+
+        self.legendbox = LegendBox()
+        self.offset = [0,0]
+        #self.scale = [1,1], if not set axis will help set it
 
 
     def __eq__(self, s):
@@ -122,8 +125,6 @@ class Window(AttrObject):
         )
 
         # opdater ikke disse. Forskellen er indlejret i padding
-        # self.offset[0] += left
-        # self.offset[1] += bottom
 
         self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
 
@@ -145,6 +146,9 @@ class Window(AttrObject):
         where all objects is in
         unless windowAxis is already specefied
         """
+        if not hasattr(self, 'windowAxis'):
+            return
+
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
             horizontal = []
             vertical = []
@@ -179,6 +183,18 @@ class Window(AttrObject):
 
         self.windowBox = (self.padding[0], self.padding[1], self.getAttr('width')+self.padding[0], self.getAttr('height')+self.padding[1])
         self.__calculateWindowBorders__()
+        
+        # get styles
+        self.width = self.getAttr('width')
+        self.height = self.getAttr('height')
+
+        self.windowBox = (
+            self.padding[0], 
+            self.padding[1], 
+            self.width+self.padding[0], 
+            self.height+self.padding[1]
+        )
+
         self.__prepare__()
         self.__addInnerContent__()
         self.__addOuterContent__()
@@ -194,24 +210,24 @@ class Window(AttrObject):
     def __addOuterContent__(self):
         
         # legend
-        self.legendbox = LegendBox(*self.objects)
+        self.legendbox.setObjects(self.objects)
         self.legendbox.finalize(self)
 
 
     def __addInnerContent__(self):
         
         # finalizeing objects
-        pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
+        if terminaltype == "terminal": pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
         for obj in self.objects:
             obj.finalize(self)
-            pbar.update()
+            if terminaltype == "terminal": pbar.update()
             self.addDrawingFunction(obj)
-        pbar.close()
+        if terminaltype == "terminal":pbar.close()
 
 
     def __pillowPaint__(self, fname):
         startTime = time.time()
-        pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
+        if terminaltype == "terminal": pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
@@ -221,10 +237,10 @@ class Window(AttrObject):
 
         for shape in self.shapes:
             shape.draw(surface)
-            pbar.update()
+            if terminaltype == "terminal": pbar.update()
 
         surface.save(fname)
-        pbar.close()
+        if terminaltype == "terminal": pbar.close()
         logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
 
 
@@ -275,3 +291,62 @@ class Window(AttrObject):
             self.objects.append(o)
         else:
             logging.error(f'{o}, is not supported in {self}')
+    
+
+
+    # defaults, may lead to problems
+    def pointOnWindowBorderFromLine(self, pos, n): # -> former def line(...)
+        """
+        para: x,y position according to basis (1,0), (0,1) in abstract space
+        return: two translated values on border of plot
+        """
+        return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
+
+
+    def inside(self, x, y):
+        """
+        para: translated
+        (pixels)
+        """
+        return insideBox(self.windowBox, (x,y))
+
+    
+    def clamp(self, x:int=0, y:int=0):
+        """
+        clamps value to window max and min
+        para: pixels
+        """
+        return (
+            min(max(self.windowBox[0], x), self.windowBox[2]),
+            min(max(self.windowBox[1], y), self.windowBox[3])
+        )
+
+
+    # translations
+    def scaled(self, x, y):
+        return self.scale[0]*x, self.scale[1]*y
+
+
+    def translate(self, x:int, y:int) -> tuple:
+        """
+        para: x,y position according to basis (1,0), (0,1) in abstract space
+        return: translated value
+        """
+
+        return (
+            x * self.scale[0] - self.offset[0] + self.padding[0],
+            y * self.scale[1] - self.offset[1] + self.padding[1]
+        )
+
+    
+    def inversetranslate(self, x:int=None, y:int=None):
+        """
+        para: translated value
+        return: x,y position according to basis (1,0), (0,1) in abstract space
+        """
+
+        p = [None, None]
+        if not x is None: p[0] = (x+self.offset[0]-self.padding[0])/self.scale[0]
+        if not y is None: p[1] = (y+self.offset[1]-self.padding[1])/self.scale[1]
+
+        return p

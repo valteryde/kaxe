@@ -5,11 +5,13 @@ from ..core.axis import Axis
 import math
 from ..core.styles import ComputedAttribute
 
+
 class BoxPlot(Plot):
     
     def __init__(self, window:list|tuple|None=None):
         super().__init__(window)
 
+    
     def __setAxisPos__(self):
         self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1])
         self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3])

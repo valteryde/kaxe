@@ -56,7 +56,7 @@ class Marker(AttrObject):
             p1, p2 = parent.pointOnWindowBorderFromLine(parent.inversetranslate(*self.axis.get(self.x)), self.axis.v)
             self.line = shapes.Line(*p1, *p2, color=self.getAttr('gridlineColor'), width=self.getAttr('gridlineWidth'))
 
-        pos = parent.translate(*parent.inversetranslate(*self.axis.get(self.x)))
+        pos = self.axis.get(self.x)
 
         n = (self.axis.n[0]/parent.scale[0], self.axis.n[1]/parent.scale[1])
         nlen = vlen(n)
@@ -80,7 +80,7 @@ class Marker(AttrObject):
         
         self.directionFromAxis = r
         textPos = (pos[0]+r*n[0]*distanceFromMarker, pos[1]+r*n[1]*distanceFromMarker)
-        
+
         if (not parent.inside(*pos)):
             self.line = None
             self.shown = False

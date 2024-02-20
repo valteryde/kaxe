@@ -1,6 +1,7 @@
 
 import copy
 from types import MappingProxyType, FunctionType
+import math
 
 # COLORS
 WHITE = (255,255,255,255)
@@ -15,6 +16,14 @@ def getRandomColor() -> tuple:
 def resetColor() -> None:
     global colorNum
     colorNum = -1
+
+
+def isLightOrDark(rgbColor=[0,128,255,255]):
+    [r,g,b,a]=rgbColor
+    hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
+    if (hsp>127.5):
+        return True
+    return False
 
 
 COLORS = [
@@ -108,9 +117,11 @@ class AttrMap:
     # retrieve a style
     def getAttr(self, attr:str, obj=None):
         attrvalue = self.__getAttr__(attr, obj)
+        
         if type(attrvalue) is ComputedAttribute:
             attrvalue.setAttrMap(self)
             return attrvalue.get()
+        
         return attrvalue
 
 
@@ -134,7 +145,6 @@ class AttrMap:
         if obj and key == 'global':
             rattr = self.__attrs__.get(obj, {}).get(attr)
             if rattr is not None: return rattr
-        
         
         # default object
         if obj is not None:
@@ -208,7 +218,7 @@ class AttrObject:
         check global stylesheet
         prioritize own attributes
         """
-
+        
         rattr = self.__attrs__.get(attr, None)
         if rattr: return rattr
 

@@ -1,8 +1,15 @@
 
-from .symbol import makeSymbolShapes
+from .symbol import makeSymbolShapes, symbol
 from .text import Text
 from .shapes import shapes
 from .styles import AttrObject
+
+class LegendObject:
+    def __init__(self, text, symbol, color):
+        self.legendText = text
+        self.legendSymbol = symbol
+        self.legendColor = color
+
 
 class LegendBox(AttrObject):
 
@@ -13,8 +20,17 @@ class LegendBox(AttrObject):
         self.objects = obj
         self.batch = shapes.Batch()
         self.boxshape = shapes.Batch()
+        self.others = []
 
     
+    def add(self, text="", symbol=symbol.CIRCLE, color=(0,0,0,255)):
+        self.others.append(LegendObject(text, symbol, color))
+
+
+    def setObjects(self, objects:list) -> None:
+        self.objects = objects
+
+
     def finalize(self, parent): # maybe add as a seperate object
         """
         stadigvæk lidt skrøbelig
@@ -25,7 +41,7 @@ class LegendBox(AttrObject):
         self.legendShapes = []
         objects = []
         
-        for obj in self.objects:
+        for obj in [*self.objects, *self.others]:
             if hasattr(obj, "legendText"): # has legend ready
                 
                 symbol = makeSymbolShapes(obj.legendSymbol, fontSize, obj.legendColor, self.batch)
@@ -49,7 +65,7 @@ class LegendBox(AttrObject):
         if len(objects) > 0:
             
             # calculate grid sizes
-            legendMaxWidth = parent.width * .7 # NOTE: STYLE
+            legendMaxWidth = parent.width * .85 # NOTE: STYLE
             legendSizeThickness = 2 #NOTE: STYLE
             legendGridSpacing = (int(fontSize/2), int(fontSize/2)+2) # NOTE: STYLE
             legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top

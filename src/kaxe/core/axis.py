@@ -29,9 +29,12 @@ class Axis(AttrObject):
         self.vLen = vlen(directionVector)
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
-    
+        self.finalized = False    
 
     def get(self, x):
+        """
+        returns pixel value between start point and end point
+        """
 
         v = vdiff(self.startPos, self.endPos)
         v = vectorScalar(v, (x-self.startNumber)/self.realLength)
@@ -41,11 +44,17 @@ class Axis(AttrObject):
 
     def computeMarkersAutomatic(self, parent):
         markers = []
+        assert self.finalized
 
-        p1, p2 = parent.inversetranslate(*self.startPos), parent.inversetranslate(*self.endPos)
+        # hvis der ikke er en scale defineret, som fx ved Bar chart så bare brug det akserene kører på
+        if not hasattr(parent, 'scale'): 
+            scale = vlen(vdiff(self.startPos, self.endPos)) / abs(self.endNumber - self.startNumber)
+            parent.scale = [scale, scale]
+
+        #p1, p2 = parent.inversetranslate(*self.startPos), parent.inversetranslate(*self.endPos)
 
         pixelLength = vlen(vdiff(self.startPos, self.endPos))
-        length = vlen(vdiff(p1, p2))
+        length = self.endNumber - self.startNumber
 
         MARKERSTEPSIZE = self.getAttr('stepSizeBand')
         MARKERSTEP = [2, 5, 10]
@@ -83,8 +92,8 @@ class Axis(AttrObject):
 
         # is null in frame?
         
-        nullX, nullY = parent.pixel(0,0)
-        if parent.inside(nullX, nullY):
+        nullX, nullY = self.get(0)
+        if self.startNumber <= 0 <= self.endNumber:
 
             distBeforeNull = vlen(vdiff((nullX, nullY), self.startPos))
             distafterNull = vlen(vdiff((nullX, nullY), self.endPos))
@@ -143,7 +152,6 @@ class Axis(AttrObject):
             self.markers.append(marker)
 
 
-
     def autoAddMarkers(self, parent):
         self.setAttrMap(parent.attrmap)
 
@@ -176,7 +184,9 @@ class Axis(AttrObject):
             color=self.getAttr('color'), 
             width=self.getAttr('width')
         )
+
         parent.addDrawingFunction(self, 2)
+        self.finalized = True
 
     
     def __boxOverlays__(self, aCenterPos, aSize, bCenterPos, bSize):

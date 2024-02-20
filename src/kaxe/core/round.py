@@ -29,7 +29,7 @@ def koundTeX(num:float) -> str:
         c = countZeros(str(n).split('.')[-1]) + 1
         s = '{}*10^<-{}>'.format(forceround(n*10**(c)), c)
 
-    elif n > 1000:
+    elif n > 10000:
 
         c = countZeros(reversed(str(int(n))))
         s = '{}*10^<{}>'.format(forceround(n/(10**(c))), c)
