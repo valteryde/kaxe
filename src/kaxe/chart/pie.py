@@ -36,6 +36,7 @@ class PieSlice:
     
     def finalize(self, parent):
         center = parent.center
+
         r = parent.r
         shapes.Arc(
             self.phaseshift,
@@ -107,17 +108,6 @@ class Pie(Window):
    
     def __prepare__(self):
 
-        # get styles
-        self.width = self.getAttr('width')
-        self.height = self.getAttr('height')
-
-        self.windowBox = [
-            self.padding[0], 
-            self.padding[1], 
-            self.width+self.padding[0], 
-            self.height+self.padding[1]
-        ]
-
         r = min(self.windowBox[2], self.windowBox[3])/2 + 5
         center = (self.windowBox[0] + self.windowBox[2]/2, self.windowBox[1] + self.windowBox[3]/2 - r*(1-self.getAttr('circleSizeProcent')))
         r *= self.getAttr('circleSizeProcent')
@@ -166,8 +156,8 @@ class Pie(Window):
 
             self.addDrawingFunction(title)
 
-            self.include(title.x, title.y, title.width, title.height)
-
+            x = self.include(title.x, title.y, title.width, title.height)[0]
+            self.center = center[0]+x, center[1]
 
 
     def add(self, number, legend=None, label=None):

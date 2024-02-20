@@ -386,7 +386,7 @@ class LineSegment(Shape):
         #[y0, y1] = flipHorizontal(surface, self.y0, self.y1)
 
         if len(self.points) <= 2:
-            print('For få punkter')
+            #print('For få punkter')
             return
 
         draw = ImageDraw.Draw(surface)

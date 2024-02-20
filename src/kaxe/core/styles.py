@@ -19,7 +19,7 @@ def resetColor() -> None:
 
 
 def isLightOrDark(rgbColor=[0,128,255,255]):
-    [r,g,b,a]=rgbColor
+    [r,g,b,*a]=rgbColor
     hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
     if (hsp>127.5):
         return True

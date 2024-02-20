@@ -18,6 +18,7 @@ class Axis(AttrObject):
         "stepSizeBand": stepSizeBandAttribute,
         "showLine": True, # bliver ikke brugt pt
         "width": 4,
+        "titleGap": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.5)
     })
 
     name = "Axis"
@@ -91,7 +92,6 @@ class Axis(AttrObject):
         lengthOverStep = round(lengthOverStep)
 
         # is null in frame?
-        
         nullX, nullY = self.get(0)
         if self.startNumber <= 0 <= self.endNumber:
 
@@ -265,7 +265,7 @@ class Axis(AttrObject):
             if not overlap:
                 break
         
-        v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 5)
+        v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * self.getAttr('titleGap'))
         pos = addVector(pos, v)
         self.title.x, self.title.y = pos
 

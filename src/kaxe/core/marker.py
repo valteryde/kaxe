@@ -1,15 +1,15 @@
 
 from .helper import *
 from .shapes import shapes
-from .text import Text
+from .text import Text, getTextDimension
 from .styles import AttrObject
 from types import MappingProxyType
 
-c = 0
-def count():
-    global c
-    c += 1
-    print(c)
+# c = 0
+# def count():
+#     global c
+#     c += 1
+#     print(c)
 
 class Marker(AttrObject):
 
@@ -91,6 +91,9 @@ class Marker(AttrObject):
             return
 
         # how long away for text box not to hit marker
+        # force specefic height
+        fontSizeRatio = fontSize/getTextDimension(self.text, fontSize)[1]
+
         self.textLabel = Text(self.text,
                                   x=textPos[0], 
                                   y=textPos[1], 
@@ -100,7 +103,7 @@ class Marker(AttrObject):
                                   anchor_x="center",
                                   anchor_y="center",
                                 # font_name=self.font,
-                                  fontSize=fontSize,
+                                  fontSize=int(fontSize),  #altså ja den her konstant hjælper en del på at udligne forholdet
         )
 
         box = [
@@ -123,7 +126,7 @@ class Marker(AttrObject):
             nudge -= 5
 
         self.textLabel.x += n[0] * nudge
-        self.textLabel.y += n[1] * nudge
+        self.textLabel.y += n[1] * (nudge + fontSize * (1-fontSizeRatio) / 2) # SKAL VIRKELIG GENNEMTÆNKES IGEN
 
         if showLine: parent.addDrawingFunction(self.line)
         parent.addDrawingFunction(self.batch, 2)

@@ -24,18 +24,18 @@ def koundTeX(num:float) -> str:
     ori = n / num > 0
 
     s = ''
-    if n < 0.1:
+    if n < 0.01:
         
-        c = countZeros(str(n).split('.')[-1]) + 1
-        s = '{}*10^<-{}>'.format(forceround(n*10**(c)), c)
+        c = math.floor(math.log10(n))
+        s = '{}*10^<{}>'.format(forceround(n/10**(c)), c)
 
     elif n > 10000:
 
-        c = countZeros(reversed(str(int(n))))
+        c = math.floor(math.log10(n))
         s = '{}*10^<{}>'.format(forceround(n/(10**(c))), c)
 
     else:
-        s = str(round(n, 2))
+        s = str(forceround(n))
 
     s = s.replace('<', '{').replace('>', '}')
     if not ori:

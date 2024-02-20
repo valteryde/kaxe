@@ -1,4 +1,6 @@
 
+# NOTE: spaghetti pls fix
+
 from .symbol import makeSymbolShapes, symbol
 from .text import Text
 from .shapes import shapes

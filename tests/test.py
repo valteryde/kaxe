@@ -13,7 +13,7 @@ class Test:
     def testNormal():
         plot = kaxe.Plot()
 
-        plot.save('tests/normal.png')
+        plot.save('tests/images/normal.png')
 
     def testPointPlot():
         plot = kaxe.Plot()
@@ -23,7 +23,7 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [0.25*i**2-100 for i in range(0,100)]).legend('test')
         plot.add(p)
 
-        plot.save('tests/pointPlot.png')
+        plot.save('tests/images/pointPlot.png')
 
 
     def testLinearPointPlot():
@@ -34,7 +34,7 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [i for i in range(0,100)]).legend('test')
         plot.add(p)
 
-        plot.save('tests/pointPlot.png')
+        plot.save('tests/images/pointPlot.png')
 
 
     def testLabels():
@@ -44,7 +44,7 @@ class Test:
         p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
         plot.add(p)
 
-        plot.save('tests/labels.png')
+        plot.save('tests/images/labels.png')
 
 
     def testCustomAxis():
@@ -62,7 +62,7 @@ class Test:
 
         plot.setAxis(first, second)
 
-        plot.save('test/customaxis.png')
+        plot.save('tests/images/customaxis.png')
     
 
 
@@ -89,7 +89,7 @@ class Test:
         plot.add(f5)
         f5.fill(4,8)
 
-        plot.save('tests/function.png')
+        plot.save('tests/images/function.png')
 
     
     def testInverseProportional():
@@ -99,7 +99,7 @@ class Test:
         plot.add(f5)
         f5.fill(4,8)
 
-        plot.save('tests/inverseprop.png')
+        plot.save('tests/images/inverseprop.png')
 
 
     def testPiecewise():
@@ -118,7 +118,7 @@ class Test:
         f5 = kaxe.objects.Function(f)
         plot.add(f5)
 
-        plot.save('tests/piecewise.png')
+        plot.save('tests/images/piecewise.png')
 
 
 
@@ -140,7 +140,7 @@ class Test:
         func = kaxe.objects.Function(f)
         plot.add(func)
 
-        plot.save('tests/pillars.png')
+        plot.save('tests/images/pillars.png')
     
     
     def testEquation():
@@ -163,7 +163,7 @@ class Test:
         eq5 = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq5)
 
-        plot.save('tests/equation.png')
+        plot.save('tests/images/equation.png')
 
 
     def testColorMap():
@@ -184,7 +184,7 @@ class Test:
         cmap1 = kaxe.objects.ColorMap(data)
         plot.add(cmap1)
 
-        plot.save('tests/colormap.png')
+        plot.save('tests/images/colormap.png')
 
     
     def testLogarithmic():
@@ -201,7 +201,7 @@ class Test:
         p1 = kaxe.objects.Points([10, 20, 30, 40, 50, 60], [0.1, 0.05, 0.075, 0.1, 1, 0.015])
         plt.add(p1)
 
-        plt.save('tests/logarithmic.png')
+        plt.save('tests/images/logarithmic.png')
 
 
     def testThemes():
@@ -213,7 +213,7 @@ class Test:
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
 
-        plot.save('tests/theme_full.png')
+        plot.save('tests/images/theme_full.png')
 
         plot = kaxe.Plot([-10, 10, -10, 10])
         
@@ -222,7 +222,7 @@ class Test:
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
 
-        plot.save('tests/theme_half.png')
+        plot.save('tests/images/theme_half.png')
     
 
     def testPolarPlot():
@@ -257,7 +257,7 @@ class Test:
         # p = kaxe.objects.Points(range(0,100), [i/2 for i in range(0,100)], connect=True).legend('test')
         # plt.add(p)
 
-        plt.save('tests/polar.png')
+        plt.save('tests/images/polar.png')
 
 
     def testBoxPlot():
@@ -293,7 +293,7 @@ class Test:
         f.legend('N=1000')
         plt.add(f)
 
-        plt.save('tests/box.png')
+        plt.save('tests/images/box.png')
 
 
     def testStyles():
@@ -309,7 +309,7 @@ class Test:
 
         plt.help()
 
-        plt.save('tests/styles.png')
+        plt.save('tests/images/styles.png')
 
     
     def testLinearFunction():
@@ -319,7 +319,7 @@ class Test:
 
         plt.add(func)
 
-        plt.save('tests/linearfunc.png')
+        plt.save('tests/images/linearfunc.png')
 
 
     def testBoxPlotNoGridLines():
@@ -358,7 +358,7 @@ class Test:
         f.legend('N=1000')
         plt.add(f)
 
-        plt.save('tests/boxnogridline.png')
+        plt.save('tests/images/boxnogridline.png')
 
 
     def testPieChart():
@@ -372,7 +372,7 @@ class Test:
 
         chart.title('$x^2$ er nu en lang lang laaaang titel')
 
-        chart.save('tests/piechart.png')
+        chart.save('tests/images/piechart.png')
     
 
     def testBarChart():
@@ -396,8 +396,7 @@ class Test:
 
         chart.style(rotateLabel=45)
 
-        chart.save('tests/barchart.png')
-
+        chart.save('tests/images/barchart.png')
 
         # rotate
         chart = kaxe.chart.Bar(True)
@@ -418,7 +417,52 @@ class Test:
 
         chart.title('$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel')
 
-        chart.save('tests/barchart_rotate.png')
+        chart.save('tests/images/barchart_rotate.png')
+
+
+    def testGroupBarChart():
+        chart = kaxe.chart.GroupBar()
+
+        chart.add(2013, 2.8)
+        chart.add(2014, 3.1)
+        chart.add(2015, 3.3)
+        chart.add(2016, 3.6)
+        chart.add(2017, [4, 1])
+        chart.add(2018, 4.3)
+        chart.add(2019, 4.6)
+        chart.add(2020, 5)
+        chart.add(2021, [5.5, 2, 1])
+        chart.add(2022, [5.9, 1])
+        chart.add(2023, [6.4, None, 1])
+
+        chart.legends('Profit', 'Marked', 'Andre buzzwords')
+
+        chart.title('$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel')
+
+        chart.style(rotateLabel=0)
+
+        chart.save('tests/images/groupbarchart.png')
+
+        # rotate
+        chart = kaxe.chart.GroupBar(True)
+
+        chart.add(2013, 2.8)
+        chart.add(2014, 3.1)
+        chart.add(2015, 3.3)
+        chart.add(2016, 3.6)
+        chart.add(2017, [4, 1])
+        chart.add(2018, 4.3)
+        chart.add(2019, 4.6)
+        chart.add(2020, 5)
+        chart.add(2021, [5.5, 2, 1])
+        chart.add(2022, [5.9, 1])
+        chart.add(2023, [6.4, None, 1])
+
+        chart.legends('Profit', 'Marked', 'Andre buzzwords')
+
+        chart.title('$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel', '$x^2$ er nu en lang lang laaaang titel')
+
+        chart.save('tests/images/groupbarchart_rotate.png')
 
 
     def testCarsten():
@@ -440,7 +484,7 @@ class Test:
 
         c1.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
-        c1.save('tests/carsten_1.png')
+        c1.save('tests/images/carsten_1.png')
 
         # c2
         c2 = kaxe.chart.Bar()
@@ -455,30 +499,30 @@ class Test:
 
         c2.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
-        c2.save('tests/carsten_2.png')
+        c2.save('tests/images/carsten_2.png')
 
         # c3
-        c3 = kaxe.chart.Bar(True)
+        c3 = kaxe.chart.GroupBar(True)
 
-        c3.add("Personbiler", 61598.65)
-        c3.add("Lette kommercielle køretøjer", 19860.13)
-        c3.add("Tunge kommercielle køretøjer", 3304.75)
-        c3.add("Tunge busser", 253.2)
+        c3.add("Personbiler", [67163.77, 55834.46, 57054.3, 61598.65])
+        c3.add("Lette kommercielle køretøjer", [20512.8, 17206.44, 18593.85, 19860.13])
+        c3.add("Tunge kommercielle køretøjer", [4152.41, 4361.42, 4298.78 ,3304.75])
+        c3.add("Tunge busser", [346.83, 219.27, 199.06, 253.2])
 
-        c3.style(barColor=(111, 196, 119, 255))
+        c3.legends('2019', '2020', '2021', '2022')
 
-        #c3.title(secondAxis='Produktion i tusinde enheder')
+        c3.title(secondAxis="Produktion i tusinde enheder")
 
-        c3.style(pieColor=[
+        c3.style(barColor=[
             (111, 196, 119, 255),
             (0, 0, 0, 255),
-            (111, 196, 119, 50),
-            (255,0,0,255)
-        ], height=1000)
+            (208, 220, 208, 255),
+            (37, 91, 42, 255)
+        ])
 
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
-        c3.save('tests/carsten_3.png')
+        c3.save('tests/images/carsten_3.png')
 
         # c4
         c4 = kaxe.chart.Pie()
@@ -499,7 +543,7 @@ class Test:
 
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
-        c4.save('tests/carsten_4.png')
+        c4.save('tests/images/carsten_4.png')
 
         # c5
         c5 = kaxe.chart.Pie()
@@ -522,11 +566,11 @@ class Test:
 
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
-        c5.save('tests/carsten_5.png')
+        c5.save('tests/images/carsten_5.png')
 
-        
+
 if __name__ == '__main__':
-    if not True:
+    if True:
         Test.testBoxPlotNoGridLines()
         Test.testPolarPlot()
         Test.testLabels()
@@ -537,12 +581,12 @@ if __name__ == '__main__':
         Test.testThemes()
         Test.testInverseProportional()
         Test.testPiecewise()
-        Test.testEquation()
         Test.testPointPlot()
         Test.testNormal()
         Test.testLogarithmic()
         Test.testLinearFunction()
-        Test.testBoxPlot()
+        Test.testBarChart()
         Test.testPieChart()
-    #Test.testCarsten()
-    Test.testBarChart()
+        Test.testGroupBarChart()
+        Test.testCarsten()
+        Test.testBoxPlot()

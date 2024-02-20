@@ -108,7 +108,10 @@ class Window(AttrObject):
 
         if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
             self.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
+            return -dx, -dy, -dxm, -dym
+        
 
+        return 0,0,0,0
 
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
         # could be a problem depending on where padding is calcualted

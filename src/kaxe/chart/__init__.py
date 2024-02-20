@@ -1,3 +1,3 @@
 
 from .pie import Pie
-from .bar import Bar
+from .bar import Bar, GroupBar
