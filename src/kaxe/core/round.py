@@ -14,6 +14,7 @@ def forceround(n:float) -> float:
 
 
 def koundTeX(num:float) -> str:
+    
     #num = round(num, 5)
     if num == 0: return "$0$"
 
@@ -29,7 +30,22 @@ def koundTeX(num:float) -> str:
         c = math.floor(math.log10(n))
         s = '{}*10^<{}>'.format(forceround(n/10**(c)), c)
 
-    elif n > 10000:
+    elif n >= 1000:
+        
+        a = str(n).split('.')[0]
+        l = []
+        for j in range(0, len(a)):
+            i = len(a) - j - 1
+
+            if j % 3 == 0 and j > 0:
+                l.append('\\smallSpace')
+                #l.append('\\,')
+            
+            l.append(a[i])
+        l.reverse()
+        s = ''.join(l)
+
+    elif n > 100000:
 
         c = math.floor(math.log10(n))
         s = '{}*10^<{}>'.format(forceround(n/(10**(c))), c)

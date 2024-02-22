@@ -524,6 +524,24 @@ class Test:
 
         c3.save('tests/images/carsten_3.png')
 
+        # c3 b
+        c3b = kaxe.chart.Bar(True)
+
+        c3b.add("Personbiler", 61598.65)
+        c3b.add("Lette kommercielle køretøjer", 19860.13)
+        c3b.add("Tunge kommercielle køretøjer", 3304.75)
+        c3b.add("Tunge busser", 253.2)
+
+        c3b.legends('2022')
+
+        c3b.title(secondAxis="Produktion i tusinde enheder")
+
+        c3b.style(barColor=(111, 196, 119, 255))
+
+        #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+
+        c3b.save('tests/images/carsten_3b.png')
+
         # c4
         c4 = kaxe.chart.Pie()
 
@@ -561,7 +579,7 @@ class Test:
             (0, 0, 0, 255),
             (37, 91, 42, 255),
             (111, 196, 119, 125),
-            (183,225,187, 255)
+            (100,100,100, 255)
         ], phaseshift=60)
 
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
@@ -569,8 +587,76 @@ class Test:
         c5.save('tests/images/carsten_5.png')
 
 
+        c6 = kaxe.chart.Pie()
+
+        c6.add(47.7, 'Nord Amerika', '47700t')
+        c6.add(43.9, 'Europa', '43900t')
+        c6.add(30.3, 'Asien og Stillehavet', '30300t')
+        c6.add(4.8, 'Resten af verden', '4800t')
+
+        c6.style(pieColor=[
+            (111, 196, 119, 255),
+            (0, 0, 0, 255),
+            (37, 91, 42, 255),
+            (111, 196, 119, 125),
+        ], phaseshift=60)
+
+        c6.save('tests/images/carsten_6.png')
+
+
+        # c7
+        c7 = kaxe.chart.Bar()
+
+        # c7.add(0.119288889, 'Raytheon Technologies', '11,9%')
+        # c7.add(0.1184, 'Boeing', '11,8%')
+        # c7.add(0.117333333, 'Lockheed Martin', '11,7%')
+        # c7.add(0.1152, 'Airbus Americas', '11,5%')
+        # c7.add(0.065066667, 'Northrop Grumman', '6,5%')
+        # c7.add(0.047644444, 'GE Aviation', '4,7%')
+        # c7.add(0.028266667, 'Rolls-Royce Holdings Plc', '2,8%')
+        # c7.add(0.022933333, 'Textron Aviation', '2,2%')
+        # c7.add(0.020977778, 'Honeywell Arospace', '2,1%')
+        # c7.add(0.0048, 'Leonardo DRS', '0,5')
+        # c7.add(0.340088889, 'Andre', '34,0%')
+
+        c7.add("Luftfartsindustrien", [65.99*0.3, 34.01*0.3])
+        c7.add("Vindmølleindustri", [84.77*0.22, 15.23*0.22])
+        c7.add("Bilindustrien", [48.6*0.13, 51.4*0.13])
+        c7.add("Andre", [0, 35])
+
+        print(65.99*0.3 + 84.77*0.22 + 48.6*0.13)
+
+        c7.style(barColor=[
+            (111, 196, 119, 255),
+            (150, 150, 150, 255),
+            # (208-50, 220-50, 208-50, 255),
+        ], barGap=125, width=2000, height=1000)
+
+        c7.title(secondAxis="Markedsandel i procent")
+
+        c7.legends('De 10 største virksomheder', 'Andre')
+
+        c7.save('tests/images/carsten_7.png')
+
+        # c8
+        c8 = kaxe.chart.Pie()
+
+        a = 65.99*0.3 + 84.77*0.22 + 48.6*0.13
+        c8.add(a, 'Potientielle kunder', f'{round(a, 2)}%')
+        c8.add(100-a, 'Andre', f'{100-round(a, 2)}%')
+
+        c8.style(pieColor=[
+            (111, 196, 119, 255),
+            (150, 150, 150, 255),
+            #(208-50, 220-50, 208-50, 255)
+        ],phaseshift=99.5)
+
+        c8.save('tests/images/carsten_8.png')
+
+
+
 if __name__ == '__main__':
-    if True:
+    if not True:
         Test.testBoxPlotNoGridLines()
         Test.testPolarPlot()
         Test.testLabels()
@@ -590,3 +676,5 @@ if __name__ == '__main__':
         Test.testGroupBarChart()
         Test.testCarsten()
         Test.testBoxPlot()
+        Test.testCarsten()
+

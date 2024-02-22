@@ -22,6 +22,9 @@ class Bar(Window):
         self.attrmap.default('height', 1500)
         self.attrmap.default('barColor', None)
         self.attrmap.default('rotateLabel', 0)
+        self.attrmap.default('barGap', 100)
+        self.attrmap.default('barSmallGapProc', 0.2)
+        self.attrmap.default('barGapProc', 0.8)
 
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
@@ -107,11 +110,12 @@ class Bar(Window):
     def __renderBars__(self):
           
         if self.rotate:
-            barGap = self.height/30
+            barGap = self.getAttr('barGap')
             barWidth = self.height / len(self.bars) - (len(self.bars)+1)/len(self.bars) * barGap
             x = self.windowBox[1] + barGap
+
         else:
-            barGap = self.width/30
+            barGap = self.getAttr('barGap')
             barWidth = self.width / len(self.bars) - (len(self.bars)+1)/len(self.bars) * barGap
             x = self.windowBox[0] + barGap
         
@@ -203,8 +207,8 @@ class GroupBar(Bar):
         # smallBarGap = barWidth * proc_s
         # barGap = barWidth * proc_l
 
-        smallGapProc = 0.2
-        barGapProc = 0.8
+        smallGapProc = self.getAttr('barSmallGapProc')
+        barGapProc = self.getAttr('barGapProc')
         
         # height = numberSmallGaps * barWidth * barGapProc + barWidth * self.numberAmount + barWidth * smallGapProc * (len(self.bars)-1)
         # 1 / ((numberSmallGaps * barGapProc + self.numberAmount + smallGapProc * (len(self.bars)-1)) / height) =  * barWidth
