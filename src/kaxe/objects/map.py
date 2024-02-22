@@ -2,9 +2,9 @@
 import numpy as np
 from .mapdata import heatcolormap
 import math
-from ..plot.core.shapes import shapes
-from ..plot.core.text import Text
-from ..plot.core.round import koundTeX
+from ..core.shapes import shapes
+from ..core.text import Text
+from ..core.round import koundTeX
 from ..plot import identities
 
 def mapTempToColor(col, minColor:float|int, maxColor:float|int, colors:list=heatcolormap):
@@ -41,6 +41,7 @@ class ColorMap:
         self.batch = shapes.Batch()
         
         self.data = data
+        self.digits = 2
 
         # max, min
         self.minValue = min([min(row) for row in self.data])
@@ -85,7 +86,7 @@ class ColorMap:
 
         # bottom text
         self.topText = Text(
-            str(koundTeX(self.minValue)), 
+            str(koundTeX(round(self.minValue, self.digits))), 
             scaleStartPos[0]+width/2, 
             scaleStartPos[1]-fontsize/4, 
             batch=self.batch, 
@@ -96,7 +97,7 @@ class ColorMap:
         
         # top text
         self.bottomText = Text(
-            str(koundTeX(self.maxValue)),
+            str(koundTeX(round(self.maxValue, self.digits))),
             scaleStartPos[0]+width/2, 
             scaleStartPos[1]+height, 
             batch=self.batch, 

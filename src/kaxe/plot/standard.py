@@ -2,10 +2,10 @@
 # a simple xy plot
 # faster than the true plot
 
-from .core.helper import *
+from ..core.helper import *
 import logging
-from .core.axis import *
-from .core.window import Window
+from ..core.axis import *
+from ..core.window import Window
 
 XYPLOT = 'xy'
 
@@ -33,8 +33,6 @@ class Plot(Window):
         self.firstTitle = None
         self.secondTitle = None
 
-        self.offset = [0,0]
-
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
 
@@ -56,7 +54,6 @@ class Plot(Window):
 
         self.firstAxis.finalize(self)
 
-
         if self.firstAxis.hasNull:
             self.secondAxis.setPos(self.pixel(0,self.windowAxis[2]), self.pixel(0,self.windowAxis[3]))
 
@@ -73,23 +70,11 @@ class Plot(Window):
         # finish making plot
         # fit "plot" into window
 
-        # get styles
-        self.width = self.getAttr('width')
-        self.height = self.getAttr('height')
-
         xLength = self.windowAxis[1] - self.windowAxis[0]
         yLength = self.windowAxis[3] - self.windowAxis[2]
         self.scale = [self.width/xLength,self.height/yLength]
 
         self.__setAxisPos__()
-
-        self.windowBox = (
-            self.padding[0], 
-            self.padding[1], 
-            self.width+self.padding[0], 
-            self.height+self.padding[1]
-        )
-        #self.nullInPlot = False
 
         self.firstAxis.autoAddMarkers(self)
         self.secondAxis.autoAddMarkers(self)
@@ -105,36 +90,7 @@ class Plot(Window):
         return self
 
 
-    # translations    
-    def scaled(self, x, y):
-        return self.scale[0]*x, self.scale[1]*y
-
-
-    def translate(self, x:int, y:int) -> tuple:
-        """
-        para: x,y position according to basis (1,0), (0,1) in abstract space
-        return: translated value
-        """
-
-        return (
-            x * self.scale[0] - self.offset[0] + self.padding[0],
-            y * self.scale[1] - self.offset[1] + self.padding[1]
-        )
-
-    
-    def inversetranslate(self, x:int=None, y:int=None):
-        """
-        para: translated value
-        return: x,y position according to basis (1,0), (0,1) in abstract space
-        """
-
-        p = [None, None]
-        if not x is None: p[0] = (x+self.offset[0]-self.padding[0])/self.scale[0]
-        if not y is None: p[1] = (y+self.offset[1]-self.padding[1])/self.scale[1]
-
-        return p
-
-
+    # more translations
     def pixel(self, x:int, y:int) -> tuple:
         """
         para: abstract value
@@ -153,31 +109,3 @@ class Plot(Window):
         return abstract value
         """
         return self.inversetranslate(x,y)
-
-
-    def pointOnWindowBorderFromLine(self, pos, n): # -> former def line(...)
-        """
-        para: x,y position according to basis (1,0), (0,1) in abstract space
-        return: two translated values on border of plot
-        """
-        return boxIntersectWithLine(self.windowBox, [n[0]*self.scale[0], n[1]*self.scale[1]], self.translate(*pos))
-
-
-    def inside(self, x, y):
-        """
-        para: translated
-        (pixels)
-        """
-        return insideBox(self.windowBox, (x,y))
-
-    
-    def clamp(self, x:int=0, y:int=0):
-        """
-        clamps value to window max and min
-        para: pixels
-        """
-        return (
-            min(max(self.windowBox[0], x), self.windowBox[2]),
-            min(max(self.windowBox[1], y), self.windowBox[3])
-        )
-

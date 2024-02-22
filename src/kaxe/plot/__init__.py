@@ -1,5 +1,4 @@
 
-from .core import *
 from .themes import Themes
 from .log import LogPlot
 from .standard import Plot, XYPLOT

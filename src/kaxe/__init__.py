@@ -2,9 +2,10 @@
 import logging
 
 from .plot import *
+from .chart import *
 from .data import data
 from .objects import *
-from .math import math, regression
+from .core import koundTeX
 
 try:
     ipy_str = str(type(get_ipython()))
