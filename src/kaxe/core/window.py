@@ -167,7 +167,7 @@ class Window(AttrObject):
             try:
                 if not self.windowAxis[0]: self.windowAxis[0] = min(horizontal)
             except Exception as e:
-                self.windowAxis[2] = -10
+                self.windowAxis[0] = -10
             
             try:
                 if not self.windowAxis[1]: self.windowAxis[1] = max(horizontal)
