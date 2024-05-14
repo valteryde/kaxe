@@ -165,25 +165,29 @@ class Window(AttrObject):
                     continue
             
             try:
-                if not self.windowAxis[0]: self.windowAxis[0] = min(horizontal)
+                if self.windowAxis[0] is None: 
+                    self.windowAxis[0] = min(horizontal)
+            
             except Exception as e:
                 self.windowAxis[0] = -10
             
             try:
-                if not self.windowAxis[1]: self.windowAxis[1] = max(horizontal)
+                if self.windowAxis[1] is None: 
+                    self.windowAxis[1] = max(horizontal)
             except Exception as e:
                 self.windowAxis[1] = 10
             
             try:
-                if not self.windowAxis[2]: self.windowAxis[2] = min(vertical)
+                if self.windowAxis[2] is None: 
+                    self.windowAxis[2] = min(vertical)
             except Exception as e:
                 self.windowAxis[2] = -5
             
             try:
-                if not self.windowAxis[3]: self.windowAxis[3] = max(vertical)
+                if self.windowAxis[3] is None: 
+                    self.windowAxis[3] = max(vertical)
             except Exception as e:
                 self.windowAxis[3] = 5
-
 
     # baking
     def __bake__(self):
