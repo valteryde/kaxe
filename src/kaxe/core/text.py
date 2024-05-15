@@ -27,14 +27,13 @@ class Text(Shape):
         open_ = 0
         word = ''
         for char in text:
-
             if char == '$' and open_:
                 open_ = False
-                if len(word) > 0: res += '\\text{' + word + '}'
-                word = ''
                 continue
             elif char == '$' and not open_:
                 open_ = True
+                if len(word) > 0: res += '\\text{' + word + '}'
+                word = ''
                 continue
         
             if open_:
@@ -51,12 +50,9 @@ class Text(Shape):
         
         iarr = np.array(pilImage)
         self.pilImage = Image.fromarray(rotate_image(iarr, self.rotate))
-        #self.pilImage = pilImage.rotate(self.rotate)
-        #self.pilImage = pilImage.crop(pilImage.getbbox())
 
-        self.pilImage.save('.__textImage__.png')
-        self.img = Image.open('.__textImage__.png')
-                
+        self.img = self.pilImage
+
         self.width = self.img.width
         self.height = self.img.height
 
@@ -67,8 +63,6 @@ class Text(Shape):
             self.__offset__[0] = self.pilImage.width/2
         if anchor_y == "center":
             self.__offset__[1] = self.pilImage.height/2
-
-        os.remove('.__textImage__.png')
 
         if rotate > 0:
             pass
@@ -94,6 +88,3 @@ class Text(Shape):
 def getTextDimension(text, fontSize ,*args, **kwargs):
     label = Text(*args, text=str(text), x=0, y=0, fontSize=fontSize, **kwargs)
     return label.width, label.height
-
-# ads $2*x^2$ + hejsa
-# \text{ads} 2*x^2 \text{+ hejsa}
