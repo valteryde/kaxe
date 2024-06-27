@@ -99,19 +99,22 @@ class Window(AttrObject):
 
 
     # paddings
-    def include(self, cx, cy, width, height):
-        """includes cx, cy in frame by adding padding"""
-        dx = min(cx - width/2, 0)
-        dy = min(cy - height/2, 0)
-        dxm = min(self.width - (cx + width/2), 0)
-        dym = min(self.height - (cy + height/2), 0)
+    def include(self, cx, cy, width=0, height=0):
+        """
+        includes cx, cy in frame by adding padding
+        """
 
-        if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
+        dx = min(cx - width/2 , 0)
+        dy = min(cy - height/2, 0)
+        
+        dxm = min(self.width - (cx + width/2) + self.padding[0], 0)
+        dym = min(self.height - (cy + height/2) + self.padding[1], 0)
+
+        if dx < 0 or dy < 0 or dxm < -self.padding[2] or dym < -self.padding[3]:
             self.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
             return -dx, -dy, -dxm, -dym
         
-
-        return 0,0,0,0
+        return 0, 0, 0, 0
 
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
         # could be a problem depending on where padding is calcualted
@@ -287,7 +290,6 @@ class Window(AttrObject):
             i = display.Image(filename=fname, width=800, unconfined=True)
             display.display(i)
             os.remove(fname)
-
 
         else:
             

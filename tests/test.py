@@ -482,7 +482,8 @@ class Test:
 
         c1.title(secondAxis='Markedsværdi i milliarder DKK')
 
-        c1.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+        c1.style({"axis.stepSizeBand": [400, 200]}, rotateLabel=45, barColor=(111, 196, 119, 255), fontSize=75)
+        
 
         c1.save('tests/images/carsten_1.png')
 
@@ -497,7 +498,7 @@ class Test:
 
         c2.title(secondAxis='Forventet antal installerede vindmøller')
 
-        c2.style(rotateLabel=45, barColor=(111, 196, 119, 255))
+        c2.style({"axis.stepSizeBand": [400, 200]}, rotateLabel=45, barColor=(111, 196, 119, 255), fontSize=75)
 
         c2.save('tests/images/carsten_2.png')
 
@@ -527,16 +528,16 @@ class Test:
         # c3 b
         c3b = kaxe.chart.Bar(True)
 
-        c3b.add("Personbiler", 61598.65)
-        c3b.add("Lette kommercielle køretøjer", 19860.13)
-        c3b.add("Tunge kommercielle køretøjer", 3304.75)
-        c3b.add("Tunge busser", 253.2)
+        c3b.add("Personbiler", 61598.65/1000)
+        c3b.add("Lette kommercielle køretøjer", 19860.13/1000)
+        c3b.add("Tunge kommercielle køretøjer", 3304.75/1000)
+        c3b.add("Tunge busser", 253.2/1000)
 
         c3b.legends('2022')
 
-        c3b.title(secondAxis="Produktion i tusinde enheder")
+        c3b.title(secondAxis="Produktion i millioner enheder")
 
-        c3b.style(barColor=(111, 196, 119, 255))
+        c3b.style(barColor=(111, 196, 119, 255), fontSize=75)
 
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
@@ -559,6 +560,13 @@ class Test:
             (37, 91, 42, 255)
         ])
 
+        c4.style(pieColor=[
+            (111, 196, 119, 50),
+            (0, 0, 0, 255),
+            (111, 196, 119, 50),
+            (111, 196, 119, 50)
+        ])
+
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
 
         c4.save('tests/images/carsten_4.png')
@@ -571,6 +579,7 @@ class Test:
         c5.add(14.4, "Sok", '14,4s')
         c5.add(31.2, "Afmontering ring", '31,2s')
         c5.add(9.6, "Huggepipe", '9,6s')
+        c5.add(10, "Kvalitetstjek", '10s')
 
         #c3.title(secondAxis='Produktion i tusinde enheder')
 
@@ -579,7 +588,8 @@ class Test:
             (0, 0, 0, 255),
             (37, 91, 42, 255),
             (111, 196, 119, 125),
-            (100,100,100, 255)
+            (100,100,100, 255),
+            (200,200,200, 255)
         ], phaseshift=60)
 
         #c3.style(rotateLabel=45, barColor=(111, 196, 119, 255))
@@ -589,7 +599,7 @@ class Test:
 
         c6 = kaxe.chart.Pie()
 
-        c6.add(47.7, 'Nord Amerika', '47700t')
+        c6.add(47.7, 'Nordamerika', '47700t')
         c6.add(43.9, 'Europa', '43900t')
         c6.add(30.3, 'Asien og Stillehavet', '30300t')
         c6.add(4.8, 'Resten af verden', '4800t')
@@ -599,7 +609,7 @@ class Test:
             (0, 0, 0, 255),
             (37, 91, 42, 255),
             (111, 196, 119, 125),
-        ], phaseshift=60)
+        ], phaseshift=60, fontSize=70)
 
         c6.save('tests/images/carsten_6.png')
 
@@ -619,20 +629,20 @@ class Test:
         # c7.add(0.0048, 'Leonardo DRS', '0,5')
         # c7.add(0.340088889, 'Andre', '34,0%')
 
-        c7.add("Luftfartsindustrien", [65.99*0.3, 34.01*0.3])
-        c7.add("Vindmølleindustri", [84.77*0.22, 15.23*0.22])
-        c7.add("Bilindustrien", [48.6*0.13, 51.4*0.13])
+        c7.add("Luftfarts", [65.99*0.3, 34.01*0.3])
+        c7.add("Vindmølle", [84.77*0.22, 15.23*0.22])
+        c7.add("Bil", [48.6*0.13, 51.4*0.13])
         c7.add("Andre", [0, 35])
 
         print(65.99*0.3 + 84.77*0.22 + 48.6*0.13)
 
-        c7.style(barColor=[
+        c7.style({"axis.stepSizeBand": [400, 200]}, barColor=[
             (111, 196, 119, 255),
             (150, 150, 150, 255),
             # (208-50, 220-50, 208-50, 255),
-        ], barGap=125, width=2000, height=1000)
+        ], barGap=125, width=2000, height=1000, fontSize=75, rotateLabel=0)
 
-        c7.title(secondAxis="Markedsandel i procent")
+        c7.title(secondAxis="Markedsandel i procent", firstAxis="Industrier")
 
         c7.legends('De 10 største virksomheder', 'Andre')
 
@@ -649,9 +659,22 @@ class Test:
             (111, 196, 119, 255),
             (150, 150, 150, 255),
             #(208-50, 220-50, 208-50, 255)
-        ],phaseshift=99.5)
+        ],phaseshift=99.5, fontSize=75, width=1500)
 
         c8.save('tests/images/carsten_8.png')
+
+    def testMathPlot():
+        if True:
+            plt = kaxe.EmptyPlot([-2, 2, -2, 2])
+            func = kaxe.Function(lambda x: 2*x**3 - 2 * x)
+            plt.add(func)
+            plt.save('tests/images/emptyplot.png')
+
+        if True:
+            plt = kaxe.EmptyPlot([0, 2, 0, 2])
+            func = kaxe.Function(lambda x: x)
+            plt.add(func)
+            plt.save('tests/images/emptyplot2.png')
 
 
 
@@ -677,4 +700,4 @@ if __name__ == '__main__':
         Test.testCarsten()
         Test.testBoxPlot()
         Test.testCarsten()
-
+        Test.testMathPlot()

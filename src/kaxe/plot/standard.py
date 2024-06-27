@@ -79,6 +79,9 @@ class Plot(Window):
         self.firstAxis.autoAddMarkers(self)
         self.secondAxis.autoAddMarkers(self)
 
+        self.firstAxis.checkCrossOvers(self,self.secondAxis)
+        self.secondAxis.checkCrossOvers(self, self.firstAxis)
+
         if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
         if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
 
