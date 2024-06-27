@@ -67,14 +67,24 @@ class Batch:
 class Shape:
     def __init__(self):
         self.engine = getEngine()
+        self.__hidden__ = False
 
 
     def draw(self, *args, **kwargs):
+        if self.__hidden__:return
+
         try:
             if self.engine == engine.PILLOW:
                 self.drawPillow(*args, **kwargs)
         except AttributeError:
             logging.critical('No man')
+
+    
+    def hide(self):
+        self.__hidden__ = True
+
+    def show(self):
+        self.__hidden__ = False
 
 
     def push(self, x, y):
@@ -319,6 +329,15 @@ class Triangle(Shape):
     
     def getBoundingBox(self):
         return [self.width, self.height]
+
+
+    def push(self, x, y):
+        self.x += x
+        self.y += y
+        self.p1 = (self.p1[0]+x, self.p1[1]+y)
+        self.p2 = (self.p2[0]+x, self.p2[1]+y)
+        self.p3 = (self.p3[0]+x, self.p3[1]+y)
+
 
 
 class Polygon(Shape):

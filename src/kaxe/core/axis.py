@@ -16,9 +16,10 @@ class Axis(AttrObject):
     
     defaults = MappingProxyType({
         "stepSizeBand": stepSizeBandAttribute,
-        "showLine": True, # bliver ikke brugt pt
+        "showArrow": False,
         "width": 4,
-        "titleGap": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.5)
+        "titleGap": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.5),
+        "arrowSize": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.75)
     })
 
     name = "Axis"
@@ -175,7 +176,9 @@ class Axis(AttrObject):
 
     def finalize(self, parent):
         self.setAttrMap(parent.attrmap)
-        
+
+        parent.addDrawingFunction(self, 2)
+
         self.shapeLine = shapes.Line(
             self.startPos[0], 
             self.startPos[1], 
@@ -185,7 +188,74 @@ class Axis(AttrObject):
             width=self.getAttr('width')
         )
 
-        parent.addDrawingFunction(self, 2)
+        self.arrowBatch = shapes.Batch()
+
+        if self.getAttr('showArrow'):
+            v = vdiff(self.endPos, self.startPos)
+            v = vectorScalar(v, 1/vlen(v))
+
+            n = (-v[1], v[0])
+
+            arrowSize = self.getAttr('arrowSize') / 2
+            arrowDownHeight = arrowSize
+
+            p1 = (self.startPos[0] + 2 * arrowSize * v[0], self.startPos[1] + 2 * arrowSize * v[1])
+            p2 = (self.startPos[0] + arrowSize * n[0] - arrowDownHeight * v[0], self.startPos[1] + arrowSize * n[1] - arrowDownHeight * v[1])
+            p3 = (self.startPos[0] - arrowSize * n[0] - arrowDownHeight * v[0], self.startPos[1] - arrowSize * n[1] - arrowDownHeight * v[1])
+
+            self.startArrows = (
+                shapes.Triangle(
+                    p1, p2, self.startPos,
+                    color=self.getAttr('color'), 
+                    batch=self.arrowBatch,
+                ),
+                shapes.Triangle(
+                    p1, p3, self.startPos,
+                    color=self.getAttr('color'), 
+                    batch=self.arrowBatch,
+                )
+            )
+
+            minx = min(p1[0],p2[0],p3[0])
+            miny = min(p1[1],p2[1],p3[1])
+            maxx = max(p1[0],p2[0],p3[0])
+            maxy = max(p1[1],p2[1],p3[1])
+
+            halfwidth = (maxx - minx) / 2
+            halfheight = (maxy - miny) / 2
+            center = (minx + halfwidth, miny + halfheight)
+
+            parent.include(*center, halfwidth*2, halfheight*2)
+
+            p4 = (self.endPos[0] - 2 * arrowSize * v[0], self.endPos[1] - 2 * arrowSize * v[1])
+            p5 = (self.endPos[0] + arrowSize * n[0] + arrowDownHeight * v[0], self.endPos[1] + arrowSize * n[1] + arrowDownHeight * v[1])
+            p6 = (self.endPos[0] - arrowSize * n[0] + arrowDownHeight * v[0], self.endPos[1] - arrowSize * n[1] + arrowDownHeight * v[1])
+
+            self.endArrows = (
+                shapes.Triangle(
+                    p4, p5, self.endPos,
+                    color=self.getAttr('color'), 
+                    batch=self.arrowBatch,
+                ),
+                shapes.Triangle(
+                    p4, p6, self.endPos,
+                    color=self.getAttr('color'), 
+                    batch=self.arrowBatch,
+                )
+            )
+
+
+            minx = min(p4[0],p5[0],p6[0])
+            miny = min(p4[1],p5[1],p6[1])
+            maxx = max(p4[0],p5[0],p6[0])
+            maxy = max(p4[1],p5[1],p6[1])
+
+            halfwidth = (maxx - minx) / 2
+            halfheight = (maxy - miny) / 2
+            center = (minx + halfwidth, miny + halfheight)
+
+            parent.include(*center, halfwidth*2, halfheight*2)
+
         self.finalized = True
 
     
@@ -273,12 +343,39 @@ class Axis(AttrObject):
         parent.include(*pos, *self.title.getBoundingBox())
 
 
+    def checkCrossOvers(self, parent, axis):
+
+        if not self.getAttr('showArrow'):
+            return
+
+        # check start and end points
+        startdist = min(
+            vlen(vdiff(self.startPos, axis.startPos)),
+            vlen(vdiff(self.startPos, axis.endPos))
+        )
+
+        enddist = min(
+            vlen(vdiff(self.endPos, axis.startPos)),
+            vlen(vdiff(self.endPos, axis.endPos))
+        )
+        
+        if startdist < 5:
+            self.startArrows[0].hide()
+            self.startArrows[1].hide()
+
+        if enddist < 5:
+            self.endArrows[0].hide()
+            self.endArrows[1].hide()
+
+
     # *** api ***
     def draw(self, *args, **kwargs):
         self.shapeLine.draw(*args, **kwargs)
+        self.arrowBatch.draw(*args, **kwargs)
 
 
     def push(self, x,y):
         self.shapeLine.push(x,y)
         self.startPos = (self.startPos[0]+x, self.startPos[1]+y)
         self.endPos = (self.endPos[0]+x, self.endPos[1]+y)
+        self.arrowBatch.push(x, y)
