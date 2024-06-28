@@ -11,3 +11,9 @@ class EmptyPlot(Plot):
     def __init__(self, window:list|tuple|None=None):
         super().__init__(window)
         self.style({'marker.showNumber': False, 'axis.showArrow':True})
+
+class EmptyWindow(Plot):
+    
+    def __init__(self, window:list|tuple|None=None):
+        super().__init__(window)
+        self.style({'marker.showNumber': False, 'axis.width':0})

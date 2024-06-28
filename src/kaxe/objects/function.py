@@ -25,7 +25,7 @@ class Function:
         self.batch = shapes.Batch()
         self.fillbatch = shapes.Batch()
         self.legendSymbol = symbol.LINE
-        self.tangentFunction = None
+        self.tangentFunctions = []
         self.dotted = dotted
         self.fillAreasBorders = []
         self.fillAreas = []
@@ -124,7 +124,8 @@ class Function:
             )
 
         # add tangent
-        if self.tangentFunction: parent.add(self.tangentFunction)
+        for tf in self.tangentFunctions:
+            parent.add(tf)
 
         # new fills
         fillAreas = []
@@ -153,12 +154,12 @@ class Function:
         
         a = dy/dx
  
-        self.tangentFunction = Function(
+        self.tangentFunctions.append(Function(
             lambda x, a, x0, y0: a*(x - x0) + y0, a=a, x0=x, y0=self.function(x),
             width=self.thickness,
             color=self.color,
             dotted=True
-        )
+        ))
 
     
     def fill(self, x0, x1): 

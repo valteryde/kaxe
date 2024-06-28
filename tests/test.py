@@ -663,7 +663,7 @@ class Test:
 
         c8.save('tests/images/carsten_8.png')
 
-    def testMathPlot():
+    def testEmptyPlot():
         if True:
             plt = kaxe.EmptyPlot([-2, 2, -2, 2])
             func = kaxe.Function(lambda x: 2*x**3 - 2 * x)
@@ -675,11 +675,34 @@ class Test:
             func = kaxe.Function(lambda x: x)
             plt.add(func)
             plt.save('tests/images/emptyplot2.png')
+        
+    def testEmptyWindow():
+        plt = kaxe.EmptyWindow([0, 10, 0, 10])
+        func = kaxe.Function(lambda x: 2*(x-5)**3 - 2 * (x-5) + 5)
+        plt.add(func)
+        plt.save('tests/images/emptywindow.png')
+    
+
+    def testParametricEquation():
+        plt = kaxe.Plot([-2, 2, -2, 2])
+        #func = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t)), [-math.pi,math.pi])
+        #func = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t*6)), [-100, 100])
+        func = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t)), [0, math.pi])
+        plt.add(func)
+        plt.save('tests/images/parametricequation.png')
+
+    def testArrow():
+        plt = kaxe.Plot([-2, 2, -2, 2])
+        arrow = kaxe.Arrow((0,0), (1,1))
+        plt.add(arrow)
+        arrow = kaxe.Arrow((1,1), (2,-1))
+        plt.add(arrow)
+        plt.save('tests/images/arrow.png')
 
 
 
 if __name__ == '__main__':
-    if not True:
+    if True:
         Test.testBoxPlotNoGridLines()
         Test.testPolarPlot()
         Test.testLabels()
@@ -700,4 +723,7 @@ if __name__ == '__main__':
         Test.testCarsten()
         Test.testBoxPlot()
         Test.testCarsten()
-        Test.testMathPlot()
+        Test.testEmptyPlot()
+        Test.testEmptyWindow()
+        Test.testParametricEquation()
+        Test.testArrow()

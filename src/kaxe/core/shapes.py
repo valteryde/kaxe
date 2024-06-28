@@ -193,7 +193,8 @@ class Line(Shape):
 
         draw = ImageDraw.Draw(surface)
 
-        draw.line((self.x0, y0, self.x1, y1), fill=self.color, width=self.thickness)
+        if self.thickness > 0:
+            draw.line((self.x0, y0, self.x1, y1), fill=self.color, width=self.thickness)
 
 
 class Circle(Shape):
