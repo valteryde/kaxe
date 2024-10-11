@@ -7,6 +7,7 @@ from .round import koundTeX
 from .marker import Marker
 import sys
 from types import MappingProxyType, FunctionType
+from typing import Union
 
 # AXIS COMPUTABLE STYLES
 stepSizeBandAttribute = ComputedAttribute(lambda a: [a.getAttr('fontSize')*7, a.getAttr('fontSize')*4])
@@ -32,6 +33,7 @@ class Axis(AttrObject):
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
         self.finalized = False    
+        self.markers = []
 
     def get(self, x):
         """
@@ -139,10 +141,18 @@ class Axis(AttrObject):
         return markers
 
 
+    def addMarkerAtPos(self, pos, text, parent):
+        marker = Marker(
+            text,
+            pos,
+            shell(self)
+        )
+        marker.finalize(parent)
+        self.markers.append(marker)
+
     def addMarkersToAxis(self, markers, parent):
         self.setAttrMap(parent.attrmap)
         
-        self.markers = []
         for marker in markers:
             marker = Marker(
                 marker["text"],
@@ -160,14 +170,14 @@ class Axis(AttrObject):
         self.addMarkersToAxis(markers, parent)
 
 
-    def addStartAndEnd(self, start:float|int, end:float|int):
+    def addStartAndEnd(self, start:Union[float, int], end:Union[float, int]):
         self.startNumber = start
         self.endNumber = end
         self.hasNull = self.startNumber < 0 < self.endNumber
         self.realLength = end - start
         
 
-    def setPos(self, startPos:tuple|list, endPos:tuple|list):
+    def setPos(self, startPos:Union[tuple, list], endPos:Union[tuple, list]):
         self.startPos = startPos
         self.endPos = endPos
 
@@ -283,7 +293,7 @@ class Axis(AttrObject):
         diff = vdiff(p1, p2)
         v = vectorScalar(diff, 1/2)
         axisPos = addVector(p1, v)
-            
+
         nscaled = (-diff[1], diff[0])
         nscaledlength = vlen(nscaled)
         nscaled = (nscaled[0] / nscaledlength, nscaled[1] / nscaledlength)

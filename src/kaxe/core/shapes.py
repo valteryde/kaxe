@@ -6,6 +6,7 @@ from .helper import *
 import os
 import numpy as np
 import logging
+from typing import Union
 
 # ENGINE
 class engine:
@@ -22,7 +23,7 @@ def getEngine():
 
 
 # HELPER
-def blitImageToSurface(surface:Image, image:Image, pos:tuple | list):
+def blitImageToSurface(surface:Image, image:Image, pos:Union[tuple, list]):
     return surface.paste(image, (int(pos[0]), int(pos[1])), image)
 
 
@@ -240,7 +241,7 @@ class Circle(Shape):
 
 
 class ImageShape(Shape):
-    def __init__(self, file:str|Image.Image, x:int, y:int, batch:Batch=None):
+    def __init__(self, file:Union[str, Image.Image], x:int, y:int, batch:Batch=None):
         self.file = file
         self.x = x
         self.y = y

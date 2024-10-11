@@ -9,6 +9,7 @@ from ..core.helper import *
 from ..core.text import Text
 import logging
 from math import sin, cos, acos, asin, radians, sqrt, pow
+from typing import Union
 
 POLARPLOT = 'polar'
 
@@ -138,7 +139,7 @@ class PolarPlot(Window):
         return self.scale[0]*x, self.scale[1]*y
 
 
-    def pixel(self, angle:int|float, radius:int|float) -> tuple:
+    def pixel(self, angle:Union[int, float], radius:Union[int, float]) -> tuple:
         """
         para: abstract value
         return: pixel values according to axis
@@ -152,7 +153,7 @@ class PolarPlot(Window):
         return self.translate(x,y)
 
 
-    def inversepixel(self, x:int|float, y:int|float):
+    def inversepixel(self, x:Union[int, float], y:Union[int, float]):
         
         x, y = self.inversetranslate(x, y)
 

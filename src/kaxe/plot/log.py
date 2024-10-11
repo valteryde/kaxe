@@ -9,9 +9,11 @@ XYPLOT = 'xy'
 
 class LogPlot(Plot):
     
-    def __init__(self,  window:list=None, firstAxisLog=False, secondAxisLog=True): # |
+    def __init__(self,  window:list=None, firstAxisLog=False, secondAxisLog=True, hideUgly=True): # |
         super().__init__(window)
         self.identity = XYPLOT
+
+        self.hideUgly = hideUgly
 
         """
         window:tuple [x0, x1, y0, y1] axis
@@ -92,20 +94,33 @@ class LogPlot(Plot):
         )
 
 
-        firstAxisMarkers = self.firstAxis.computeMarkersAutomatic(self)
+        for transinv, axis, isLog in [(self.xtransinv, self.firstAxis, self.firstAxisLog), (self.ytransinv, self.secondAxis, self.secondAxisLog)]:
+            
+            axisMarkers = axis.computeMarkersAutomatic(self)
 
-        for marker in firstAxisMarkers:
-            marker["text"] = str(koundTeX(self.xtransinv(marker["pos"])))
+            if isLog:
+                confirmedMarkers = []
+                unconfirmedMarkers = set() # no doubles
+                
+                for marker in axisMarkers:
+                    
+                    if self.hideUgly:
+                        testVal = math.log10(transinv(marker["pos"]))
+                        
+                        if round(testVal) - testVal != 0:
+                            unconfirmedMarkers.add(10**math.ceil(testVal) / 2)
+                            continue
+                    
+                    marker["text"] = str(koundTeX(transinv(marker["pos"])))
+                    confirmedMarkers.append(marker)
+                
+                for marker in unconfirmedMarkers:
+                    axis.addMarkerAtPos(math.log10(marker), str(koundTeX(marker)), self)
 
-        self.firstAxis.addMarkersToAxis(firstAxisMarkers, self)
+                axis.addMarkersToAxis(confirmedMarkers, self)
 
-
-        secondAxisMarkers = self.secondAxis.computeMarkersAutomatic(self)
-
-        for marker in secondAxisMarkers:
-            marker["text"] = str(koundTeX(self.ytransinv(marker["pos"])))
-
-        self.secondAxis.addMarkersToAxis(secondAxisMarkers, self)
+            else:
+                axis.addMarkersToAxis(axisMarkers, self)
 
 
     # translations

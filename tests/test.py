@@ -9,6 +9,10 @@ import unittest
 
 #class TestMethods(unittest.TestCase):
 class Test:
+    def run():
+        for i in dir(Test):
+            if 'test' in i:
+                eval('Test.{}()'.format(i))
 
     def testNormal():
         plot = kaxe.Plot()
@@ -202,6 +206,14 @@ class Test:
         plt.add(p1)
 
         plt.save('tests/images/logarithmic.png')
+
+        plt = kaxe.LogPlot([0, 4121, 0, 1212], firstAxisLog=True, secondAxisLog=True)
+        plt.save('tests/images/loglog.png')
+
+    def testPrettyLogarithmic():
+        plt = kaxe.LogPlot([0, 4121, 0, 1212])
+        plt.add(kaxe.Points([0, 500, 1000, 1500, 2000, 2500], [1, 5, 10, 50, 100, 500, 1000], connect=True))
+        plt.save('tests/images/logarithmic2.png')
 
 
     def testThemes():
@@ -699,10 +711,22 @@ class Test:
         plt.add(arrow)
         plt.save('tests/images/arrow.png')
 
+    
+    def testRootLocus():
+        plt = kaxe.Plot([-5, 5, -5, 5])
+        
+        # (s^5 - 1)/(s^2 + 1)
+        #plt.add(kaxe.RootLocus([3, 0, 0, -1], [0, 0, 1, 0], [-5, 5]))
+        plt.add(kaxe.RootLocus([1, 0, 0, 0, 0, -1], [0, 0, 0, 1, 0, 1]))
+        #plt.add(kaxe.RootLocus([2,5,1], [1,2, 3], [-5, 5]))
+        #plt.add(kaxe.RootLocus([2, 5, 1],[1, 2, 3], [0, 10**9]))
+
+        plt.show()
+
 
 
 if __name__ == '__main__':
-    if True:
+    if not True:
         Test.testBoxPlotNoGridLines()
         Test.testPolarPlot()
         Test.testLabels()
@@ -727,3 +751,7 @@ if __name__ == '__main__':
         Test.testEmptyWindow()
         Test.testParametricEquation()
         Test.testArrow()
+        #Test.testPrettyLogarithmic()
+        #Test.testLogarithmic()
+        Test.testRootLocus()
+    Test.run()

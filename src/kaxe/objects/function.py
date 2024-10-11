@@ -8,7 +8,7 @@ from ..core.symbol import symbol
 from ..plot import identities
 import numbers
 from random import randint
-
+from typing import Union
 
 class Function:
 
@@ -53,7 +53,7 @@ class Function:
         return self.function(x)
 
 
-    def __setPoint__(self, x, parent, firstaxisy:int|None=None, fills:list|None=None):
+    def __setPoint__(self, x, parent, firstaxisy:Union[int, None]=None, fills:Union[list, None]=None):
         try:
             y = self.function(x, *self.otherArgs, **self.otherKwargs)
         except Exception as e:

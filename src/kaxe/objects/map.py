@@ -6,8 +6,9 @@ from ..core.shapes import shapes
 from ..core.text import Text
 from ..core.round import koundTeX
 from ..plot import identities
+from typing import Union
 
-def mapTempToColor(col, minColor:float|int, maxColor:float|int, colors:list=heatcolormap):
+def mapTempToColor(col, minColor:Union[float, int], maxColor:Union[float, int], colors:list=heatcolormap):
 
     if -0.005 < minColor - maxColor < 0.005:
         return [*colors[-1], 255]

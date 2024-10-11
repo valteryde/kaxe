@@ -201,7 +201,8 @@ class AttrObject:
         self.attrmapRef = attrmap
 
 
-    def getAttr(self, attr:str, attrmap:AttrMap|None=None):
+    def getAttr(self, attr:str, attrmap:AttrMap=None):
+
         if not attrmap:
             attrmap = self.attrmapRef
 

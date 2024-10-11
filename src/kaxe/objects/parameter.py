@@ -9,12 +9,13 @@ from ..plot import identities
 import numbers
 from random import randint
 from .function import Function
+from typing import Union
 
 class ParametricEquation:
 
     def __init__(self, 
                  f:Callable, 
-                 interval:tuple|list,
+                 interval:Union[tuple, list],
                  color:tuple=None, 
                  width:int=10,
                  dotted:bool=False,
