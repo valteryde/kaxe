@@ -93,6 +93,8 @@ class LogPlot(Plot):
             self.height+self.padding[1]
         )
 
+        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
 
         for transinv, axis, isLog in [(self.xtransinv, self.firstAxis, self.firstAxisLog), (self.ytransinv, self.secondAxis, self.secondAxisLog)]:
             
