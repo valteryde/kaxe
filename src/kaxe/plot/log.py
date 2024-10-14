@@ -93,9 +93,6 @@ class LogPlot(Plot):
             self.height+self.padding[1]
         )
 
-        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
-        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
-
         for transinv, axis, isLog in [(self.xtransinv, self.firstAxis, self.firstAxisLog), (self.ytransinv, self.secondAxis, self.secondAxisLog)]:
             
             axisMarkers = axis.computeMarkersAutomatic(self)
@@ -124,7 +121,10 @@ class LogPlot(Plot):
             else:
                 axis.addMarkersToAxis(axisMarkers, self)
 
+        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
 
+    
     # translations
     def pixel(self, x:int, y:int) -> tuple:
         """
