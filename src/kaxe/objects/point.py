@@ -83,4 +83,3 @@ class Points:
     def legend(self, text:str):
         self.legendText = text
         return self
-    

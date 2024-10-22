@@ -30,9 +30,9 @@ class Bar(Window):
         self.attrmap.submit(Marker)
 
         if rotate:
-            self.axis = Axis((1,0))
+            self.axis = Axis((1,0), (0, -1))
         else:
-            self.axis = Axis((0,1))
+            self.axis = Axis((0,1), (-1, 0))
 
         self.maxNumber = 0
         self.maxNumberAmount = 0
@@ -89,9 +89,9 @@ class Bar(Window):
         if self.titleText:
             
             title = Text(self.titleText, self.windowBox[0] + self.windowBox[2]/2, topPoint[1], fontSize=self.getAttr('titleFontSize'))
-            title.y += title.height*1.5
+            title.push(0, title.height*1.5)
             self.addDrawingFunction(title)
-            self.include(title.x, title.y, title.width, title.height)
+            self.include(*title.getCenterPos(), title.width, title.height)
 
         if self.secondAxisTitle: self.axis.addTitle(self.secondAxisTitle, self)
 
@@ -102,7 +102,7 @@ class Bar(Window):
             self.firstTitle = Text(self.firstAxisTitle, 0, self.windowBox[1]+self.windowBox[3]/2, fontSize=self.getAttr('fontSize'), rotate=90)
         
         if self.firstAxisTitle:
-            self.include(self.firstTitle.x, self.firstTitle.y, self.firstTitle.width, self.firstTitle.height)
+            self.include(*self.firstTitle.getCenterPos(), self.firstTitle.width, self.firstTitle.height)
             self.addDrawingFunction(self.firstTitle)
 
 
@@ -154,11 +154,11 @@ class Bar(Window):
             )
             
             if self.rotate:
-                text.x -= text.width/2 + self.getAttr('fontSize')*0.25
+                text.push(-text.width/2 - self.getAttr('fontSize')*0.25, 0)
             else:
-                text.y -= text.height/2 + self.getAttr('fontSize')*0.25
+                text.push(0, -text.height/2 - self.getAttr('fontSize')*0.25)
             
-            self.include(text.x, text.y, text.width, text.height)
+            self.include(*text.getCenterPos(), text.width, text.height)
 
             x += barWidth + barGap
 
@@ -263,12 +263,10 @@ class GroupBar(Bar):
             )
 
             if self.rotate:
-                text.y -= (len([i for i in numbers if i is not None])-1) * barWidth/2
-                text.x -= text.width/2 + self.getAttr('fontSize')*0.25
+                text.push(-(text.width/2 + self.getAttr('fontSize')*0.25), -(len([i for i in numbers if i is not None])-1) * barWidth/2)
             else:
-                text.x -= (len([i for i in numbers if i is not None])-1) * barWidth/2
-                text.y -= text.height/2 + self.getAttr('fontSize')*0.25
+                text.push( -((len([i for i in numbers if i is not None])-1) * barWidth/2), -(text.height/2 + self.getAttr('fontSize')*0.25))
             
-            self.include(text.x, text.y, text.width, text.height)
+            self.include(*text.getCenterPos(), text.width, text.height)
 
             x += barWidth + barGap

@@ -129,3 +129,7 @@ def shell(a):
         return a
 
     return __shell__
+
+def closeToZero(v, epsilon=0.001):
+    return -epsilon < v < epsilon
+

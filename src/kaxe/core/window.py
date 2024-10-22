@@ -155,6 +155,7 @@ class Window(AttrObject):
         if not hasattr(self, 'windowAxis'):
             return
 
+        # har ingen effekt på 3D
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
             horizontal = []
             vertical = []
@@ -192,6 +193,14 @@ class Window(AttrObject):
             except Exception as e:
                 self.windowAxis[3] = 5
 
+    # before objects added to window
+    def __before__(self):
+        return self.__prepare__()
+
+    # after objects added to window
+    def __after__(self):
+        pass
+
     # baking
     def __bake__(self):
         # finish making plot
@@ -216,8 +225,9 @@ class Window(AttrObject):
             self.height+self.padding[1]
         )
 
-        self.__prepare__()
+        self.__before__()
         self.__addInnerContent__()
+        self.__after__()
         self.__addOuterContent__()
         
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
@@ -301,9 +311,9 @@ class Window(AttrObject):
         return fname
 
     # shape
+    # for at kunne overskrive den nederste funktion indføres denne
     def addDrawingFunction(self, shape, z=0):
         self.shapes.append((shape, z))
-
 
     # api
     def add(self, o):
@@ -311,7 +321,7 @@ class Window(AttrObject):
             self.objects.append(o)
         else:
             logging.error(f'{o}, is not supported in {self}')
-    
+        return o
 
 
     # defaults, may lead to problems

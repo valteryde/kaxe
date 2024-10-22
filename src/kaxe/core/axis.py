@@ -5,9 +5,12 @@ from .styles import AttrObject, ComputedAttribute
 from .text import Text, getTextDimension
 from .round import koundTeX
 from .marker import Marker
-import sys
 from types import MappingProxyType, FunctionType
 from typing import Union
+import numpy as np
+from PIL import Image
+from random import randint
+
 
 # AXIS COMPUTABLE STYLES
 stepSizeBandAttribute = ComputedAttribute(lambda a: [a.getAttr('fontSize')*7, a.getAttr('fontSize')*4])
@@ -20,20 +23,37 @@ class Axis(AttrObject):
         "showArrow": False,
         "width": 4,
         "titleGap": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.5),
-        "arrowSize": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.75)
+        "arrowSize": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.75),
+        "drawAxis": True,
+        "drawMarkersAtEnd": True
     })
 
     name = "Axis"
 
-    def __init__(self, directionVector:tuple):
+    def __init__(self, directionVector:tuple, titleNormal:tuple):
+        """
+        
+        Example (horisontal) axis:
+        __________ --> DirectionVector
+            |
+            |  titleNormal
+            v
+          title
+            
+        """
+
         super().__init__()
 
         self.directionVector = directionVector
+        self.titleNormal = np.array(titleNormal) / vlen(titleNormal)
         self.vLen = vlen(directionVector)
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
         self.finalized = False    
         self.markers = []
+        
+        # self.debugBatch = shapes.Batch()
+
 
     def get(self, x):
         """
@@ -42,7 +62,8 @@ class Axis(AttrObject):
 
         v = vdiff(self.startPos, self.endPos)
         v = vectorScalar(v, (x-self.startNumber)/self.realLength)
-        v = addVector(self.startPos, v)
+        v = addVector((self.shapeLine.x0, self.shapeLine.y0), v)
+        
         return v
     
 
@@ -54,8 +75,6 @@ class Axis(AttrObject):
         if not hasattr(parent, 'scale'): 
             scale = vlen(vdiff(self.startPos, self.endPos)) / abs(self.endNumber - self.startNumber)
             parent.scale = [scale, scale]
-
-        #p1, p2 = parent.inversetranslate(*self.startPos), parent.inversetranslate(*self.endPos)
 
         pixelLength = vlen(vdiff(self.startPos, self.endPos))
         length = self.endNumber - self.startNumber
@@ -111,14 +130,16 @@ class Axis(AttrObject):
                 p = -step*i
                 markers.append({
                     "text": str(koundTeX(p)),
-                    "pos" : p
+                    "pos" : p,
+                    "style": []
                 })
             
             for i in range(1, ticksAfterNull+1):
                 p = step*i
                 markers.append({
                     "text": str(koundTeX(p)),
-                    "pos" : p
+                    "pos" : p,
+                    "style": []
                 })
 
         else:
@@ -135,10 +156,32 @@ class Axis(AttrObject):
                 p = direction*step*i + startPos
                 markers.append({
                     "text": str(str(koundTeX(p))),
-                    "pos" : p
+                    "pos" : p,
+                    "style": []
                 })
         
-        return markers
+        
+        drawMarkersAtEnd = self.getAttr('drawMarkersAtEnd')
+        v = self.endPos - self.startPos
+        lenAB = np.linalg.norm(v)
+        accMarkers = []
+        for marker in markers:
+            
+            v0 = np.array(self.get(marker["pos"])) - self.startPos
+            d = np.dot(v, v0)
+
+            lenv0 = np.linalg.norm(v0)
+            
+            proc = lenv0/lenAB
+            
+            if d >= 0 and proc <= 1:
+                accMarkers.append(marker)
+
+            if not drawMarkersAtEnd and (closeToZero(proc, 0.1) or closeToZero(proc-1, 0.1)):
+                marker["style"].append(("tickWidth", 0))
+
+        accMarkers.sort(key=lambda x: x["pos"])
+        return accMarkers
 
 
     def addMarkerAtPos(self, pos, text, parent):
@@ -150,17 +193,24 @@ class Axis(AttrObject):
         marker.finalize(parent)
         self.markers.append(marker)
 
+
     def addMarkersToAxis(self, markers, parent):
         self.setAttrMap(parent.attrmap)
         
         for marker in markers:
-            marker = Marker(
+            marker_ = Marker(
                 marker["text"],
                 marker["pos"],
                 shell(self)
             )
-            marker.finalize(parent)
-            self.markers.append(marker)
+            
+            marker_.setAttrMap(parent.attrmap)
+
+            for style, val in marker["style"]:
+                marker_.setAttr(style, val)
+            
+            marker_.finalize(parent)
+            self.markers.append(marker_)
 
 
     def autoAddMarkers(self, parent):
@@ -178,8 +228,8 @@ class Axis(AttrObject):
         
 
     def setPos(self, startPos:Union[tuple, list], endPos:Union[tuple, list]):
-        self.startPos = startPos
-        self.endPos = endPos
+        self.startPos = np.array(startPos)
+        self.endPos = np.array(endPos)
 
         self.pixelLength = vlen(vdiff(self.startPos, self.endPos))
 
@@ -254,7 +304,6 @@ class Axis(AttrObject):
                 )
             )
 
-
             minx = min(p4[0],p5[0],p6[0])
             miny = min(p4[1],p5[1],p6[1])
             maxx = max(p4[0],p5[0],p6[0])
@@ -285,9 +334,84 @@ class Axis(AttrObject):
                 or abottom_left[1] > btop_right[1])
 
 
+    def __topLeftBoxOverlays__(self, label:Text, title:Text):
+        lx, ly, lwidth, lheight = label.getBoundingBox()
+        tx, ty, twidth, theight = title.getBoundingBox()
+
+        return self.__boxOverlays__((lx+lwidth/2, ly+lheight/2), (lwidth, lheight), (tx+twidth/2, ty+theight/2), (twidth, theight))
+
+        
+    def __pixelCollision__(self, label:Text, title:Text):
+
+        lx, ly, lwidth, lheight = label.getBoundingBox()
+        tx, ty, twidth, theight = title.getBoundingBox()
+
+        # if the two hitboxes dosent cross -> no collision
+        # check is fast
+        if not self.__boxOverlays__((lx+lwidth/2, ly+lheight/2), (lwidth, lheight), (tx+twidth/2, ty+theight/2), (twidth, theight)):
+            return False
+        #print('tjekker', label.text)
+
+        # else check for pixel collision
+        ax, ay, aw, ah = tx, ty, twidth, theight
+        bx, by, bw, bh = lx, ly, lwidth, lheight
+
+        # givet to firkanter
+        #        _______________
+        #        |             |
+        # _______|_______      |
+        # |      |      |      |
+        # |      |      |      |
+        # |      |      |      |
+        # |      |______|______|
+        # |             |
+        # |_____________|
+        # 
+        # Firkanterne er givet ved en P1 og P2 hver især
+        # Overlapnings området i x starter ved
+        # det maksimale af venstres venstre koordinat og højre firkants venstre koordinat
+
+        x_left = max(ax, bx)
+        x_right = min(ax + aw, bx + bw)
+        
+        y_left = max(ay, by)
+        y_right = min(ay + ah, by + bh)
+
+        A = np.array(title.img)
+        B = np.array(label.img)
+        
+        # print(ax, ax + aw, bx, bx + bw)
+
+        #A = np.flip(A, 0)
+        #B = np.flip(B, 0)
+
+        alphacutoff = 0
+        for x in range(x_left+1, x_right):
+
+            for y in range(y_left+1, y_right):
+
+                if A[len(A) - y + ay][x - ax][3] > alphacutoff and B[len(B) - y + by][x - bx][3] > alphacutoff:
+                    return True
+                
+                # A[len(A) - y + ay][x - ax] = (255,0,0,255)
+                # B[len(B) - y + by][x - bx] = (0,0,255,255)
+
+        # title.img = Image.fromarray(A)
+        # label.img = Image.fromarray(B)
+
+        return False
+
+
     def addTitle(self, title:str, parent) -> None:
         v = (self.v[0]*parent.scale[0], self.v[1]*parent.scale[1])
         angle = angleBetweenVectors(v, (1,0))
+        
+        # adjust angle to readable text
+        if angle > 90:
+            angle -= 180
+        
+        if self.v[1] < 0:
+            angle = -angle
 
         p1, p2 = self.startPos, self.endPos
         diff = vdiff(p1, p2)
@@ -299,15 +423,19 @@ class Axis(AttrObject):
         nscaled = (nscaled[0] / nscaledlength, nscaled[1] / nscaledlength)
 
         maxDist = [distPointLine(nscaled, p1, marker.pos()) for marker in self.markers if hasattr(marker, 'textLabel')]
-        maxDist = max(maxDist)
+        if len(maxDist) > 0:
+            maxDist = max(maxDist)
+        else:
+            maxDist = 0
 
         textDimension = getTextDimension(title, self.getAttr('fontSize'))
-        v = vectorScalar(nscaled, (textDimension[1]/2 + maxDist) * self.markers[-1].directionFromAxis)
+        v = vectorScalar(self.titleNormal, (textDimension[1]/2 + maxDist))
 
         # nudge out of marker spots
-        # forstil dig to kasser
+        # givet to kasser
         # vi tjekker om den to kasser er oveni hindanden (om de overlapper)
         # hvis ja så rykker vi kassen langs normal linjen
+        # er måske lige no shit det her men ja
         # ---------------
         # |             |
         # |             |
@@ -317,44 +445,65 @@ class Axis(AttrObject):
         #    |      |
         #    --------
         pos = (axisPos[0]+v[0], axisPos[1]+v[1])
-        self.title = Text(title, 0,0, self.getAttr('fontSize'), self.getAttr('color'), angle)
-        size = self.title.getBoundingBox()
-        v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * 1)
-        for _ in range(1000): # max nudge
-
-            checkMarkers = [i for i in self.markers] # shallow copy (hopefully)
+        v = self.titleNormal # hmmm
+        
+        self.title = Text(title, *pos, self.getAttr('fontSize'), self.getAttr('color'), angle)
+        
+        for _ in range(1000): # max nudge 1000
 
             overlap = False
-            for i, marker in enumerate(checkMarkers):
+            for _, marker in enumerate(self.markers):
+                
                 if not hasattr(marker, 'textLabel'):
-                    # checkMarkers.pop(i)
-                    #break
                     continue
 
-                # #print(marker.pos(), marker.getBoundingBox(), pos, size)
-                # if self.__boxOverlays__(marker.pos(), marker.getBoundingBox(), pos, size): print('hjejsa')
-
-                if self.__boxOverlays__(marker.pos(), marker.getBoundingBox(), pos, size):
-                    pos = addVector(pos, v)
+                if self.__pixelCollision__(marker.textLabel, self.title):
+                    self.title.push(v[0]*2, v[1]*2) #kører skævt når den skal runde op
                     overlap = True
                     break
-                # else:
-                #     checkMarkers.pop(i)
-                #     break
 
             if not overlap:
-                break
+               break
         
-        v = vectorScalar(nscaled, self.markers[-1].directionFromAxis * self.getAttr('titleGap'))
-        pos = addVector(pos, v)
-        self.title.x, self.title.y = pos
+        # add title gap to title label
+        self.title.push(
+            *vectorScalar(self.titleNormal, self.getAttr('titleGap'))
+        )
 
         parent.addDrawingFunction(self.title, 2)
-        parent.include(*pos, *self.title.getBoundingBox())
+        parent.include(*self.title.getCenterPos(), *self.title.getBoundingBox()[2:4])
 
 
     def checkCrossOvers(self, parent, axis):
 
+        if not(len(self.markers) == 0 or len(axis.markers) == 0):
+            l = [
+                (self.markers[-1], axis.markers[-1]),
+                (self.markers[-1], axis.markers[0]),
+                (self.markers[0], axis.markers[-1]),
+                (self.markers[0], axis.markers[0])
+            ]
+
+            for a, b in l:
+                if not hasattr(a, 'textLabel') or not hasattr(b, 'textLabel'):
+                    continue
+                
+                if not self.__topLeftBoxOverlays__(a.textLabel,b.textLabel):
+                    continue
+                
+                v = addVector(a.textLabel.getCenterPos(), vectorScalar(b.textLabel.getCenterPos(), -1))
+                
+                vlen_ = vlen(v)
+                if vlen_ == 0: #closeToZero måske
+                    continue
+
+                v = vectorScalar(v, 1/vlen_)
+
+                c = max(a.textLabel.width, a.textLabel.height) / 3 + max(b.textLabel.width, b.textLabel.height) / 3
+                a.textLabel.push(v[0]*c, v[1]*c)
+                b.textLabel.push(-v[0]*c, -v[1]*c)
+
+        # check arrow
         if not self.getAttr('showArrow'):
             return
 
@@ -380,12 +529,13 @@ class Axis(AttrObject):
 
     # *** api ***
     def draw(self, *args, **kwargs):
-        self.shapeLine.draw(*args, **kwargs)
-        self.arrowBatch.draw(*args, **kwargs)
+        if self.getAttr('drawAxis'):
+            self.shapeLine.draw(*args, **kwargs)
+            self.arrowBatch.draw(*args, **kwargs)
 
 
     def push(self, x,y):
         self.shapeLine.push(x,y)
-        self.startPos = (self.startPos[0]+x, self.startPos[1]+y)
-        self.endPos = (self.endPos[0]+x, self.endPos[1]+y)
         self.arrowBatch.push(x, y)
+        self.startPos = np.array((self.startPos[0]+x, self.startPos[1]+y))
+        self.endPos = np.array((self.endPos[0]+x, self.endPos[1]+y))

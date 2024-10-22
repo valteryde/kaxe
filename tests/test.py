@@ -6,6 +6,7 @@ sys.path.append('./src')
 import math
 import kaxe
 import unittest
+from random import randint
 
 #class TestMethods(unittest.TestCase):
 class Test:
@@ -33,12 +34,13 @@ class Test:
     def testLinearPointPlot():
         plot = kaxe.Plot()
 
-        plot.title('en lang titel der strakker sig langt', 'en lang titel der strakker sig langt')
+        plot.title('hejsa')
 
         p = kaxe.objects.Points(range(0,100), [i for i in range(0,100)]).legend('test')
         plot.add(p)
 
         plot.save('tests/images/pointPlot.png')
+        #plot.show()
 
 
     def testLabels():
@@ -477,7 +479,7 @@ class Test:
         chart.save('tests/images/groupbarchart_rotate.png')
 
 
-    def testCarsten():
+    def testCharts():
         c1 = kaxe.chart.Bar()
 
         c1.add(2013, 2.8*6.89)
@@ -721,14 +723,61 @@ class Test:
         #plt.add(kaxe.RootLocus([2,5,1], [1,2, 3], [-5, 5]))
         #plt.add(kaxe.RootLocus([2, 5, 1],[1, 2, 3], [0, 10**9]))
 
-        plt.show()
+        plt.save('tests/images/rootlocus.png')
+        #plt.show()
+
+
+    def test3DAnimation():
+
+        for i in range(0,360, 30):
+            plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[-10,i])
+            plt.title('x aksen', 'y aksen', 'z aksen')
+            plt.style(width=1000)
+            plt.style(height=1000)
+            
+            points = []
+            n = 50
+            for x in range(1,n):
+                x = x / n
+                for y in range(1,n):
+                    y = y / n
+                    points.append((x, y, 2*x*y/(1+x**2)))
+
+            cloud = kaxe.Points3D(
+                [x for x,y,z in points],
+                [y for x,y,z in points],
+                [z for x,y,z in points],
+            ).legend('Kaxe nu i 3D')
+
+            plt.add(cloud)
+
+            plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
+            # ffmpeg -framerate 30 -i tests/images/3d/3d-cloud-%d.png -c:v libx264 -r 30 tests/3d.mp4
+
+
+    def test3D():
+        
+        plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        plt.style(width=1000, height=1000)
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3))
+        plt.save('tests/images/3d-box.png')
+
+        plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        plt.style(width=1000, height=1000)
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3))
+        plt.save('tests/images/3d-frame.png')
+
+        plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
+        plt.style(width=1000, height=1000)
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5))
+        plt.save('tests/images/3d-center.png')
+
 
 
 
 if __name__ == '__main__':
     if not True:
         Test.testBoxPlotNoGridLines()
-        Test.testPolarPlot()
         Test.testLabels()
         Test.testFunction()
         Test.testPillars()
@@ -738,7 +787,6 @@ if __name__ == '__main__':
         Test.testInverseProportional()
         Test.testPiecewise()
         Test.testPointPlot()
-        Test.testNormal()
         Test.testLogarithmic()
         Test.testLinearFunction()
         Test.testBarChart()
@@ -746,12 +794,15 @@ if __name__ == '__main__':
         Test.testGroupBarChart()
         Test.testCarsten()
         Test.testBoxPlot()
-        Test.testCarsten()
         Test.testEmptyPlot()
         Test.testEmptyWindow()
         Test.testParametricEquation()
-        Test.testArrow()
         #Test.testPrettyLogarithmic()
         #Test.testLogarithmic()
         Test.testRootLocus()
+        #Test.testLinearPointPlot()
+        Test.test3D()
+        #Test.test3DAnimation()
+        Test.testPolarPlot()
+        Test.testCharts()
     Test.run()

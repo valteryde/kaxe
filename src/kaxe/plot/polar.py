@@ -38,7 +38,7 @@ class PolarPlot(Window):
 
         self.scale = (1,1)
         self.radiusTitle = None
-        self.radiusAxis = Axis((1,0))
+        self.radiusAxis = Axis((1,0), (0,1))
 
         self.angleAxis = PolarAxis()
         self.batch = shapes.Batch()
@@ -220,7 +220,7 @@ class PolarPlot(Window):
 class PolarAxis(Axis):
 
     def __init__(self, degrees:bool=False):
-        super().__init__((1,0))
+        super().__init__((1,0), (0,1))
         
         self.batch = shapes.Batch()
 
@@ -279,11 +279,13 @@ class PolarAxis(Axis):
                 color=parent.getAttr('color')
             )
 
+            x, y = textShape.getCenterPos()
+
             poss = [
-                (textShape.x+textShape.width/2, textShape.y),
-                (textShape.x+textShape.width/2, textShape.y-textShape.height/2),
-                (textShape.x-textShape.width/2, textShape.y),
-                (textShape.x-textShape.width/2, textShape.y+textShape.height/2),
+                (x+textShape.width/2, y),
+                (x+textShape.width/2, y-textShape.height/2),
+                (x-textShape.width/2, y),
+                (x-textShape.width/2, y+textShape.height/2),
             ]
 
             maxDist = 0
@@ -294,10 +296,10 @@ class PolarAxis(Axis):
 
             maxDist += fontsize
 
-            textShape.x, textShape.y = addVector(vectorScalar(v, maxDist), pos)
+            textShape.push(*vectorScalar(v, maxDist)) #= addVector(vectorScalar(v, maxDist), pos)
             self.texts.append(textShape)
 
         parent.addDrawingFunction(self.batch)
         parent.addDrawingFunction(self.circle, 2)
         for textShape in self.texts:
-            parent.include(textShape.x, textShape.y, textShape.width, textShape.height)
+            parent.include(*textShape.getCenterPos(), textShape.width, textShape.height)

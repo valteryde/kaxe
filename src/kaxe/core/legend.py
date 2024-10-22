@@ -125,8 +125,7 @@ class LegendBox(AttrObject):
                     ]
 
                     # set base pos
-                    text.x = basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing
-                    text.y = basePos[1] - rowPos
+                    text.setLeftTopPos(basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing, basePos[1] - rowPos)
                     symbol.x = basePos[0] + colPos
                     symbol.y = basePos[1] - text.height / 2 - symbolSize[1]/2 - rowPos
 

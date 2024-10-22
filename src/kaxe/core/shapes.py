@@ -248,10 +248,10 @@ class ImageShape(Shape):
         if batch: batch.add(self)
         super().__init__()
 
-        if type(self.file) is str:
+        if type(file) is str:
             pass#self.img = pg.shapes
 
-        elif type(self.img) is Image.Image:
+        elif type(file) is Image.Image:
             self.img = self.file
 
         else: #file is something else?

@@ -107,7 +107,7 @@ class ColorMap:
             fontSize=fontsize
         )
         
-        self.bottomText.y += self.bottomText.height + fontsize/4
+        self.bottomText.push(0, self.bottomText.height + fontsize/4)
 
         self.img = shapes.ImageArray(np.array(arr, np.uint8), *scaleStartPos, batch=self.batch)
         parent.addPaddingCondition(right=width+scaleLeftMargin)

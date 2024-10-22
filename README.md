@@ -5,6 +5,8 @@ Kaxe is an lightweight graphing tools for functions, equations, points and more 
 
 ![BoxPlot](tests/images/box.png)
 
+![3DPlot](tests/images/3d-box.png)
+
 ## Plots
 
 Kaxe supports diffrent plotting windows including

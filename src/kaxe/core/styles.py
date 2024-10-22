@@ -221,7 +221,7 @@ class AttrObject:
         """
         
         rattr = self.__attrs__.get(attr, None)
-        if rattr: return rattr
+        if rattr is not None: return rattr
 
         return attrmap.getAttr(attr, self.name)
     

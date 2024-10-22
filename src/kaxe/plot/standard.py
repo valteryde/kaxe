@@ -23,8 +23,8 @@ class Plot(Window):
         window:tuple [x0, x1, y0, y1] axis
         """
         
-        self.firstAxis = Axis((1,0))
-        self.secondAxis = Axis((0,1))
+        self.firstAxis = Axis((1,0), (0,-1))
+        self.secondAxis = Axis((0,1), (-1,0))
 
         # options
         self.windowAxis = window

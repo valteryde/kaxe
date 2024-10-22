@@ -152,11 +152,11 @@ class Pie(Window):
 
         if self.titleText:
             title = Text(self.titleText, center[0], center[1]+r, fontSize=self.getAttr('titleFontSize'))
-            title.y += title.height
+            title.push(0, title.height)
 
             self.addDrawingFunction(title)
 
-            x = self.include(title.x, title.y, title.width, title.height)[0]
+            x = self.include(*title.getCenterPos(), title.width, title.height)[0]
             self.center = center[0]+x, center[1]
 
 
