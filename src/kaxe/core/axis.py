@@ -503,6 +503,10 @@ class Axis(AttrObject):
                 a.textLabel.push(v[0]*c, v[1]*c)
                 b.textLabel.push(-v[0]*c, -v[1]*c)
 
+                parent.include(*a.textLabel.getCenterPos(), a.textLabel.width, a.textLabel.height)
+                parent.include(*b.textLabel.getCenterPos(), b.textLabel.width, b.textLabel.height)
+
+
         # check arrow
         if not self.getAttr('showArrow'):
             return

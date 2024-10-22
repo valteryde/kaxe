@@ -78,6 +78,13 @@ class Function3D(Base3DObject):
                 )
 
 
-    def legend(self, text:str):
+    def legend(self, text:str, color=None, symbol=None):
         self.legendText = text
+
+        if color:
+            self.legendColor = color
+
+        if symbol:
+            self.legendSymbol = symbol
+
         return self

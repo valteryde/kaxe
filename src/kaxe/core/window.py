@@ -62,11 +62,13 @@ class Window(AttrObject):
         self.legendObjects = []
         self.legendBatch = shapes.Batch()
         self.legendBoxShape = shapes.Batch()
-        
+
         self.padding = [0,0,0,0] #computed padding
 
         self.style = self.attrmap.styles
         self.help = self.attrmap.help
+        
+        self.__included__ = []
 
         self.legendbox = LegendBox()
         self.offset = [0,0]
@@ -104,6 +106,10 @@ class Window(AttrObject):
         includes cx, cy in frame by adding padding
         """
 
+        # keep track of included pixels
+        # makes it possible to downsize element
+        self.__included__.append([cx, cy, width, height])
+
         dx = min(cx - width/2 , 0)
         dy = min(cy - height/2, 0)
         
@@ -114,7 +120,8 @@ class Window(AttrObject):
             self.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
             return -dx, -dy, -dxm, -dym
         
-        return 0, 0, 0, 0
+        return 0, 0, 0, 0 #?
+
 
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
         # could be a problem depending on where padding is calcualted
@@ -132,18 +139,33 @@ class Window(AttrObject):
 
         # opdater ikke disse. Forskellen er indlejret i padding
 
-        self.windowBox = (self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1])
+        self.windowBox = [self.padding[0], self.padding[1], self.width+self.padding[0], self.height+self.padding[1]]
 
-        for i in self.shapes:
-            if type(i) is tuple: # list is still unsorted
-                i[0].push(left, bottom)
-                continue
-            i.push(left, bottom)
+        self.pushAll(left, bottom)
         
         # for i in self.objects:
         #     i.push(left, bottom)
-
         self.setAttrMap(self.attrmap)
+
+
+    def pushAll(self, x, y):
+        for i in self.shapes:
+            if type(i) is tuple: # list is still unsorted
+                i[0].push(x, y)
+                continue
+            i.push(x, y)
+
+        # push included
+        for includ in self.__included__:
+            includ[0] += x
+            includ[1] += y
+
+
+    def reIncludeElements(self) -> None:
+        # måske lav temp mappe
+        old = [i for i in self.__included__]
+        for x, y, width, height in old:
+            self.include(x, y, width, height)
 
 
     # calculate windowAxis
@@ -193,14 +215,17 @@ class Window(AttrObject):
             except Exception as e:
                 self.windowAxis[3] = 5
 
+
     # before objects added to window
     def __before__(self):
         return self.__prepare__()
 
+    
     # after objects added to window
     def __after__(self):
         pass
 
+    
     # baking
     def __bake__(self):
         # finish making plot
@@ -214,16 +239,12 @@ class Window(AttrObject):
         self.windowBox = (self.padding[0], self.padding[1], self.getAttr('width')+self.padding[0], self.getAttr('height')+self.padding[1])
         self.__calculateWindowBorders__()
         
-        # get styles
-        self.width = self.getAttr('width')
-        self.height = self.getAttr('height')
-
-        self.windowBox = (
+        self.windowBox = [
             self.padding[0], 
             self.padding[1], 
             self.width+self.padding[0], 
             self.height+self.padding[1]
-        )
+        ]
 
         self.__before__()
         self.__addInnerContent__()

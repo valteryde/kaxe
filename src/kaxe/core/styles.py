@@ -184,10 +184,7 @@ class AttrMap:
                     s = f'{key}.{attr}'
 
                 rattr = self.__attrs__.get(key, {}).get(attr)
-                if rattr is None:
-                    print(f'    {bcolors.OKGREEN}{s}:{bcolors.ENDC} {self.__defaults__[key][attr]}')
-                else:
-                    print(f'    {bcolors.OKGREEN}{s}:{bcolors.OKCYAN} {rattr}{bcolors.ENDC}')
+                print(f'    {bcolors.OKGREEN}{s}:{bcolors.ENDC} {self.__defaults__[key][attr]}')
 
 
 class AttrObject:

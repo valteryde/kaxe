@@ -1,30 +1,48 @@
 
-# logger
-import logging
+# DONE:
+# Crop firkanten så der ikke er så meget "dødt" plads rundt om
+#       altså det ikke altid 3d området bruger hele området 
+#       så meget af det kan bare fjernes
+# Progressbar skal have titler
+# .help() skal ikke printe forskellige farver (blå ved ændret)
+
+# DONE: Men ikke testet
+# Punkter skal sortes fra hvis de ligger udenfor
+
+# TODO:
+# Ryd op i koden og slet alt overflødigt
+# Tal på aksen der går igennem (center) og pile
+# Frame ligesom matplotlib med baggrund baggerst i firkanten
+# Objects (mappen) skal deles op i 3d og 2d
+# kunne være fedt med en funktion der bare hedder plot() og så laver den selv enten
+# et 2d eller 3d vindue med fx funktion eller 
+# Funktion skal "samles" hvis bunden kommer udenfor så trekanterne ikke er underligere
+# forskellige farvemaps til forskellige funktioner
+#       kunne være ret cool hvis man kunne vælge en grøn farveskala eller en rød farveskala
+# axis.drawMarkersAtEnd burde kun være på dem der på enden og ikke 0.4 i intervallet [-0.5, 0.5]
+# Måske lidt mere gap imellem marker og akser
+# Function skal laves som en samlet funktion
+#       det samme med points
+#       -> Her bare brug en "fordeler" funktion
 
 
 # window
 from ..core.window import Window
-from ..core.shapes import ImageShape, shapes
+from ..core.shapes import ImageShape
 from ..core.axis import Axis
 from ..core.marker import Marker
 
 # 3d 
 from ..core.d3.render import Render
 from ..core.d3.objects.line import Line3D
-from ..core.d3.objects.triangle import Triangle
-from ..core.d3.objects.point import Point3D
 
 # other
 import math
 import numpy as np
-from random import randint
 from PIL import Image
 
 XYZPLOT = 'xyz'
 
-def sign(num):
-    return -1 if num < 0 else 1
 
 class Plot3D(Window):
     
@@ -44,6 +62,18 @@ class Plot3D(Window):
         self.firstAxisTitle = None
         self.secondAxisTitle = None
         self.thirdAxisTitle = None
+
+        # styles
+        self.attrmap.default('width', 1500)
+        self.attrmap.default('height', 1500)
+        self.attrmap.default('wireframeLinewidth', 2)
+        self.attrmap.default('fontSize', 32)
+        self.attrmap.setAttr('axis.drawAxis', False)
+        self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
+        self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
+        self.attrmap.setAttr('marker.showLine', False)
+        # self.attrmap.setAttr('marker.tickWidth', 2)
+
 
         """
         window:tuple [x0, x1, y0, y1, z0, z1] axis
@@ -75,7 +105,7 @@ class Plot3D(Window):
         self.p7 = np.array((h, h, h))
         self.p8 = np.array((-h, h, h))
 
-        lineWidth = 2
+        lineWidth = self.getAttr('wireframeLinewidth')
 
         # x : 1, 9, 10, 12
         # y : 2, 5, 6, 11
@@ -154,11 +184,6 @@ class Plot3D(Window):
         }
 
 
-    def __compare__(self, a, b):
-        a = [i for i in a]
-        b = [i for i in b]
-        return a == b
-
 
     def __createAxis__(self, line:Line3D, normal, i, addMarkers=True):
         
@@ -232,18 +257,15 @@ class Plot3D(Window):
             
 
     def __before__(self):
-        assert self.__normal__ != self.__boxed__
+        # assert self.__normal__ != self.__boxed__
 
         # finish making plot
         # fit "plot" into window
 
         # create render
         # add frame
-        # skal på en eller anden måde finde en god værdi for det her
 
-        # alpha = randint(0,360)
-        # beta = randint(0,360)
-        print('alpha={}, beta={}'.format(*self.rotation))
+        # print('alpha={}, beta={}'.format(*self.rotation))
 
         self.render = Render(width=self.getAttr('width'), height=self.getAttr('height'), cameraAngle=[math.radians(self.rotation[0]), math.radians(self.rotation[1])])
         
@@ -260,7 +282,6 @@ class Plot3D(Window):
                 for line in i:
                     line.hide()
 
-
         # set scale beforehand so axis dosent compute automatically
 
         # compute windowAxisLength
@@ -276,13 +297,6 @@ class Plot3D(Window):
         
         self.image = ImageShape(Image.new('RGBA', (self.getAttr('width'), self.getAttr('height'))), 0, 0)
         self.addDrawingFunction(self.image)
-
-        self.attrmap.setAttr('axis.drawAxis', False)
-        self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
-        self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
-        self.attrmap.setAttr('marker.showLine', False)
-        self.attrmap.setAttr('marker.tickWidth', 2)
-        self.attrmap.setAttr('fontSize', 32)
 
         # BOXED AND FRAMED
         if self.__boxed__:
@@ -338,6 +352,7 @@ class Plot3D(Window):
             axisx.checkCrossOvers(self, axisz)
             axisy.checkCrossOvers(self, axisz)
 
+
         if self.firstAxisTitle:
             axisx.addTitle(self.firstAxisTitle, self)
         
@@ -351,10 +366,28 @@ class Plot3D(Window):
         # for line in [self.l1, self.l9, self.l10, self.l12]:
         #     print(self.l1.p1)
 
-
         self.image.img = self.render.render()
-
+        bbox = self.image.img.getbbox()
         
+        self.addPaddingCondition(
+            left=-bbox[0], 
+            bottom=-(self.image.img.height - bbox[3]), 
+            top=-bbox[1], 
+            right=-(self.image.img.width-bbox[2])
+        )
+
+        self.reIncludeElements()
+
+        # # man burde nemt kunne fjerne højre top hjørne 
+        # self.pushAll(-bbox[0], -(self.image.img.height - bbox[3]))
+        # self.image.push(bbox[0], self.image.img.height - bbox[3])
+        # self.image.img = self.image.img.crop(bbox)
+
+        # self.windowBox[2] += bbox[0]
+        # self.windowBox[3] += self.image.img.height - bbox[3]
+        # self.width -= bbox[0]
+        # self.height += self.image.img.height - bbox[3]
+
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
         
@@ -410,4 +443,12 @@ class PlotFrame3D(Plot3D):
         super().__init__(window, rotation)
         self.__boxed__ = True
         self.__frame__ = True
+        self.__normal__ = False
+
+
+class PlotEmpty3D(Plot3D):
+    def __init__(self,  window:list=None, rotation=[0, -20]):
+        super().__init__(window, rotation)
+        self.__boxed__ = False
+        self.__frame__ = False
         self.__normal__ = False

@@ -42,14 +42,14 @@ class Render:
         self.abuffer = empty((self.width, self.height))
         self.abuffer.fill(-1)
 
-        bar = tqdm.tqdm(total=len(self.objects3d))
+        bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
         for index, obj in enumerate(self.objects3d):
             obj.drawTozBuffer(self, index)
             bar.update()
         bar.close()
         
         # draw to image
-        bar = tqdm.tqdm(total=self.width*self.height)
+        bar = tqdm.tqdm(total=self.width*self.height, desc="3D Draw")
         for x in range(self.width):
             for y in range(self.height):
 

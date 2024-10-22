@@ -117,7 +117,7 @@ class Marker(AttrObject):
         parent.addDrawingFunction(self.batch, 2)
         parent.addDrawingFunction(self.textLabel, 2)
         
-        # include kører med center position tror jeg nok
+        # include kører med center position tror jeg nok 
         parent.include(*self.textLabel.getCenterPos(), self.textLabel.width, self.textLabel.height)
 
 

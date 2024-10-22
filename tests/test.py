@@ -758,11 +758,13 @@ class Test:
     def test3D():
         
         plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        #plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
         plt.style(width=1000, height=1000)
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3))
         plt.save('tests/images/3d-box.png')
 
         plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        #plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
         plt.style(width=1000, height=1000)
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3))
         plt.save('tests/images/3d-frame.png')
@@ -771,6 +773,11 @@ class Test:
         plt.style(width=1000, height=1000)
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5))
         plt.save('tests/images/3d-center.png')
+        
+        plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
+        plt.style(width=1000, height=1000)
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5))
+        plt.save('tests/images/3d-empty.png')
 
 
 
@@ -801,8 +808,8 @@ if __name__ == '__main__':
         #Test.testLogarithmic()
         Test.testRootLocus()
         #Test.testLinearPointPlot()
-        Test.test3D()
         #Test.test3DAnimation()
         Test.testPolarPlot()
         Test.testCharts()
-    Test.run()
+    Test.test3D()
+    #Test.run()

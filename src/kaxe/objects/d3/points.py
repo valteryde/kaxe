@@ -27,6 +27,9 @@ class Points3D(Base3DObject):
         render = parent.render
 
         for i in range(len(self.x)):
+            if not parent.inside3D(self.x[i], self.y[i], self.z[i]):
+                continue
+            
             render.add3DObject(
                 Point3D(*parent.pixel(self.x[i], self.y[i], self.z[i]), 5, getColor(self.z[i], 0, 1))
             )
