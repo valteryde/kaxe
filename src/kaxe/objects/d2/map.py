@@ -1,11 +1,11 @@
 
 import numpy as np
-from .mapdata import heatcolormap
+from ..mapdata import heatcolormap
 import math
-from ..core.shapes import shapes
-from ..core.text import Text
-from ..core.round import koundTeX
-from ..plot import identities
+from ...core.shapes import shapes
+from ...core.text import Text
+from ...core.round import koundTeX
+from ...plot import identities
 from typing import Union
 
 def mapTempToColor(col, minColor:Union[float, int], maxColor:Union[float, int], colors:list=heatcolormap):

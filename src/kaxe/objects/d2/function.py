@@ -1,11 +1,11 @@
 
 from typing import Callable
 from .point import Points
-from ..core.styles import getRandomColor
-from ..core.helper import *
-from ..core.shapes import shapes
-from ..core.symbol import symbol
-from ..plot import identities
+from ...core.styles import getRandomColor
+from ...core.helper import *
+from ...core.shapes import shapes
+from ...core.symbol import symbol
+from ...plot import identities
 import numbers
 from random import randint
 from typing import Union

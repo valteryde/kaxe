@@ -6,7 +6,7 @@ from .base import Base3DObject
 # 3d
 from ...core.d3.objects import Point3D, Triangle
 from ...core.d3.helper import rc
-from .color import getColor
+from ..color import getColor
 
 # other
 import numpy as np

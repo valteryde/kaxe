@@ -1,9 +1,9 @@
 
 from scipy.optimize import fsolve
-from ..core.shapes import shapes
-from ..objects.point import Points
-from ..objects.equation import Equation
-from ..plot import identities
+from ...core.shapes import shapes
+from .point import Points
+from .equation import Equation
+from ...plot import identities
 import numpy
 import cmath
 import math

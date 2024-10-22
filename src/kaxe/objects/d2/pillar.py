@@ -1,10 +1,10 @@
 
-from ..core.styles import *
-from ..core.shapes import shapes
-from ..core.symbol import makeSymbolShapes
-from ..core.symbol import symbol as symbols
-from ..core.helper import *
-from ..plot import identities
+from ...core.styles import *
+from ...core.shapes import shapes
+from ...core.symbol import makeSymbolShapes
+from ...core.symbol import symbol as symbols
+from ...core.helper import *
+from ...plot import identities
 
 class Pillars:
 
