@@ -10,7 +10,7 @@ Kaxe is an lightweight graphing tools for functions, equations, points and more 
 Kaxe is build to be simple, flexiable and equipped with an flat learning curve.
 Kaxe supports diffrent plotting windows including
 
-### 2D
+### 2D Plots
 
 ![BoxPlot](tests/images/box.png)
 
@@ -20,7 +20,7 @@ Kaxe supports diffrent plotting windows including
 * Box plot
 * Empty plot
 
-### 3D
+### 3D Plots
 
 ![3DPlot](tests/images/3d-box.png)
 
