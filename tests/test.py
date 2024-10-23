@@ -5,10 +5,8 @@ sys.path.append('./src')
 # test
 import math
 import kaxe
-import unittest
 from random import randint
 
-#class TestMethods(unittest.TestCase):
 class Test:
     def run():
         for i in dir(Test):
@@ -775,7 +773,7 @@ class Test:
         plt.save('tests/images/3d-center.png')
         
         plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
-        plt.style(width=1000, height=1000)
+        plt.style(width=1000, height=1000, backgroundColor=(0,0,0,0))
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5))
         plt.save('tests/images/3d-empty.png')
 

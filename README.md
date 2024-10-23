@@ -1,22 +1,32 @@
 
 # Kaxe
 
+![BoxPlot](logo.png)
+
 Kaxe is an lightweight graphing tools for functions, equations, points and more written in pure python
-
-![BoxPlot](tests/images/box.png)
-
-![3DPlot](tests/images/3d-box.png)
 
 ## Plots
 
+Kaxe is build to be simple, flexiable and equipped with an flat learning curve.
 Kaxe supports diffrent plotting windows including
+
+### 2D
+
+![BoxPlot](tests/images/box.png)
 
 * A standard basis plotting window
 * Logaritchmic plot
 * Polar plot
 * Box plot
+* Empty plot
 
-Kaxe is build to be simple, flexiable and equipped with an flat learning curve.
+### 3D
+
+![3DPlot](tests/images/3d-box.png)
+
+* Boxed plot
+* Frame plot
+* Empty
 
 ## Gettings started
 

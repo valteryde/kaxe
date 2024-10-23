@@ -13,7 +13,7 @@ class Render:
 
         self.camera = Camera()
         if w: self.camera.w = w
-        self.image = Image.new('RGBA', (self.width, self.height), (255, 255, 255, 255))
+        self.image = Image.new('RGBA', (self.width, self.height), (255, 255, 255, 0))
         self.image = array(self.image)
         self.camera.satelite(*cameraAngle)
 
