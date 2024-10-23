@@ -471,7 +471,7 @@ class Axis(AttrObject):
         )
 
         parent.addDrawingFunction(self.title, 2)
-        parent.include(*self.title.getCenterPos(), *self.title.getBoundingBox()[2:4])
+        parent.includeElement(self.title)
 
 
     def checkCrossOvers(self, parent, axis):
@@ -503,8 +503,8 @@ class Axis(AttrObject):
                 a.textLabel.push(v[0]*c, v[1]*c)
                 b.textLabel.push(-v[0]*c, -v[1]*c)
 
-                parent.include(*a.textLabel.getCenterPos(), a.textLabel.width, a.textLabel.height)
-                parent.include(*b.textLabel.getCenterPos(), b.textLabel.width, b.textLabel.height)
+                parent.includeElement(a.textLabel)
+                parent.includeElement(b.textLabel)
 
 
         # check arrow

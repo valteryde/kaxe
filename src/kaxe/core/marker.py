@@ -12,6 +12,9 @@ import numpy as np
 #     c += 1
 #     print(c)
 
+def sign(v):
+    return 1 if v > 0 else -1
+
 class Marker(AttrObject):
 
     name = "Marker"
@@ -102,11 +105,11 @@ class Marker(AttrObject):
         # hvilken side rammer den mest (husk martkers ikke roteres)
         # mest horisontalt
         if abs(self.axis.titleNormal[0]) > abs(self.axis.titleNormal[1]):
-            self.textLabel.push(self.axis.titleNormal[0]*self.textLabel.width/2, 0) # kan godt være den skal rundes op til 1 eller -1
+            self.textLabel.push(sign(self.axis.titleNormal[0])*self.textLabel.width/2, 0) # kan godt være den skal rundes op til 1 eller -1
 
         # mest vertikalt
         else:
-            self.textLabel.push(0, self.axis.titleNormal[1]*self.textLabel.height/2)
+            self.textLabel.push(0, sign(self.axis.titleNormal[1])*self.textLabel.height/2)
 
         # 5 fordi jeg synes det, burde nok kunne vælges men det også mange valg
         nudge = vectorScalar(self.axis.titleNormal, self.getAttr('tickLength')/2 + 5)
@@ -117,8 +120,7 @@ class Marker(AttrObject):
         parent.addDrawingFunction(self.batch, 2)
         parent.addDrawingFunction(self.textLabel, 2)
         
-        # include kører med center position tror jeg nok 
-        parent.include(*self.textLabel.getCenterPos(), self.textLabel.width, self.textLabel.height)
+        parent.includeElement(self.textLabel)
 
 
     def getBoundingBox(self):

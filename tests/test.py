@@ -730,8 +730,7 @@ class Test:
         for i in range(0,360, 30):
             plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[-10,i])
             plt.title('x aksen', 'y aksen', 'z aksen')
-            plt.style(width=1000)
-            plt.style(height=1000)
+            plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
             
             points = []
             n = 50
@@ -745,20 +744,46 @@ class Test:
                 [x for x,y,z in points],
                 [y for x,y,z in points],
                 [z for x,y,z in points],
-            ).legend('Kaxe nu i 3D')
+            )#.legend('Kaxe nu i 3D')
 
             plt.add(cloud)
 
             plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
             # ffmpeg -framerate 30 -i tests/images/3d/3d-cloud-%d.png -c:v libx264 -r 30 tests/3d.mp4
 
+    
+    def test3DAnimationSingleFrame():
+        i = 120
+
+        plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[-10,i])
+        plt.title('x aksen', 'y aksen', 'z aksen')
+        plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
+            
+        points = []
+        n = 50
+        for x in range(1,n):
+            x = x / n
+            for y in range(1,n):
+                y = y / n
+                points.append((x, y, 2*x*y/(1+x**2)))
+
+        cloud = kaxe.Points3D(
+            [x for x,y,z in points],
+            [y for x,y,z in points],
+            [z for x,y,z in points],
+        )#.legend('Kaxe nu i 3D')
+
+        plt.add(cloud)
+
+        plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
+
 
     def test3D():
         
         plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
-        #plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
         plt.style(width=1000, height=1000)
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3))
+        cmap = kaxe.Colormaps.standard
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-box.png')
 
         plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
@@ -806,8 +831,9 @@ if __name__ == '__main__':
         Test.testLogarithmic()
         Test.testRootLocus()
         Test.testLinearPointPlot()
-        Test.test3DAnimation()
         Test.testPolarPlot()
         Test.testCharts()
         Test.test3D()
-    Test.run()
+    Test.test3DAnimation()
+    #Test.test3DAnimationSingleFrame()
+    #Test.run()

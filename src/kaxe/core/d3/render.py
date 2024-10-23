@@ -25,6 +25,7 @@ class Render:
         self.SCL = 1 # pixel scale (tilfældigt)
         self.O = array((self.width//2, self.height//2)) # offset
 
+    
     def pixel(self, x, y, z):
         return self.camera.project((x,y,z)) * self.SCL + self.O
 
@@ -74,4 +75,8 @@ class Render:
 
         self.image = Image.fromarray(self.image)
         self.image = self.image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        
+        self.abuffer = []
+        self.zbuffer = []
+
         return self.image

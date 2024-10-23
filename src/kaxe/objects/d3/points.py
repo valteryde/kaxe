@@ -6,7 +6,7 @@ from .base import Base3DObject
 # 3d
 from ...core.d3.objects import Point3D
 from ...core.d3.helper import rc
-from ..color import getColor
+from ..color import Colormaps
 
 
 class Points3D(Base3DObject):
@@ -21,6 +21,10 @@ class Points3D(Base3DObject):
         self.legendSymbol = symbols.CIRCLE
         self.legendColor = rc()
 
+        self.cmap = color
+        if color is None:
+            self.cmap = Colormaps.standard
+
     
     def finalize(self, parent):
 
@@ -31,7 +35,7 @@ class Points3D(Base3DObject):
                 continue
             
             render.add3DObject(
-                Point3D(*parent.pixel(self.x[i], self.y[i], self.z[i]), 5, getColor(self.z[i], 0, 1))
+                Point3D(*parent.pixel(self.x[i], self.y[i], self.z[i]), 5, self.cmap.getColor(self.z[i], 0, 1))
             )
 
 

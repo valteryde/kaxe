@@ -30,6 +30,8 @@
 #       det samme med points
 #       -> Her bare brug en "fordeler" funktion
 # Farver skal kunne vælges
+# z-aksen titel skal altid være op ad
+# shapes objekter skal have en include metode med vindue som argument så den kan tilføje sig selv
 
 
 # window
@@ -46,6 +48,8 @@ from ..core.d3.objects.line import Line3D
 import math
 import numpy as np
 from PIL import Image
+
+import time
 
 XYZPLOT = 'xyz'
 
@@ -78,7 +82,7 @@ class Plot3D(Window):
         self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
         self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
         self.attrmap.setAttr('marker.showLine', False)
-        # self.attrmap.setAttr('marker.tickWidth', 2)
+        self.attrmap.setAttr('marker.tickWidth', 2)
 
 
         """
@@ -273,7 +277,12 @@ class Plot3D(Window):
 
         # print('alpha={}, beta={}'.format(*self.rotation))
 
-        self.render = Render(width=self.getAttr('width'), height=self.getAttr('height'), cameraAngle=[math.radians(self.rotation[0]), math.radians(self.rotation[1])])
+        self.render = Render(
+            width=self.getAttr('width'), 
+            height=self.getAttr('height'),
+            cameraAngle=[math.radians(self.rotation[0]), 
+                         math.radians(self.rotation[1])]
+        )
         
         self.__createWireframe__()
         self.__scaleRender__()
@@ -301,7 +310,7 @@ class Plot3D(Window):
     def __after__(self):
         # add to window
         
-        self.image = ImageShape(Image.new('RGBA', (self.getAttr('width'), self.getAttr('height'))), 0, 0)
+        self.image = ImageShape(Image.new('RGBA', (self.width, self.height)), 0, 0)
         self.addDrawingFunction(self.image)
 
         # BOXED AND FRAMED
@@ -367,23 +376,18 @@ class Plot3D(Window):
 
         if self.thirdAxisTitle:
             axisz.addTitle(self.thirdAxisTitle, self)
-        
+
         # er det bare at tage fx x aksens og så tage den højeste x værdi og så den mindste z værdi?
         # for line in [self.l1, self.l9, self.l10, self.l12]:
         #     print(self.l1.p1)
 
         self.image.img = self.render.render()
         bbox = self.image.img.getbbox()
+        oldpadding = [i for i in self.padding]
+        self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
+        x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
+        self.pushAll(x,y)
         
-        self.addPaddingCondition(
-            left=-bbox[0], 
-            bottom=-(self.image.img.height - bbox[3]), 
-            top=-bbox[1], 
-            right=-(self.image.img.width-bbox[2])
-        )
-
-        self.reIncludeElements()
-
         # # man burde nemt kunne fjerne højre top hjørne 
         # self.pushAll(-bbox[0], -(self.image.img.height - bbox[3]))
         # self.image.push(bbox[0], self.image.img.height - bbox[3])

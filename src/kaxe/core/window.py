@@ -101,26 +101,28 @@ class Window(AttrObject):
 
 
     # paddings
+    def includeElement(self, element):
+        self.include(*element.getCenterPos(), element.width, element.height)
+        self.__included__.append(element)
+
+
     def include(self, cx, cy, width=0, height=0):
         """
         includes cx, cy in frame by adding padding
         """
 
-        # keep track of included pixels
-        # makes it possible to downsize element
-        self.__included__.append([cx, cy, width, height])
-
         dx = min(cx - width/2 , 0)
         dy = min(cy - height/2, 0)
         
-        dxm = min(self.width - (cx + width/2) + self.padding[0], 0)
-        dym = min(self.height - (cy + height/2) + self.padding[1], 0)
+        dxm = min(self.width - (cx + width/2) + self.padding[0] + self.padding[2], 0)
+        dym = min(self.height - (cy + height/2) + self.padding[1] + self.padding[3], 0)
 
-        if dx < 0 or dy < 0 or dxm < -self.padding[2] or dym < -self.padding[3]:
+        if dx < 0 or dy < 0 or dxm < 0 or dym < 0:
             self.addPaddingCondition(left=-(dx), bottom=-(dy), right=-(dxm), top=-(dym))
+
             return -dx, -dy, -dxm, -dym
         
-        return 0, 0, 0, 0 #?
+        return 0, 0, 0, 0
 
 
     def addPaddingCondition(self, left:int=0, bottom:int=0, top:int=0, right:int=0):
@@ -154,18 +156,6 @@ class Window(AttrObject):
                 i[0].push(x, y)
                 continue
             i.push(x, y)
-
-        # push included
-        for includ in self.__included__:
-            includ[0] += x
-            includ[1] += y
-
-
-    def reIncludeElements(self) -> None:
-        # måske lav temp mappe
-        old = [i for i in self.__included__]
-        for x, y, width, height in old:
-            self.include(x, y, width, height)
 
 
     # calculate windowAxis
@@ -226,6 +216,20 @@ class Window(AttrObject):
         pass
 
     
+    def __setSize__(self, width, height):
+        self.width = width
+        self.height = height
+        
+        self.padding = (0,0,0,0)
+
+        self.windowBox = [
+            self.padding[0], 
+            self.padding[1], 
+            self.width+self.padding[0], 
+            self.height+self.padding[1]
+        ]
+
+
     # baking
     def __bake__(self):
         # finish making plot
@@ -236,21 +240,23 @@ class Window(AttrObject):
         self.width = self.getAttr('width')
         self.height = self.getAttr('height')
 
-        self.windowBox = (self.padding[0], self.padding[1], self.getAttr('width')+self.padding[0], self.getAttr('height')+self.padding[1])
-        self.__calculateWindowBorders__()
-        
         self.windowBox = [
             self.padding[0], 
             self.padding[1], 
             self.width+self.padding[0], 
             self.height+self.padding[1]
         ]
+        self.__calculateWindowBorders__()
 
         self.__before__()
         self.__addInnerContent__()
         self.__after__()
         self.__addOuterContent__()
-        
+
+        # include all elements
+        for element in self.__included__:
+            self.include(*element.getCenterPos(), element.width, element.height)
+
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 
         # add style padding

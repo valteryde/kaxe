@@ -6,7 +6,7 @@ from .base import Base3DObject
 # 3d
 from ...core.d3.objects import Point3D, Triangle
 from ...core.d3.helper import rc
-from ..color import getColor
+from ..color import Colormaps
 
 # other
 import numpy as np
@@ -21,6 +21,10 @@ class Function3D(Base3DObject):
         self.supports = [identities.XYZPLOT]
         self.legendSymbol = symbols.RECTANGLE
         self.legendColor = rc()
+
+        self.cmap = color
+        if color is None:
+            self.cmap = Colormaps.standard
 
         self.numPoints = 200
 
@@ -52,7 +56,7 @@ class Function3D(Base3DObject):
                 if matrix[xn][yn][0] is None:
                     continue
 
-                color = getColor(matrix[xn][yn][2], parent.windowAxis[4], parent.windowAxis[5])
+                color = self.cmap.getColor(matrix[xn][yn][2], parent.windowAxis[4], parent.windowAxis[5])
                 
                 if not all(i[0] is not None for i in [matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1]]):
                     continue

@@ -82,7 +82,7 @@ class Line3D:
 
     def drawTozBuffer(self, render, index):
         if self.hidden: return
-
+        
         drawLine(
             zbuffer=render.zbuffer,
             abuffer=render.abuffer,
