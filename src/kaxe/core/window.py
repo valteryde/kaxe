@@ -102,7 +102,7 @@ class Window(AttrObject):
 
     # paddings
     def includeElement(self, element):
-        self.include(*element.getCenterPos(), element.width, element.height)
+        self.include(*element.getIncludeArguments())
         self.__included__.append(element)
 
 
@@ -255,7 +255,7 @@ class Window(AttrObject):
 
         # include all elements
         for element in self.__included__:
-            self.include(*element.getCenterPos(), element.width, element.height)
+            self.include(*element.getIncludeArguments())
 
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 

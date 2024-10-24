@@ -158,3 +158,7 @@ Axis titles can be changed with
 ```python
 plot.title(*titles:str)
 ```
+
+### Examples
+
+![Style3DPlot](tests/images/3d-box-style.png)

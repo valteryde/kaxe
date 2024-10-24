@@ -45,13 +45,13 @@ class Text(Shape):
 
         # make pil image
         pilImage = MathText(text, self.fontSize, self.color).image
-        width = pilImage.width
-        height = pilImage.height
+        # width = pilImage.width
+        # height = pilImage.height
 
         iarr = np.array(pilImage)
         self.img = Image.fromarray(rotate_image(iarr, self.rotate))
 
-        newCenterFromTopLeft = np.array([[math.cos(self.rotate), -math.sin(self.rotate)], [math.sin(self.rotate), math.cos(self.rotate)]]) @ np.array((width/2, height/2))
+        # newCenterFromTopLeft = np.array([[math.cos(self.rotate), -math.sin(self.rotate)], [math.sin(self.rotate), math.cos(self.rotate)]]) @ np.array((width/2, height/2))
 
         self.width = self.img.width
         self.height = self.img.height
@@ -115,6 +115,10 @@ class Text(Shape):
         self.__center__[1] += int(y)
         self.__leftTop__[0] += int(x)
         self.__leftTop__[1] += int(y)
+
+
+    def getIncludeArguments(self):
+        return (*self.getCenterPos(), self.width, self.height)
 
 
 def getTextDimension(text, fontSize ,*args, **kwargs):

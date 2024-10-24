@@ -54,7 +54,8 @@ def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, in
                 alpha = linalg.norm(array((x,y)) - p1_proj) * r_line_len
 
                 if not(-0.25 <= alpha <= 1.25):
-                    raise ValueError
+                    continue
+                    #raise ValueError
 
                 p = rp2 * alpha + rp1 * (1 - alpha)
 

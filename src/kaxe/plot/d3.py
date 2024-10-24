@@ -12,27 +12,28 @@
 #       måske tage en farve og så skrue op for den eller ned på en eller
 #       anden måde fx ganget alle indgange med en skalar
 # 
+# Function skal laves som en samlet funktion
+#       det samme med points
+#       -> Her bare brug en "fordeler" funktion
+# z-aksen titel skal altid være op ad
+# Farver skal kunne vælges (som axis)
+# axis.drawMarkersAtEnd burde kun være på dem der på enden og ikke 0.4 i intervallet [-0.5, 0.5]
 
 # DONE: Men ikke testet
 # Punkter skal sortes fra hvis de ligger udenfor
+
+# Påbegyndt:
+# shapes objekter skal have en include metode med vindue som argument så den kan tilføje sig selv
 
 # TODO:
 # Ryd op i koden og slet alt overflødigt
 # Tal på aksen der går igennem (center) og pile
 # Frame ligesom matplotlib med baggrund baggerst i firkanten
-# 
 # kunne være fedt med en funktion der bare hedder plot() og så laver den selv enten
 # et 2d eller 3d vindue med fx funktion eller punkter
 # 
 # Funktion skal "samles" hvis bunden kommer udenfor så trekanterne ikke er underligere
-# axis.drawMarkersAtEnd burde kun være på dem der på enden og ikke 0.4 i intervallet [-0.5, 0.5]
 # Måske lidt mere gap imellem marker og akser
-# Function skal laves som en samlet funktion
-#       det samme med points
-#       -> Her bare brug en "fordeler" funktion
-# z-aksen titel skal altid være op ad
-# shapes objekter skal have en include metode med vindue som argument så den kan tilføje sig selv
-# Farver skal kunne vælges (som axis)
 
 
 # window
@@ -49,8 +50,6 @@ from ..core.d3.objects.line import Line3D
 import math
 import numpy as np
 from PIL import Image
-
-import time
 
 XYZPLOT = 'xyz'
 
@@ -289,10 +288,11 @@ class Plot3D(Window):
         self.__scaleRender__()
         
         # add color to wireframe
+        lineBoxColor = self.getAttr('Axis.axisColor')
         if self.__boxed__:
             for i in self.lines:
                 for line in i:
-                    line.color = (0,0,0,255)
+                    line.color = lineBoxColor
         else:
             for i in self.lines:
                 for line in i:
@@ -388,16 +388,6 @@ class Plot3D(Window):
         self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
         x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
         self.pushAll(x,y)
-        
-        # # man burde nemt kunne fjerne højre top hjørne 
-        # self.pushAll(-bbox[0], -(self.image.img.height - bbox[3]))
-        # self.image.push(bbox[0], self.image.img.height - bbox[3])
-        # self.image.img = self.image.img.crop(bbox)
-
-        # self.windowBox[2] += bbox[0]
-        # self.windowBox[3] += self.image.img.height - bbox[3]
-        # self.width -= bbox[0]
-        # self.height += self.image.img.height - bbox[3]
 
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
@@ -406,7 +396,7 @@ class Plot3D(Window):
             self.firstAxisTitle = firstAxis
         
         if secondAxis:
-            self.secondAxisTitle = firstAxis
+            self.secondAxisTitle = secondAxis
 
         if thirdAxis:
             self.thirdAxisTitle = thirdAxis

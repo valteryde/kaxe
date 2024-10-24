@@ -4,9 +4,13 @@ from ...plot import identities
 from .base import Base3DObject
 
 # 3d
-from ...core.d3.objects import Point3D
+from ...core.d3.objects import Point3D, Line3D
 from ...core.d3.helper import rc
 from ..color import Colormaps
+
+# packages
+import numpy as np
+from scipy.spatial import Delaunay
 
 
 class Points3D(Base3DObject):
@@ -35,7 +39,7 @@ class Points3D(Base3DObject):
                 continue
             
             render.add3DObject(
-                Point3D(*parent.pixel(self.x[i], self.y[i], self.z[i]), 5, self.cmap.getColor(self.z[i], 0, 1))
+                Point3D(*parent.pixel(self.x[i], self.y[i], self.z[i]), 5, self.cmap.getColor(self.z[i], parent.windowAxis[4], parent.windowAxis[5]))
             )
 
 

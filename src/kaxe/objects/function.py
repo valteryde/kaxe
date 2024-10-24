@@ -10,19 +10,18 @@ class Function:
                  f:Callable, # both
                  color:tuple=None, # both
                  width:int=10, # 2d
-                 numPoints=150, # 3d
+                 numPoints:int=None, # 3d
+                 fill:bool=True, # 3d
                  *args, 
                  **kwargs
                 ) -> Union[Function2D, Function3D]:
         
         sig = signature(f)
-        n = len(sig.parameters) - len(kwargs) - len(args)
-        
-         
+        n = len(sig.parameters) - len(kwargs) - len(args)         
 
         if n == 1:
             return Function2D(f, color=color, width=width, *args, **kwargs)
 
         if n == 2:
-            return Function3D(f, color=color, numPoints=numPoints)
+            return Function3D(f, color=color, numPoints=numPoints, fill=fill)
 

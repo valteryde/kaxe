@@ -15,7 +15,12 @@ class Colormap:
     
     def getColor(self, value:Union[int, float], start:Union[int, float], end:Union[int, float]):
         
-        x = (value / (end - start)) * (len(self.colorGradientSteps) - 1)
+        if value < start:
+            return self.colorGradientSteps[0]
+        if value > end:
+            return self.colorGradientSteps[-1]
+
+        x = ((value - start) / (end - start)) * (len(self.colorGradientSteps) - 1)
         x0 = math.floor(x)
         x1 = math.ceil(x)
 

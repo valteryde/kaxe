@@ -25,7 +25,8 @@ class Axis(AttrObject):
         "titleGap": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.5),
         "arrowSize": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.75),
         "drawAxis": True,
-        "drawMarkersAtEnd": True
+        "drawMarkersAtEnd": True,
+        "axisColor": ComputedAttribute(lambda map: map.getAttr('color')),
     })
 
     name = "Axis"
@@ -177,7 +178,7 @@ class Axis(AttrObject):
             if d >= 0 and proc <= 1:
                 accMarkers.append(marker)
 
-            if not drawMarkersAtEnd and (closeToZero(proc, 0.1) or closeToZero(proc-1, 0.1)):
+            if (not drawMarkersAtEnd) and (closeToZero(proc, 0.01) or closeToZero(proc-1, 0.01)):
                 marker["style"].append(("tickWidth", 0))
 
         accMarkers.sort(key=lambda x: x["pos"])
@@ -244,7 +245,7 @@ class Axis(AttrObject):
             self.startPos[1], 
             self.endPos[0], 
             self.endPos[1], 
-            color=self.getAttr('color'), 
+            color=self.getAttr('axisColor'), 
             width=self.getAttr('width')
         )
 
@@ -411,6 +412,9 @@ class Axis(AttrObject):
             angle -= 180
         
         if self.v[1] < 0:
+            angle = -angle
+
+        if closeToZero(angle + 90):
             angle = -angle
 
         p1, p2 = self.startPos, self.endPos

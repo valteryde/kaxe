@@ -6,6 +6,8 @@ sys.path.append('./src')
 import math
 import kaxe
 from random import randint
+import numpy as np
+
 
 class Test:
     def argument():
@@ -788,9 +790,16 @@ class Test:
         
         plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
         plt.style(width=1000, height=1000)
+        plt.help()
         cmap = kaxe.Colormaps.standard
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap, numPoints=500))
         plt.save('tests/images/3d-box.png')
+
+        plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        plt.style(width=1000, height=1000, backgroundColor=(0,0,100,255), color=(255,255,255,255))
+        cmap = kaxe.Colormaps.green
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
+        plt.save('tests/images/3d-box-style.png')
 
         plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
         plt.style(width=1000, height=1000)
@@ -801,48 +810,36 @@ class Test:
         plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
         plt.style(width=1000, height=1000)
         cmap = kaxe.Colormaps.brown
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap))
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap, fill=False))
         plt.save('tests/images/3d-center.png')
         
         plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
         plt.style(width=1000, height=1000, backgroundColor=(0,0,0,0))
         cmap = kaxe.Colormaps.red
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap))
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap, fill=False))
         plt.save('tests/images/3d-empty.png')
 
 
+    def test3Dfunction():
+        # virkelig flot
+        # plt = kaxe.Plot3D()
+        # plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-10))
+        # plt.show()
+
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-5))
+        plt.show()
+
+        def func(x, y):
+            
+            if (-2 < x < 2) and (-2 < y < 2):
+                return 1
+            return None
+
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function(func))
+        plt.show()
 
 
 if __name__ == '__main__':
-    if not True:
-        Test.testBoxPlotNoGridLines()
-        Test.testLabels()
-        Test.testFunction()
-        Test.testPillars()
-        Test.testEquation()
-        Test.testColorMap()
-        Test.testThemes()
-        Test.testInverseProportional()
-        Test.testPiecewise()
-        Test.testPointPlot()
-        Test.testLogarithmic()
-        Test.testLinearFunction()
-        Test.testBarChart()
-        Test.testPieChart()
-        Test.testGroupBarChart()
-        Test.testCarsten()
-        Test.testBoxPlot()
-        Test.testEmptyPlot()
-        Test.testEmptyWindow()
-        Test.testParametricEquation()
-        Test.testPrettyLogarithmic()
-        Test.testLogarithmic()
-        Test.testRootLocus()
-        Test.testLinearPointPlot()
-        Test.testPolarPlot()
-        Test.testCharts()
-        Test.test3D()
-    #Test.test3DAnimation()
-    #Test.test3DAnimationSingleFrame()
-    #Test.run()
     Test.argument()
