@@ -25,7 +25,7 @@ Ligeledes hvilkte plot der arbejdes på
 
 terminaltype = 'terminal'
 try:
-    ipy_str = str(type(get_ipython()))
+    ipy_str = str(type(get_ipython())) # pyright: ignore[reportUndefinedVariable]
     if 'zmqshell' in ipy_str:
         terminaltype = 'jupyter'
     if 'terminal' in ipy_str:
