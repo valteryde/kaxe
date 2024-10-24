@@ -10,7 +10,7 @@ from ..color import Colormaps
 
 
 class Points3D(Base3DObject):
-    def __init__(self, x, y, z, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False):
+    def __init__(self, x, y, z, color:tuple=None, size:int=None, connect:bool=False):
         super().__init__()
 
         self.x = x

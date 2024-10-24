@@ -6,7 +6,7 @@ from ...core.symbol import symbol as symbols
 from ...core.helper import *
 from ...plot import identities
 
-class Points:
+class Points2D:
     def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False):
         self.batch = shapes.Batch()
         self.points = []

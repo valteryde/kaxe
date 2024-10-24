@@ -1,7 +1,7 @@
 
 from scipy.optimize import fsolve
 from ...core.shapes import shapes
-from .point import Points
+from .point import Points2D
 from .equation import Equation
 from ...plot import identities
 import numpy

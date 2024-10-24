@@ -1,6 +1,6 @@
 
 from typing import Callable
-from .point import Points
+from .point import Points2D
 from ...core.styles import getRandomColor
 from ...core.helper import *
 from ...core.shapes import shapes
@@ -10,13 +10,12 @@ import numbers
 from random import randint
 from typing import Union
 
-class Function:
+class Function2D:
 
     def __init__(self, 
                  f:Callable, 
                  color:tuple=None, 
                  width:int=10,
-                 dotted:bool=False,
                  *args, 
                  **kwargs
                 ):
@@ -26,7 +25,6 @@ class Function:
         self.fillbatch = shapes.Batch()
         self.legendSymbol = symbol.LINE
         self.tangentFunctions = []
-        self.dotted = dotted
         self.fillAreasBorders = []
         self.fillAreas = []
         self.fills = []
@@ -154,11 +152,10 @@ class Function:
         
         a = dy/dx
  
-        self.tangentFunctions.append(Function(
+        self.tangentFunctions.append(Function2D(
             lambda x, a, x0, y0: a*(x - x0) + y0, a=a, x0=x, y0=self.function(x),
             width=self.thickness,
             color=self.color,
-            dotted=True
         ))
 
     

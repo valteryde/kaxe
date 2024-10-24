@@ -6,14 +6,14 @@ from .base import Base3DObject
 # 3d
 from ...core.d3.objects import Point3D, Triangle
 from ...core.d3.helper import rc
-from ..color import Colormaps
+from ..color import Colormaps, Colormap
 
 # other
 import numpy as np
 
 
 class Function3D(Base3DObject):
-    def __init__(self, f, color:tuple=None, size:int=None):
+    def __init__(self, f, color:Colormap=None, numPoints=100):
         super().__init__()
 
         self.f = f
@@ -26,7 +26,7 @@ class Function3D(Base3DObject):
         if color is None:
             self.cmap = Colormaps.standard
 
-        self.numPoints = 200
+        self.numPoints = numPoints
 
 
     def finalize(self, parent):

@@ -8,6 +8,12 @@ import kaxe
 from random import randint
 
 class Test:
+    def argument():
+        if len(sys.argv) == 1:
+            Test.run()
+        else:
+            eval('Test.test{}()'.format(sys.argv[1]))
+
     def run():
         for i in dir(Test):
             if 'test' in i:
@@ -787,19 +793,21 @@ class Test:
         plt.save('tests/images/3d-box.png')
 
         plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
-        #plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
         plt.style(width=1000, height=1000)
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3))
+        cmap = kaxe.Colormaps.cream
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-frame.png')
 
         plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
         plt.style(width=1000, height=1000)
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5))
+        cmap = kaxe.Colormaps.brown
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap))
         plt.save('tests/images/3d-center.png')
         
         plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
         plt.style(width=1000, height=1000, backgroundColor=(0,0,0,0))
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5))
+        cmap = kaxe.Colormaps.red
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap))
         plt.save('tests/images/3d-empty.png')
 
 
@@ -834,6 +842,7 @@ if __name__ == '__main__':
         Test.testPolarPlot()
         Test.testCharts()
         Test.test3D()
-    Test.test3DAnimation()
+    #Test.test3DAnimation()
     #Test.test3DAnimationSingleFrame()
     #Test.run()
+    Test.argument()

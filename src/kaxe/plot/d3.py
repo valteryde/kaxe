@@ -6,6 +6,12 @@
 # Progressbar skal have titler
 # .help() skal ikke printe forskellige farver (blå ved ændret)
 # Objects (mappen) skal deles op i 3d og 2d
+# forskellige farvemaps til forskellige funktioner
+#       kunne være ret cool hvis man kunne vælge en grøn farveskala eller en rød farveskala
+#       kan laves som en colormap class
+#       måske tage en farve og så skrue op for den eller ned på en eller
+#       anden måde fx ganget alle indgange med en skalar
+# 
 
 # DONE: Men ikke testet
 # Punkter skal sortes fra hvis de ligger udenfor
@@ -19,19 +25,14 @@
 # et 2d eller 3d vindue med fx funktion eller punkter
 # 
 # Funktion skal "samles" hvis bunden kommer udenfor så trekanterne ikke er underligere
-# forskellige farvemaps til forskellige funktioner
-#       kunne være ret cool hvis man kunne vælge en grøn farveskala eller en rød farveskala
-#       kan laves som en colormap class
-#       måske tage en farve og så skrue op for den eller ned på en eller
-#       anden måde fx ganget alle indgange med en skalar
 # axis.drawMarkersAtEnd burde kun være på dem der på enden og ikke 0.4 i intervallet [-0.5, 0.5]
 # Måske lidt mere gap imellem marker og akser
 # Function skal laves som en samlet funktion
 #       det samme med points
 #       -> Her bare brug en "fordeler" funktion
-# Farver skal kunne vælges
 # z-aksen titel skal altid være op ad
 # shapes objekter skal have en include metode med vindue som argument så den kan tilføje sig selv
+# Farver skal kunne vælges (som axis)
 
 
 # window

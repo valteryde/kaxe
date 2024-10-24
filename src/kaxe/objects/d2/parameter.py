@@ -1,6 +1,6 @@
 
 from typing import Callable
-from .point import Points
+from .point import Points2D
 from ...core.styles import getRandomColor
 from ...core.helper import *
 from ...core.shapes import shapes
@@ -8,7 +8,7 @@ from ...core.symbol import symbol
 from ...plot import identities
 import numbers
 from random import randint
-from .function import Function
+from .function import Function2D
 from typing import Union
 
 class ParametricEquation:
@@ -114,7 +114,7 @@ class ParametricEquation:
         
         a = dy/dx
  
-        self.tangentFunctions.append(Function(
+        self.tangentFunctions.append(Function2D(
             lambda x, a, x0, y0: a*(x - x0) + y0, a=a, x0=x, y0=y,
             width=self.thickness,
             color=self.color,
