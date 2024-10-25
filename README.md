@@ -162,3 +162,5 @@ plot.title(*titles:str)
 ### Examples
 
 ![Style3DPlot](tests/images/3d-box-style.png)
+![PrettyPlot3D2](tests/images/3d-function-pretty-2.png)
+![Style3DPlot3](tests/images/3d-function-pretty-3.png)

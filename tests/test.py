@@ -841,5 +841,26 @@ class Test:
         plt.save('tests/images/3d-function-ugly.png')
 
 
+    def test3DPretty():
+        
+        def f(x, b):
+    
+            return sum([
+                math.pow(0.55, n)*math.cos(math.pow(b, n)*math.pi*x) for n in range(0, 50)
+            ])
+
+        plt = kaxe.PlotFrame3D([-5, 5, 1, 10, -5, 5])
+        plt.title('x', 'b', 'z')
+        plt.add(kaxe.Function(f))
+        plt.save('tests/images/3d-function-pretty-2.png')
+
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function(lambda x, y: math.sin(x*y/10)))
+        plt.add(kaxe.Function(lambda x, y: math.sin(x*y/10)+5, fill=False))
+        plt.add(kaxe.Function(lambda x, y: math.sin(x*y/10)-5, fill=False))
+        plt.save('tests/images/3d-function-pretty-3.png')
+
+
 if __name__ == '__main__':
+    
     Test.argument()
