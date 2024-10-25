@@ -822,23 +822,23 @@ class Test:
 
     def test3Dfunction():
         # virkelig flot
-        # plt = kaxe.Plot3D()
-        # plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-10))
-        # plt.show()
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-10))
+        plt.save('tests/images/3d-function-pretty.png')
 
         plt = kaxe.Plot3D()
         plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-5))
-        plt.show()
+        plt.save('tests/images/3d-function-cutoff.png')
 
         def func(x, y):
             
-            if (-2 < x < 2) and (-2 < y < 2):
-                return 1
+            if (-2 < x < 2) and (-2 < y < 20):
+                return x**5/y
             return None
 
         plt = kaxe.Plot3D()
         plt.add(kaxe.Function(func))
-        plt.show()
+        plt.save('tests/images/3d-function-ugly.png')
 
 
 if __name__ == '__main__':

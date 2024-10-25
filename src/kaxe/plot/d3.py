@@ -24,6 +24,7 @@
 
 # Påbegyndt:
 # shapes objekter skal have en include metode med vindue som argument så den kan tilføje sig selv
+# Funktion skal "samles" hvis bunden kommer udenfor så trekanterne ikke er underligere
 
 # TODO:
 # Ryd op i koden og slet alt overflødigt
@@ -32,7 +33,6 @@
 # kunne være fedt med en funktion der bare hedder plot() og så laver den selv enten
 # et 2d eller 3d vindue med fx funktion eller punkter
 # 
-# Funktion skal "samles" hvis bunden kommer udenfor så trekanterne ikke er underligere
 # Måske lidt mere gap imellem marker og akser
 
 
