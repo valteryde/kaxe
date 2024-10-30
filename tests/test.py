@@ -8,7 +8,6 @@ import kaxe
 from random import randint
 import numpy as np
 
-
 class Test:
     def argument():
         if len(sys.argv) == 1:

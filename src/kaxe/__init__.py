@@ -5,7 +5,8 @@ from .plot import *
 from .chart import *
 from .data import data
 from .objects import *
-from .core import koundTeX
+from .core import koundTeX, setDefaultColors
+from .core import resetColor as resetColors
 
 try:
     ipy_str = str(type(get_ipython()))

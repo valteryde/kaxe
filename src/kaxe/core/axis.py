@@ -492,7 +492,7 @@ class Axis(AttrObject):
                 if not hasattr(a, 'textLabel') or not hasattr(b, 'textLabel'):
                     continue
                 
-                if not self.__topLeftBoxOverlays__(a.textLabel,b.textLabel):
+                if not self.__pixelCollision__(a.textLabel,b.textLabel):
                     continue
                 
                 v = addVector(a.textLabel.getCenterPos(), vectorScalar(b.textLabel.getCenterPos(), -1))
