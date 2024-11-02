@@ -478,8 +478,7 @@ class Axis(AttrObject):
         parent.includeElement(self.title)
 
 
-    def checkCrossOvers(self, parent, axis):
-
+    def __checkMarkersOverlapping__(self, parent, axis):
         if not(len(self.markers) == 0 or len(axis.markers) == 0):
             l = [
                 (self.markers[-1], axis.markers[-1]),
@@ -488,28 +487,46 @@ class Axis(AttrObject):
                 (self.markers[0], axis.markers[0])
             ]
 
+            # textbuble
+            # axis fejl
+
+            posSelfCenter = np.array((self.startPos/2 + self.endPos/2))
+            posAxisCenter = np.array((axis.startPos/2 + axis.endPos/2))
             for a, b in l:
                 if not hasattr(a, 'textLabel') or not hasattr(b, 'textLabel'):
                     continue
                 
-                if not self.__pixelCollision__(a.textLabel,b.textLabel):
+                if not self.__topLeftBoxOverlays__(a.textLabel, b.textLabel):
                     continue
                 
-                v = addVector(a.textLabel.getCenterPos(), vectorScalar(b.textLabel.getCenterPos(), -1))
-                
-                vlen_ = vlen(v)
-                if vlen_ == 0: #closeToZero måske
+                posMarkerA = np.array((a.tickLine.x0/2 + a.tickLine.x1/2, a.tickLine.y0/2 + a.tickLine.y1/2))
+                posMarkerB = np.array((b.tickLine.x0/2 + b.tickLine.x1/2, b.tickLine.y0/2 + b.tickLine.y1/2))
+
+                va = posSelfCenter - posMarkerA
+                va /= np.sqrt(np.dot(va, va))
+
+                vb = posAxisCenter - posMarkerB
+                vb /= np.sqrt(np.dot(vb, vb))
+
+                for i in range(parent.width): # maxpixel
+
+                    b.textLabel.push(*vb*10)
+                    a.textLabel.push(*va*10)
+
+                    if not self.__topLeftBoxOverlays__(a.textLabel, b.textLabel):
+                        parent.includeElement(a.textLabel)
+                        parent.includeElement(b.textLabel)
+                        break
+                    
+                else:
                     continue
+                
+                break
 
-                v = vectorScalar(v, 1/vlen_)
 
-                c = max(a.textLabel.width, a.textLabel.height) / 3 + max(b.textLabel.width, b.textLabel.height) / 3
-                a.textLabel.push(v[0]*c, v[1]*c)
-                b.textLabel.push(-v[0]*c, -v[1]*c)
+    def checkCrossOvers(self, parent, axis):
 
-                parent.includeElement(a.textLabel)
-                parent.includeElement(b.textLabel)
-
+        self.__checkMarkersOverlapping__(parent, axis)
 
         # check arrow
         if not self.getAttr('showArrow'):

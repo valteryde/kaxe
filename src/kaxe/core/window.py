@@ -10,7 +10,7 @@ import tqdm
 from random import randint
 import os
 try:
-    from IPython import display
+    from IPython import display # pyright: ignore[reportMissingModuleSource]
 except ImportError:
     pass
 
@@ -69,6 +69,7 @@ class Window(AttrObject):
         self.help = self.attrmap.help
         
         self.__included__ = []
+        self.__bakedImage__ = False
 
         self.legendbox = LegendBox()
         self.offset = [0,0]
@@ -263,6 +264,7 @@ class Window(AttrObject):
         self.addPaddingCondition(*self.getAttr('outerPadding'))
 
         logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
+        self.__baked__ = True
 
 
     def __addOuterContent__(self):
@@ -300,23 +302,29 @@ class Window(AttrObject):
         surface.save(fname)
         if terminaltype == "terminal": pbar.close()
         logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
+        return surface
 
 
     def __paint__(self, *args, **kwargs):
         
         if True: # self.engine == 'PILLOW':
-            self.__pillowPaint__(*args, **kwargs)
+            return self.__pillowPaint__(*args, **kwargs)
 
 
     # save and show    
     def save(self, fname):
-        
+        if self.__bakedImage__:
+            logging.log(0, 'Using cached plot window')
+            self.__bakedImage__.save(fname)
+            return
+
         totStartTime = time.time()
 
         self.__bake__()
-        self.__paint__(fname)
+        self.__bakedImage__ = self.__paint__(fname)
         
         logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
+    
     
     
     def show(self):

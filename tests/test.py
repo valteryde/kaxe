@@ -860,6 +860,19 @@ class Test:
         plt.save('tests/images/3d-function-pretty-3.png')
 
 
+    def testCrossOverMarker():
+        plt = kaxe.BoxPlot([-2000,6000,-1,1])
+        plt.save('tests/images/crossover.png')
+
+        plt = kaxe.Plot3D()
+        plt.style(width=1000, height=1000)
+        plt.help()
+        cmap = kaxe.Colormaps.standard
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
+        plt.save('tests/images/3d-box.png')
+        plt.show()
+
+
 if __name__ == '__main__':
     
     Test.argument()
