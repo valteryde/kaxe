@@ -869,7 +869,7 @@ class Test:
         plt.help()
         cmap = kaxe.Colormaps.standard
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
-        plt.save('tests/images/3d-box.png')
+        plt.save('tests/images/3d-box-2.png')
         plt.show()
 
     
