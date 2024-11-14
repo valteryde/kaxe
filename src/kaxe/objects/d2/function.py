@@ -16,10 +16,12 @@ class Function2D:
                  f:Callable, 
                  color:tuple=None, 
                  width:int=10,
+                 dotted:int=0,
+                 dashed:int=0,
                  *args, 
                  **kwargs
                 ):
-        
+
         self.function = f
         self.batch = shapes.Batch()
         self.fillbatch = shapes.Batch()
@@ -28,6 +30,9 @@ class Function2D:
         self.fillAreasBorders = []
         self.fillAreas = []
         self.fills = []
+
+        self.dotted = dotted
+        self.dashed = dashed
 
         if color is None:
             self.color = getRandomColor()
@@ -55,11 +60,14 @@ class Function2D:
         try:
             y = self.function(x, *self.otherArgs, **self.otherKwargs)
         except Exception as e:
+            print('Bad value:', x, e)
             return
 
         if not isinstance(x, numbers.Real) or not isinstance(y, numbers.Real):
+            print('Bad value:', x, y)
             return
         if math.isnan(x) or math.isnan(y):
+            print('Bad value:', x, y)
             return
 
         px, py = parent.pixel(x,y)
@@ -107,7 +115,7 @@ class Function2D:
         
         elif parent == identities.POLAR:
         
-            fidelity = 100
+            fidelity = 100 # burde kunne vælges som værdi
             for angle in range(0, 360*fidelity, 5):
                 angle = math.radians(angle / fidelity)
                 self.__setPoint__(angle, parent)
@@ -119,6 +127,10 @@ class Function2D:
                 color=self.color, 
                 width=self.thickness, 
                 batch=self.batch, 
+                dotted=self.dotted > 0,
+                dashed=self.dashed > 0,
+                dashedDist=self.dashed,
+                dottedDist=self.dotted
             )
 
         # add tangent

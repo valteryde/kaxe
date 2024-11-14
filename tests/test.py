@@ -872,7 +872,16 @@ class Test:
         plt.save('tests/images/3d-box.png')
         plt.show()
 
+    
+    def testDottedLine():
+        plt = kaxe.Plot()
+        
+        plt.add(kaxe.Function2D(lambda x: x**2-5, dashed=30))
+
+        plt.show()
+
 
 if __name__ == '__main__':
     
-    Test.argument()
+    Test.testDottedLine()
+    #Test.argument()

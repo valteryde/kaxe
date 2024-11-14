@@ -384,10 +384,14 @@ class Polygon(Shape):
 
 class LineSegment(Shape):
     
-    def __init__(self, points, color:tuple=BLACK, width=1, batch:Batch=None, center:bool=False, *args, **kwargs):
+    def __init__(self, points, color:tuple=BLACK, width=1, batch:Batch=None, center:bool=False, dotted=False, dottedDist=30, dashed=True, dashedDist=30, *args, **kwargs):
         self.points = points
         self.x = [x for x,y in self.points]
         self.y = [y for x,y in self.points]
+        self.dotted = dotted
+        self.dottedDist = dottedDist
+        self.dashed = dashed
+        self.dashedDist = dashedDist
         self.thickness = width
         self.color = color
         self.batch = batch
@@ -401,6 +405,37 @@ class LineSegment(Shape):
     def push(self, x, y):
         self.offset[0] += x
         self.offset[1] += y
+
+
+    def __drawDottedLines__(self, draw:ImageDraw.ImageDraw, pos):
+        
+        # find distance
+        lastPoint = pos[0], pos[1]
+        for i in range(2, len(pos), 2):
+            x, y = pos[i], pos[i+1]
+            dist = np.linalg.norm((lastPoint[0] - x, lastPoint[1] - y))
+            if dist > self.dottedDist:
+                lastPoint = (x,y)
+                draw.circle((x,y), self.thickness, fill=self.color)
+
+    
+    def __drawDashedLines__(self, draw:ImageDraw.ImageDraw, pos):
+
+        # find distance
+        lastPoint = pos[0], pos[1]
+        drewLastPoint = False
+        for i in range(2, len(pos), 2):
+            x, y = pos[i], pos[i+1]
+            dist = np.linalg.norm((lastPoint[0] - x, lastPoint[1] - y))
+            if dist > self.dashedDist:
+                
+                if not drewLastPoint: # hvis forrige punkt ikke blev tegnet
+                    draw.line((*lastPoint, x,y), width=10, fill=self.color)
+                    drewLastPoint = True
+                else:
+                    drewLastPoint = False
+                
+                lastPoint = (x,y)
 
 
     def drawPillow(self, surface:Image):
@@ -417,7 +452,12 @@ class LineSegment(Shape):
             newpos.append(x+self.offset[0])
             newpos.append(flipHorizontal(surface, y+self.offset[1])[0])
 
-        draw.line(newpos, fill=self.color, width=self.thickness, joint="curve")
+        if self.dotted:
+            self.__drawDottedLines__(draw, newpos)
+        elif self.dashed:
+            self.__drawDashedLines__(draw, newpos)
+        else:
+            draw.line(newpos, fill=self.color, width=self.thickness, joint="curve")
 
 
 
@@ -457,12 +497,12 @@ class Arc(Shape):
 # NAMESPACE
 class shapes:
     Rectangle = Rectangle
-    Line = Line
+    Line = Line # to points
     Circle = Circle
     Triangle=Triangle
     Polygon=Polygon
     Image = ImageShape
     ImageArray = ImageArrayShape
     Batch = Batch
-    LineSegment = LineSegment
+    LineSegment = LineSegment # multiple points
     Arc = Arc
