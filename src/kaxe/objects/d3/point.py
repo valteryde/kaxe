@@ -22,7 +22,6 @@ class Points3D(Base3DObject):
         self.z = z
         
         self.supports = [identities.XYZPLOT]
-        self.legendSymbol = symbols.CIRCLE
         self.legendColor = rc()
 
         self.cmap = color
@@ -43,6 +42,12 @@ class Points3D(Base3DObject):
             )
 
 
-    def legend(self, text:str):
+    def legend(self, text:str, color=None, symbol=symbols.CIRCLE):
         self.legendText = text
+
+        if color:
+            self.legendColor = color
+
+        self.legendSymbol = symbol
+
         return self

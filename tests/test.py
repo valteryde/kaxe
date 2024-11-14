@@ -878,10 +878,24 @@ class Test:
         
         plt.add(kaxe.Function2D(lambda x: x**2-5, dashed=30))
 
-        plt.show()
+        plt.save('tests/images/dottedline.png')
+        #plt.show()
+
+
+    def testAllLegends():
+        plt = kaxe.Plot()
+        plt.add(kaxe.Arrow((0,0), (1,1)).legend('Arrow'))
+        plt.add(kaxe.Equation(lambda x,y: x, lambda x,y: 2*y).legend('Equation'))
+        plt.add(kaxe.Function2D(lambda x: x**2-4).legend('Funktion'))
+        plt.add(kaxe.ParametricEquation(lambda t: (math.sin(t), (t/3)**2), (0, 2*math.pi)).legend('ParametricEquation'))
+        plt.add(kaxe.Pillars([0,1,2], [1,2,3], color=(0,0,0,100)).legend('Pillars'))
+        plt.add(kaxe.Points([0,1,2,3], [0,1,2,3]).legend('Points'))
+        plt.save('tests/images/alllegeneds.png')
+
+        # burde også test3 3d
 
 
 if __name__ == '__main__':
     
-    Test.testDottedLine()
-    #Test.argument()
+    # Test.testAllLegends()
+    Test.argument()

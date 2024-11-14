@@ -22,7 +22,6 @@ class Arrow:
         else:
             self.color = color
     
-        self.legendSymbol = symbols.LINE
         self.legendColor = self.color
 
         self.supports = [identities.XYPLOT, identities.POLAR]
@@ -33,7 +32,6 @@ class Arrow:
         pixel0 = parent.pixel(*self.p0)
         pixel1 = parent.pixel(*self.p1)
     
-
         v = vdiff(pixel1, pixel0)
         v = vectorScalar(v, 1/vlen(v))
 
@@ -72,7 +70,9 @@ class Arrow:
         self.batch.push(x, y)
 
 
-    def legend(self, text:str):
+    def legend(self, text:str, symbol=symbols.LINE, color=None):
         self.legendText = text
+        self.legendSymbol = symbol
+        if color:
+            self.legendColor = color
         return self
-    

@@ -18,7 +18,7 @@ class ParametricEquation:
                  interval:Union[tuple, list],
                  color:tuple=None, 
                  width:int=10,
-                 dotted:bool=False,
+                 #dotted:bool=0,
                  *args, 
                  **kwargs
                 ):
@@ -27,9 +27,8 @@ class ParametricEquation:
         self.interval = interval
         self.batch = shapes.Batch()
         
-        self.legendSymbol = symbol.LINE
         self.tangentFunctions = []
-        self.dotted = dotted
+        #self.dotted = dotted
         self.fidelity = 100
 
         if color is None:
@@ -130,6 +129,9 @@ class ParametricEquation:
         self.batch.push(*args, **kwargs)
     
 
-    def legend(self, text:str):
+    def legend(self, text:str, symbol=symbol.LINE, color=None):
         self.legendText = text
+        self.legendSymbol = symbol
+        if color:
+            self.legendColor = color
         return self

@@ -25,8 +25,6 @@ class Pillars:
 
         #self.size = size
 
-        self.symbol = symbols.RECTANGLE
-        self.legendSymbol = self.symbol
         self.legendColor = self.color
         
         self.farLeft = min(self.x) - 1
@@ -65,7 +63,9 @@ class Pillars:
         self.batch.push(x, y)
 
 
-    def legend(self, text:str):
+    def legend(self, text:str, symbol=symbols.RECTANGLE, color=None):
         self.legendText = text
+        self.legendSymbol = symbol
+        if color:
+            self.legendColor = color
         return self
-    

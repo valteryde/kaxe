@@ -384,7 +384,7 @@ class Polygon(Shape):
 
 class LineSegment(Shape):
     
-    def __init__(self, points, color:tuple=BLACK, width=1, batch:Batch=None, center:bool=False, dotted=False, dottedDist=30, dashed=True, dashedDist=30, *args, **kwargs):
+    def __init__(self, points, color:tuple=BLACK, width=1, batch:Batch=None, center:bool=False, dotted=False, dottedDist=30, dashed=False, dashedDist=30, *args, **kwargs):
         self.points = points
         self.x = [x for x,y in self.points]
         self.y = [y for x,y in self.points]

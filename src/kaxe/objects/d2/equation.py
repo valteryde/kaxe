@@ -18,13 +18,12 @@ class Equation:
         self.left = left
         self.right = right
         
-        self.legendSymbol = symbol.LINE
         self.width = width
         if color is None:
             self.color = getRandomColor()
         else:
             self.color = color
-        self.legendColor = self.color
+        self.legendColor = self.color # default
         
         self.dots = []
         self.dotsPosAbstract = set()
@@ -178,6 +177,9 @@ class Equation:
         self.batch.draw(*args, **kwargs)
 
 
-    def legend(self, text:str):
+    def legend(self, text:str, symbol=symbol.LINE, color=None):
         self.legendText = text
+        self.legendSymbol = symbol
+        if color:
+            self.legendColor = color
         return self

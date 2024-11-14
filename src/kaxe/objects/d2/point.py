@@ -80,6 +80,10 @@ class Points2D:
         self.batch.push(x, y)
 
 
-    def legend(self, text:str):
+    def legend(self, text:str, symbol=None, color=None):
         self.legendText = text
+        if symbol:
+            self.legendSymbol = symbol
+        if color:
+            self.legendColor = color
         return self

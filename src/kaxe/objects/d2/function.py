@@ -25,7 +25,6 @@ class Function2D:
         self.function = f
         self.batch = shapes.Batch()
         self.fillbatch = shapes.Batch()
-        self.legendSymbol = symbol.LINE
         self.tangentFunctions = []
         self.fillAreasBorders = []
         self.fillAreas = []
@@ -39,6 +38,10 @@ class Function2D:
         else:
             self.color = color
         self.legendColor = self.color
+
+        self.legendSymbol = symbol.LINE
+        if self.dotted:
+            self.legendSymbol = symbol.CIRCLE
 
         self.thickness = width
         if len(self.color) > 3:
@@ -185,6 +188,10 @@ class Function2D:
         self.batch.push(*args, **kwargs)
     
 
-    def legend(self, text:str):
+    def legend(self, text:str, symbol=None, color=None):
         self.legendText = text
+        if symbol:
+            self.legendSymbol = symbol
+        if color:
+            self.legendColor = color
         return self
