@@ -894,8 +894,28 @@ class Test:
 
         # burde også test3 3d
 
+    def testLollipop():
+        start = -2*math.pi
+        end = 2*math.pi
+        
+        plt = kaxe.Plot([start, end, -1.5, 1.5])
+        
+        func = lambda x: math.sin(x)
+
+        x = []
+        y = []
+        numPoints = 50
+        for i in range(0, numPoints):
+            j = (end - start) * i/numPoints + start    
+            x.append(j)
+            y.append(func(j))
+
+        plt.add(kaxe.Function(func))
+        plt.add(kaxe.Points2D(x, y, lollipop=True).legend('Sampling'))
+
+        plt.show()
 
 if __name__ == '__main__':
     
-    # Test.testAllLegends()
-    Test.argument()
+    Test.testLollipop()
+    # Test.argument()

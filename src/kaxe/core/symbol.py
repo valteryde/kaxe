@@ -6,6 +6,7 @@ import numpy as np
 from .fileloader import loadFile
 
 triangle = Image.open(loadFile('symboltriangle.png'))
+lollipop = Image.open(loadFile('symbollollipop.png'))
 
 class CustomSymbol(ImageShape):
     def __init__(self, symbimg:Image, width:int, height:int, color:tuple=BLACK, batch:Batch=None):
@@ -31,6 +32,7 @@ class symbol:
     TRIANGLE = 'TRI'
     STAR = 'STAR'
     RECTANGLE = "RECT"
+    LOLLIPOP = 'LOLLIPOP'
 
 
 def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
@@ -42,4 +44,5 @@ def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
         return shapes.Circle(0,0, int(height/2), cornerAlign=True, color=color, batch=batch)
     if symb == symbol.TRIANGLE:
         return CustomSymbol(triangle, height, height, color=color, batch=batch)
-
+    if symb == symbol.LOLLIPOP:
+        return CustomSymbol(lollipop, height, height, color=color, batch=batch)

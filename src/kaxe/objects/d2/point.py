@@ -7,7 +7,7 @@ from ...core.helper import *
 from ...plot import identities
 
 class Points2D:
-    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False):
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False):
         self.batch = shapes.Batch()
         self.points = []
         self.lines = []
@@ -27,7 +27,11 @@ class Points2D:
         self.symbol = symbol
         self.legendSymbol = self.symbol
         if not symbol:
-            self.legendSymbol = symbols.LINE
+            self.legendSymbol = symbols.CIRCLE
+        self.lollipop = lollipop
+        if not symbol and self.lollipop:
+            self.legendSymbol = symbols.LOLLIPOP
+
         self.legendColor = self.color
         self.connect = connect
         
@@ -49,7 +53,8 @@ class Points2D:
             x,y = parent.pixel(x, y)
             if not parent.inside(x,y):
                 continue
-
+            
+            # symbol
             if self.symbol:
                 
                 #shapes.Circle(x,y, self.size, color=self.color, batch=self.batch)
@@ -59,6 +64,12 @@ class Points2D:
                 if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
                 self.points.append(symbol)
             
+            # lollipop (lagt til lines)
+            _, y0 = parent.pixel(x, 0)
+            line = shapes.Line(x, y, x, y0, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
+            self.lines.append(line)
+
+            # connect
             if not self.connect or i == len(self.x)-1:
                 continue
             
