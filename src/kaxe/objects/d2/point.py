@@ -65,7 +65,7 @@ class Points2D:
                 self.points.append(symbol)
             
             else:
-                shapes.Circle(x, y, self.size, self.color, batch=self.batch)
+                shapes.Circle(x, y, self.size/2, self.color, batch=self.batch)
 
             # lollipop (lagt til lines)
             if self.lollipop:
