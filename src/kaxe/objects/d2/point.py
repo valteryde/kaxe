@@ -64,10 +64,14 @@ class Points2D:
                 if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
                 self.points.append(symbol)
             
+            else:
+                shapes.Circle(x, y, self.size, self.color, batch=self.batch)
+
             # lollipop (lagt til lines)
-            _, y0 = parent.pixel(x, 0)
-            line = shapes.Line(x, y, x, y0, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
-            self.lines.append(line)
+            if self.lollipop:
+                _, y0 = parent.pixel(x, 0)
+                line = shapes.Line(x, y, x, y0, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
+                self.lines.append(line)
 
             # connect
             if not self.connect or i == len(self.x)-1:
@@ -78,6 +82,9 @@ class Points2D:
                 continue
             
             if (vlen(vdiff((x1, y1), (x,y))) < self.size) and self.symbol:
+                continue
+
+            if not parent.inside(x1, y1):
                 continue
 
             line = shapes.Line(x,y, x1, y1, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)

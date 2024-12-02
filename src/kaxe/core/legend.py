@@ -73,7 +73,7 @@ class LegendBox(AttrObject):
             legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top
             legendSymbolTextSpacing = int(fontSize/4) # NOTE: STYLE
             legendDrawBox = False
-
+            
             # legendGridSpacing = (0, 0) # NOTE: STYLE
             # legendPadding = (0, 0, 0, 0) # NOTE: STYLE, left bottom right top
 
@@ -113,6 +113,7 @@ class LegendBox(AttrObject):
             for row in grid:
                 colPos = 0
 
+                maxTextHeight = 0
                 for symbol, text in row:
                     self.legendShapes.append(symbol)
                     self.legendShapes.append(text)
@@ -125,13 +126,17 @@ class LegendBox(AttrObject):
                     ]
 
                     # set base pos
-                    text.setLeftTopPos(basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing, basePos[1] - rowPos)
+                    # text.setLeftTopPos(basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing, basePos[1] - rowPos)
+                    text.setLeftTopPos(basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing, basePos[1] - rowPos - fontSize/2 + text.height/2)
                     symbol.x = basePos[0] + colPos
-                    symbol.y = basePos[1] - text.height / 2 - symbolSize[1]/2 - rowPos
+                    symbol.y = basePos[1] - fontSize/2 - rowPos - symbolSize[1]/2
 
-                    colPos += symbolSize[0] + text.width + legendSymbolTextSpacing + legendGridSpacing[0]
+                    maxTextHeight = max(maxTextHeight, symbolSize[1], text.height)
+
+                    colPos += fontSize + text.width + legendSymbolTextSpacing + legendGridSpacing[0]
                 
-                rowPos += text.height + legendGridSpacing[1]
+                rowPos += maxTextHeight + legendGridSpacing[1]
+
 
             # legend box
             # legendBoxSize = [10,30]
@@ -140,9 +145,9 @@ class LegendBox(AttrObject):
                     legendPos[0]-legendSizeThickness,
                     legendPos[1]-legendSizeThickness,
                     legendBoxSize[0]+2*legendSizeThickness,
-                    legendBoxSize[1]+2*legendSizeThickness, # JEG VED IKKE HVORFOR 30
+                    legendBoxSize[1]+2*legendSizeThickness,
                     batch=self.boxshape,
-                    color=parent.markerColor # NOTE: STYLE
+                    color=(255,0,0,255) # NOTE: STYLE
                 ))
 
                 self.legendShapes.append(shapes.Rectangle(
@@ -150,7 +155,7 @@ class LegendBox(AttrObject):
                     legendPos[1], 
                     legendBoxSize[0],
                     legendBoxSize[1], # JEG VED IKKE HVORFOR 30
-                    color=parent.backgroundColor,
+                    color=(0,0,255,255),
                     batch=self.boxshape
                 ))
 

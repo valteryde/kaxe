@@ -12,7 +12,7 @@ import numpy as np
 class Text(Shape):
     
     def __init__(self, text:str, x:int, y:int, fontSize:int=16, color=(0,0,0,255), rotate:int=0, batch:Batch=None, anchor_x:str="center", anchor_y:str="center", *args, **kwargs):
-        self.batch = batch     
+        self.batch = batch
         self.color = color
         self.rotate = rotate
         self.fontSize = fontSize
@@ -45,8 +45,8 @@ class Text(Shape):
 
         # make pil image
         pilImage = MathText(text, self.fontSize, self.color).image
-        # width = pilImage.width
-        # height = pilImage.height
+        # width = pilImage.width 
+        # height = pilImage.height 
 
         iarr = np.array(pilImage)
         self.img = Image.fromarray(rotate_image(iarr, self.rotate))
@@ -95,9 +95,11 @@ class Text(Shape):
     def getCenterPos(self):
         return self.__center__
 
+    
     def getLeftTopPos(self):
         return self.__leftTop__
 
+    
     def setLeftTopPos(self, x, y):
         self.__leftTop__[0] = x
         self.__leftTop__[1] = y
