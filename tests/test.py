@@ -1009,6 +1009,7 @@ class Test:
         plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\frac{a}{b}$'))
         plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\theta=\\theta_0 * \\mu * \\text{e}^{-\\frac{c}{2 *J} * t} * \\cos(\\frac{a * t}{2 * J} + \\alpha)$'))
         plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\theta=\\theta_0 * \\mu * \\text{e}^{-\\frac{c}{2 *J} * t} * \\cos(\\frac{a * t}{2 * J} + \\alpha)$'))
+        plt.help()
         plt.show()
 
 if __name__ == '__main__':

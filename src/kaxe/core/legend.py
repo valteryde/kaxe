@@ -6,7 +6,7 @@ from .styles import AttrObject, ComputedAttribute
 import math
 from types import MappingProxyType
 
-debug = True
+debug = False
 
 class LegendObject:
     def __init__(self, text, symbol, color):
