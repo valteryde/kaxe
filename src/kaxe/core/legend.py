@@ -1,10 +1,12 @@
 
-# NOTE: spaghetti pls fix
-
 from .symbol import makeSymbolShapes, symbol
 from .text import Text
 from .shapes import shapes
-from .styles import AttrObject
+from .styles import AttrObject, ComputedAttribute
+import math
+from types import MappingProxyType
+
+debug = True
 
 class LegendObject:
     def __init__(self, text, symbol, color):
@@ -16,6 +18,13 @@ class LegendObject:
 class LegendBox(AttrObject):
 
     name = "LegendBox"
+
+    defaults = MappingProxyType({
+        "topMargin": 50,
+        "maxWidth": ComputedAttribute(lambda map: map.getAttr('width')*0.85),
+        "gaps": ComputedAttribute(lambda map: (map.getAttr('fontSize')/2, map.getAttr('fontSize')/2)),
+        "symbolTextSpacing": ComputedAttribute(lambda map: int(map.getAttr('fontSize')/4))
+    })
 
     def __init__(self, *obj):
         super().__init__()
@@ -67,98 +76,95 @@ class LegendBox(AttrObject):
         if len(objects) > 0:
             
             # calculate grid sizes
-            legendMaxWidth = parent.width * .85 # NOTE: STYLE
-            legendSizeThickness = 2 #NOTE: STYLE
-            legendGridSpacing = (int(fontSize/2), int(fontSize/2)+2) # NOTE: STYLE
-            legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top
-            legendSymbolTextSpacing = int(fontSize/4) # NOTE: STYLE
-            legendDrawBox = False
             
-            # legendGridSpacing = (0, 0) # NOTE: STYLE
-            # legendPadding = (0, 0, 0, 0) # NOTE: STYLE, left bottom right top
 
-            grid = [[]]
-            rowWidth = 0
-            maxGridWidth = 0
-            sumTextHeight = 0
-            rowTextHeight = 0
+            legendMaxWidth = self.getAttr('maxWidth')
+            legendGridSpacing = self.getAttr('gaps')
+            legendSymbolTextSpacing = self.getAttr('symbolTextSpacing')
+            legendGap = self.getAttr('topMargin')
+
+            # legendSizeThickness = 2 #NOTE: STYLE
+            # legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top
+
+            # Da symbol og tekst skal centeres omkring linjens center midterlinje skal den 
+            # maksimale linje højde og bredde findes
+            currentLineWidth = 0
+            grid = [{"elements":[], "height":0}]
+            
             for symbol, text in objects:
                 
-                width = text.width + symbol.getBoundingBox()[0] + legendGridSpacing[0] + legendSymbolTextSpacing
-                rowWidth += width
-                rowTextHeight = max(rowTextHeight, text.height)
+                # start med at få bredden
+                symbolSize = symbol.getBoundingBox()
+                width = symbolSize[0] + text.width + legendGridSpacing[0] + legendGridSpacing[0]
+                height = symbolSize[0] + text.height
 
-                if rowWidth > legendMaxWidth:
-                    grid.append([])
-                    maxGridWidth = max(maxGridWidth, rowWidth-width)
-                    rowWidth = width
-                    sumTextHeight += rowTextHeight
+                currentLineWidth += width
+                # hvis bredden er for meget så gå en linje ned
+                if currentLineWidth > legendMaxWidth:
+                    grid.append({"elements":[], "height":0})
+                    currentLineWidth = 0
+                
+                grid[-1]["elements"].append((symbol, text, width, height))
+                grid[-1]["height"] = max(grid[-1]["height"], height)
 
-                grid[-1].append((symbol, text))
+            grid.reverse()
 
-            sumTextHeight += rowTextHeight
-            maxGridWidth = max(maxGridWidth, rowWidth)
-            
-            maxGridWidth -= legendGridSpacing[0]
-            
-            legendBoxSize = [
-                maxGridWidth + legendPadding[0] + legendPadding[2],  
-                sumTextHeight + legendGridSpacing[1] * (len(grid)-1) + legendPadding[1] + legendPadding[3]
-            ]
-            
-            legendPos = [parent.width/2 + parent.padding[0] - legendBoxSize[0]/2, 0]
-
-            # draw grid
-            rowPos = 0
+            # create legends
+            currentLinePos = [0, 0]
+            maxPos = [0, 0]
+            minPos = [math.inf, math.inf]
             for row in grid:
-                colPos = 0
-
-                maxTextHeight = 0
-                for symbol, text in row:
-                    self.legendShapes.append(symbol)
-                    self.legendShapes.append(text)
-
+                currentLinePos[0] = 0
+                
+                for symbol, text, width, height in row["elements"]:
                     symbolSize = symbol.getBoundingBox()
 
-                    basePos = [
-                        legendPos[0] + legendPadding[0],
-                        legendPos[1] + legendBoxSize[1] - legendPadding[1]
-                    ]
+                    x = currentLinePos[0]
+                    y = currentLinePos[1]
 
-                    # set base pos
-                    # text.setLeftTopPos(basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing, basePos[1] - rowPos)
-                    text.setLeftTopPos(basePos[0] + colPos + symbolSize[0] + legendSymbolTextSpacing, basePos[1] - rowPos - fontSize/2 + text.height/2)
-                    symbol.x = basePos[0] + colPos
-                    symbol.y = basePos[1] - fontSize/2 - rowPos - symbolSize[1]/2
+                    currentLinePos[0] += width
+                    symbol.x = x
+                    symbol.y = y + row["height"]/2 - symbolSize[1]/2
+                    text.setLeftTopPos(
+                        x + symbolSize[0] + legendSymbolTextSpacing, 
+                        y + text.height/2 + row["height"]/2 #+ text.height + height/2 - text.height/2 #+ height/2 + text.height/2
+                    )
 
-                    maxTextHeight = max(maxTextHeight, symbolSize[1], text.height)
+                    if debug:
+                        shapes.Rectangle(x, y, text.width + symbolSize[0] + legendSymbolTextSpacing, row["height"], batch=self.batch, color=(200,200,200,100))
+                    
+                    # find left top most
+                    tx, ty = text.getLeftTopPos()
+                    maxPos[0] = max(maxPos[0], tx + text.width, symbol.x + symbolSize[0])
+                    maxPos[1] = max(maxPos[1], ty, symbol.y + symbolSize[1])
 
-                    colPos += fontSize + text.width + legendSymbolTextSpacing + legendGridSpacing[0]
-                
-                rowPos += maxTextHeight + legendGridSpacing[1]
+                    minPos[0] = min(minPos[0], tx, symbol.x)
+                    minPos[1] = min(minPos[1], ty - text.height, symbol.y)
 
+                currentLinePos[1] += row["height"] + legendGridSpacing[1]
 
-            # legend box
-            # legendBoxSize = [10,30]
-            if legendDrawBox:
-                self.legendShapes.append(shapes.Rectangle(
-                    legendPos[0]-legendSizeThickness,
-                    legendPos[1]-legendSizeThickness,
-                    legendBoxSize[0]+2*legendSizeThickness,
-                    legendBoxSize[1]+2*legendSizeThickness,
-                    batch=self.boxshape,
-                    color=(255,0,0,255) # NOTE: STYLE
-                ))
+            if debug: shapes.Circle(0,0, 10, batch=self.batch)
 
-                self.legendShapes.append(shapes.Rectangle(
-                    legendPos[0], 
-                    legendPos[1], 
-                    legendBoxSize[0],
-                    legendBoxSize[1], # JEG VED IKKE HVORFOR 30
-                    color=(0,0,255,255),
-                    batch=self.boxshape
-                ))
+            height = (maxPos[1] - minPos[1])
+            width = (maxPos[0] - minPos[0])
+            
+            ### skub den ned til window 0,0 (her burde title være med)
+            # self.batch.push(-minPos[0], -minPos[1])
+            ### skub dens egen højde ned
+            # self.batch.push(0, -height)
+            ### giv den noget mellemrum 
+            # self.batch.push(0, -legendGap)
+            ### centrer den horisontalt
+            # self.batch.push(parent.getSize()[0]/2 - width/2, 0)
 
-            parent.addPaddingCondition(bottom=legendBoxSize[1]+fontSize)
+            # combine
+            self.batch.push(
+                -minPos[0] + parent.getSize()[0]/2 - width/2, 
+                -minPos[1] - height - legendGap
+            )
+
             parent.addDrawingFunction(self.boxshape)
             parent.addDrawingFunction(self.batch)
+            
+            # tilføj plads til legenden
+            parent.addPaddingCondition(bottom=height+legendGap)

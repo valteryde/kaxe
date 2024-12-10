@@ -428,3 +428,7 @@ class Window(AttrObject):
         if not y is None: p[1] = (y+self.offset[1]-self.padding[1])/self.scale[1]
 
         return p
+
+
+    def getSize(self):
+        return self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]

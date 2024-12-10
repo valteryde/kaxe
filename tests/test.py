@@ -919,7 +919,7 @@ class Test:
     def testPointsOutsideAndMultipleLegends():
         
         plt = kaxe.Plot([10, 10.5, None, None])
-        plt.style(fontSize=128)
+        plt.style(fontSize=128, outerPadding=(900,500,500,500))
         t = [i/100 for i in range(0,10000)]
         plt.add(kaxe.Points2D(t, [x**2 for x in t], connect=True).legend('$\\frac{a}{b}$'))
         plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
@@ -973,6 +973,7 @@ class Test:
         plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
         plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
         plt.save('tests/images/testPointsOutsideAndMultipleLegends.png')
+        plt.show()
 
     def testQualityOfLife():
         
@@ -995,10 +996,27 @@ class Test:
         # plt.show()
 
 
+    def testLegendBoxAgain():
+        
+        plt = kaxe.BoxPlot()
+        plt.style(outerPadding=(0,0,0,0))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('Experiment 1'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\theta=\\theta_0 * \\mu * \\text{e}^{-\\frac{c}{2 *J} * t} * \\cos(\\frac{a * t}{2 * J} + \\alpha)$'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('Experiment 2'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('a'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('Experiment 3'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('Experiment 4'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\frac{a}{b}$'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\theta=\\theta_0 * \\mu * \\text{e}^{-\\frac{c}{2 *J} * t} * \\cos(\\frac{a * t}{2 * J} + \\alpha)$'))
+        plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\theta=\\theta_0 * \\mu * \\text{e}^{-\\frac{c}{2 *J} * t} * \\cos(\\frac{a * t}{2 * J} + \\alpha)$'))
+        plt.show()
+
 if __name__ == '__main__':
     
     # Test.testPointsOutsideAndMultipleLegends()
+    Test.testLegendBoxAgain()
+    Test.testPointsOutsideAndMultipleLegends()
     # Test.testQualityOfLife()
     # Test.testLollipop()
     # Test.argument()
-    Test.testThemes()
+    # Test.testThemes()
