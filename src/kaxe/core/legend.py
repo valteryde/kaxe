@@ -74,9 +74,6 @@ class LegendBox(AttrObject):
 
 
         if len(objects) > 0:
-            
-            # calculate grid sizes
-            
 
             legendMaxWidth = self.getAttr('maxWidth')
             legendGridSpacing = self.getAttr('gaps')
@@ -95,8 +92,8 @@ class LegendBox(AttrObject):
                 
                 # start med at få bredden
                 symbolSize = symbol.getBoundingBox()
-                width = symbolSize[0] + text.width + legendGridSpacing[0] + legendGridSpacing[0]
-                height = symbolSize[0] + text.height
+                width = symbolSize[0] + text.width + legendGridSpacing[0] + legendSymbolTextSpacing
+                height = max(symbolSize[0], text.height)
 
                 currentLineWidth += width
                 # hvis bredden er for meget så gå en linje ned
