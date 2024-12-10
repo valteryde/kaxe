@@ -5,8 +5,8 @@ from ...core.styles import getRandomColor
 from ...core.helper import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol
+from ...core.helper import isRealNumber
 from ...plot import identities
-import numbers
 from random import randint
 from typing import Union
 
@@ -66,11 +66,8 @@ class Function2D:
             print('Bad value:', x, e)
             return
 
-        if not isinstance(x, numbers.Real) or not isinstance(y, numbers.Real):
-            print('Bad value:', x, y)
-            return
-        if math.isnan(x) or math.isnan(y):
-            print('Bad value:', x, y)
+        if not (isRealNumber(x) and isRealNumber(y)):
+            print('Bad value:', x)
             return
 
         px, py = parent.pixel(x,y)

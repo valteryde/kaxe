@@ -12,7 +12,15 @@ class Points2D:
         self.points = []
         self.lines = []
         
-        x, y = list(zip(*sorted(zip(x, y), key=lambda x: x[0])))
+        # clean lists
+        cx, cy = [], []
+        for i in range(len(x)):
+
+            if isRealNumber(x[i]) and isRealNumber(y[i]):
+                cx.append(x[i])
+                cy.append(y[i])
+
+        x, y = list(zip(*sorted(zip(cx, cy), key=lambda x: x[0])))
 
         self.x = x
         self.y = y
@@ -51,6 +59,7 @@ class Points2D:
 
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)
+            
             if not parent.inside(x,y):
                 continue
             

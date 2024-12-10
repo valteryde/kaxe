@@ -1,5 +1,6 @@
 
 import math
+import numbers
 
 
 # math
@@ -133,3 +134,10 @@ def shell(a):
 def closeToZero(v, epsilon=0.001):
     return -epsilon < v < epsilon
 
+
+def isRealNumber(x):
+    if not isinstance(x, numbers.Real):
+        return False
+    if math.isnan(x):
+        return False
+    return True

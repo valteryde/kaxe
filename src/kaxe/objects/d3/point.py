@@ -2,6 +2,7 @@
 from ...core.symbol import symbol as symbols # namespace confusison
 from ...plot import identities
 from .base import Base3DObject
+from ...core.helper import isRealNumber
 
 # 3d
 from ...core.d3.objects import Point3D, Line3D
@@ -17,9 +18,17 @@ class Points3D(Base3DObject):
     def __init__(self, x, y, z, color:tuple=None, size:int=None, connect:bool=False):
         super().__init__()
 
-        self.x = x
-        self.y = y
-        self.z = z
+        cx, cy, cz = [], [], []
+        for i in range(len(x)):
+
+            if isRealNumber(x[i]) and isRealNumber(y[i]):
+                cx.append(x[i])
+                cy.append(y[i])
+                cz.append(y[i])
+
+        self.x = cx
+        self.y = cy
+        self.z = cz
         
         self.supports = [identities.XYZPLOT]
         self.legendColor = rc()

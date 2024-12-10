@@ -165,8 +165,12 @@ class Window(AttrObject):
         where all objects is in
         unless windowAxis is already specefied
         """
+        
         if not hasattr(self, 'windowAxis'):
             return
+
+        if len(self.windowAxis) != 4:
+            [self.windowAxis.append(None) for _ in range(4 - len(self.windowAxis))]
 
         # har ingen effekt på 3D
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
@@ -205,7 +209,16 @@ class Window(AttrObject):
                     self.windowAxis[3] = max(vertical)
             except Exception as e:
                 self.windowAxis[3] = 5
-
+        
+        # if optimal is one dimensionel
+        if self.windowAxis[0] == self.windowAxis[1]:
+            self.windowAxis[0] -= 1
+            self.windowAxis[1] += 1
+        
+        if self.windowAxis[2] == self.windowAxis[3]:
+            self.windowAxis[2] -= 1
+            self.windowAxis[3] += 1
+        
 
     # before objects added to window
     def __before__(self):

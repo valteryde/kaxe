@@ -227,7 +227,7 @@ class Test:
 
         plot = kaxe.Plot([-10, 10, -10, 10])
         
-        plot.theme(kaxe.Themes.A4Full)
+        plot.theme(kaxe.Themes.A4Large)
 
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
@@ -236,7 +236,7 @@ class Test:
 
         plot = kaxe.Plot([-10, 10, -10, 10])
         
-        plot.theme(kaxe.Themes.A4Half)
+        plot.theme(kaxe.Themes.A4Small)
 
         eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
         plot.add(eq)
@@ -974,9 +974,31 @@ class Test:
         plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
         plt.save('tests/images/testPointsOutsideAndMultipleLegends.png')
 
+    def testQualityOfLife():
+        
+        plt = kaxe.Plot([0, 5])
+        plt.add(kaxe.Points2D([0,1,2,3], [0,1,2,3]).legend('A'))
+        plt.save('tests/images/dump.png')
+
+        plt = kaxe.Plot([0, 5])
+        plt.add(kaxe.Points2D([0,1,2,3], [0,0,0,0]))
+        plt.save('tests/images/dump.png')
+
+        plt = kaxe.Plot()
+        plt.add(kaxe.Function(lambda x: math.sqrt(x)))
+        plt.save('tests/images/dump.png')
+        # plt.show()
+
+        plt = kaxe.Plot()
+        plt.add(kaxe.Points(['hej', 'wow', 'nan', 1, 2], ['a', 'b', 'c', 2, complex(2, 1)]))
+        plt.save('tests/images/dump.png')
+        # plt.show()
+
 
 if __name__ == '__main__':
     
-    Test.testPointsOutsideAndMultipleLegends()
+    # Test.testPointsOutsideAndMultipleLegends()
+    # Test.testQualityOfLife()
     # Test.testLollipop()
     # Test.argument()
+    Test.testThemes()
