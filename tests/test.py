@@ -1015,9 +1015,9 @@ class Test:
 if __name__ == '__main__':
     
     # Test.testPointsOutsideAndMultipleLegends()
-    Test.testLegendBoxAgain()
-    Test.testPointsOutsideAndMultipleLegends()
+    # Test.testLegendBoxAgain()
+    # Test.testPointsOutsideAndMultipleLegends()
     # Test.testQualityOfLife()
     # Test.testLollipop()
-    # Test.argument()
+    Test.argument()
     # Test.testThemes()
