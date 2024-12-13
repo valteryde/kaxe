@@ -7,7 +7,7 @@ from .data import data
 from .objects import *
 from .core import koundTeX, setDefaultColors
 from .core import resetColor as resetColors
-from .core import symbol
+from .core import symbol as Symbol
 
 try:
     ipy_str = str(type(get_ipython()))

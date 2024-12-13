@@ -52,7 +52,7 @@ class Function2D:
         self.otherArgs = args
         self.otherKwargs = kwargs
 
-        self.supports = [identities.XYPLOT, identities.POLAR]
+        self.supports = [identities.XYPLOT, identities.POLAR, identities.LOGPLOT]
 
 
     def __call__(self, x):
@@ -113,6 +113,16 @@ class Function2D:
                 x, _ = parent.inversepixel(n,0)
                 self.__setPoint__(x, parent, firstaxisy, fills)
         
+        
+        elif parent == identities.LOGPLOT:
+            for n in range(0, parent.windowBox[2]):
+                try:
+                    x, _ = parent.inversepixel(n,1)
+                except Exception as e:
+                    continue
+                self.__setPoint__(x, parent, fills)
+        
+
         elif parent == identities.POLAR:
         
             fidelity = 100 # burde kunne vælges som værdi

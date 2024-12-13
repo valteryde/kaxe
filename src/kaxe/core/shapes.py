@@ -430,7 +430,7 @@ class LineSegment(Shape):
             if dist > self.dashedDist:
                 
                 if not drewLastPoint: # hvis forrige punkt ikke blev tegnet
-                    draw.line((*lastPoint, x,y), width=10, fill=self.color)
+                    draw.line((*lastPoint, x,y), width=self.thickness, fill=self.color)
                     drewLastPoint = True
                 else:
                     drewLastPoint = False

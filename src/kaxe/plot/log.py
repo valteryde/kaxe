@@ -5,13 +5,13 @@ from ..core.window import Window
 import math
 from .standard import Plot
 
-XYPLOT = 'xy'
+LOGPLOT = 'log'
 
 class LogPlot(Plot):
     
     def __init__(self,  window:list=None, firstAxisLog=False, secondAxisLog=True, hideUgly=True): # |
         super().__init__(window)
-        self.identity = XYPLOT
+        self.identity = LOGPLOT
 
         self.hideUgly = hideUgly
 
@@ -75,6 +75,12 @@ class LogPlot(Plot):
         # finish making plot
         # fit "plot" into window
 
+        if self.windowAxis[0] <= 0 and self.firstAxisLog:
+            self.windowAxis[0] = 0.01
+        
+        if self.windowAxis[2] <= 0 and self.secondAxisLog:
+            self.windowAxis[2] = 0.01
+
         self.windowAxis[0] = self.xtrans(self.windowAxis[0])
         self.windowAxis[1] = self.xtrans(self.windowAxis[1])
         self.windowAxis[2] = self.ytrans(self.windowAxis[2])
@@ -124,6 +130,8 @@ class LogPlot(Plot):
         if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
         if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
 
+        self.firstAxis.checkCrossOvers(self,self.secondAxis)
+        self.secondAxis.checkCrossOvers(self, self.firstAxis)
     
     # translations
     def pixel(self, x:int, y:int) -> tuple:
@@ -140,4 +148,24 @@ class LogPlot(Plot):
         para: pixel values according to axis
         return abstract value
         """
-        return self.inversetranslate(self.xtransinv(x),self.ytransinv(y))
+        
+        x, y = self.inversetranslate(x, y)
+
+        return self.xtransinv(x), self.ytransinv(y)
+
+
+class BoxLogPlot(LogPlot):
+    def __init__(self, window = None, firstAxisLog=False, secondAxisLog=True, hideUgly=True):
+        super().__init__(window, firstAxisLog, secondAxisLog, hideUgly)
+    
+    def __setAxisPos__(self):
+        self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1])
+        self.secondAxis.addStartAndEnd(self.windowAxis[2], self.windowAxis[3])
+        self.offset[0] += self.windowAxis[0] * self.scale[0]
+        self.offset[1] += self.windowAxis[2] * self.scale[1]
+
+        self.firstAxis.setPos(self.translate(self.windowAxis[0],self.windowAxis[2]), self.translate(self.windowAxis[1],self.windowAxis[2]))
+        self.firstAxis.finalize(self)
+
+        self.secondAxis.setPos(self.translate(self.windowAxis[0],self.windowAxis[2]), self.translate(self.windowAxis[0],self.windowAxis[3]))
+        self.secondAxis.finalize(self)

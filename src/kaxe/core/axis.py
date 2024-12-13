@@ -480,11 +480,18 @@ class Axis(AttrObject):
 
     def __checkMarkersOverlapping__(self, parent, axis):
         if not(len(self.markers) == 0 or len(axis.markers) == 0):
+            
+            afirst = min(*self.markers, key=lambda x: x.x)
+            bfirst = min(*axis.markers, key=lambda x: x.x)
+            
+            alast = max(*self.markers, key=lambda x: x.x)
+            blast = max(*axis.markers, key=lambda x: x.x)
+
             l = [
-                (self.markers[-1], axis.markers[-1]),
-                (self.markers[-1], axis.markers[0]),
-                (self.markers[0], axis.markers[-1]),
-                (self.markers[0], axis.markers[0])
+                (alast, blast),
+                (alast, bfirst),
+                (afirst, blast),
+                (afirst, bfirst)
             ]
 
             # textbuble

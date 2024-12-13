@@ -49,7 +49,7 @@ class Points2D:
             self.farTop = max(self.y)
             self.farBottom = min(self.y)
 
-        self.supports = [identities.XYPLOT, identities.POLAR]
+        self.supports = [identities.XYPLOT, identities.POLAR, identities.LOGPLOT]
 
     
     def finalize(self, parent):

@@ -33,11 +33,14 @@ class symbol:
     STAR = 'STAR'
     RECTANGLE = "RECT"
     LOLLIPOP = 'LOLLIPOP'
+    THICKLINE = 'THICKLINE'
 
 
 def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
     if symb == symbol.LINE:
         return shapes.Rectangle(0, 0, height, height/6, color=color, batch=batch)
+    if symb == symbol.THICKLINE:
+        return shapes.Rectangle(0, 0, height, height/2, color=color, batch=batch)
     if symb == symbol.RECTANGLE:
         return shapes.Rectangle(0, 0, height, height, color=color, batch=batch)
     if symb == symbol.CIRCLE:
