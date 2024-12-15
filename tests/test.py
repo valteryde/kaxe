@@ -181,21 +181,25 @@ class Test:
         #gaussian distribution
 
         plot = kaxe.Plot()
-                
+
         size = (1000, 1000)
+        size = (10, 10)
+        size = (500, 100)
 
         sigma = size[0]/2
         mu = 0
         f = lambda x: (1/(sigma*math.sqrt(2*math.pi))*math.e**(-1/2*(((x-mu)/sigma)**2)))*100
-        f = lambda x,y: math.sin(x/100)*100*math.e**(y/1000)
+        f = lambda x,y: math.sin(x*y/200)*math.e**(y/100)
 
         #data = [[f(math.sqrt(math.pow(x-size[0]//2,2)+math.pow(y-size[1]//2,2))) for x in range(size[0])] for y in range(size[1])]
         data = [[f(x,y) for x in range(size[0])] for y in range(size[1])]
 
-        cmap1 = kaxe.objects.ColorMap(data)
+        cmap1 = kaxe.objects.HeatMap(data)
+        cmap1.addColorScale(plot)
         plot.add(cmap1)
 
         plot.save('tests/images/colormap.png')
+        plot.show()
 
     
     def testLogarithmic():
@@ -1012,6 +1016,9 @@ class Test:
         plt.help()
         plt.show()
 
+
 if __name__ == '__main__':
     
-    Test.argument()
+    pass
+
+# stepsizeband som en værdi udfra

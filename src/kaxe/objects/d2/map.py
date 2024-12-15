@@ -7,42 +7,122 @@ from ...core.text import Text
 from ...core.round import koundTeX
 from ...plot import identities
 from typing import Union
-
-def mapTempToColor(col, minColor:Union[float, int], maxColor:Union[float, int], colors:list=heatcolormap):
-
-    if -0.005 < minColor - maxColor < 0.005:
-        return [*colors[-1], 255]
-
-    n = (col - minColor) / (maxColor - minColor)
-    n = (len(colors)-1) * n
-
-    upper = min(math.ceil(n), len(colors)-1)
-    lower = max(math.floor(n), 0)
-
-    r = n - lower
-    if r < 0:
-        return [*colors[lower], 255]
-
-    try:
-        c = [
-            round(colors[lower][0] + (colors[upper][0] - colors[lower][0])*r),
-            round(colors[lower][1] + (colors[upper][1] - colors[lower][1])*r),
-            round(colors[lower][2] + (colors[upper][2] - colors[lower][2])*r),
-            255
-        ]
-
-    except IndexError:
-        return [*colors[-1], 255]
-
-    return c
+from ..color import Colormaps
 
 
-class ColorMap:
-    def __init__(self, data):
+class ColorScale:
+
+    def __init__(self, lower:Union[float, int, tuple], upper:Union[float, int, tuple], cmap=Colormaps.standard, width:Union[int, None]=None):
+        """
+        lower and upper can both be a number or a tuple of length 2 with value and title as values
+        """
+        self.digits = 2
+
+        if type(lower) in [list, tuple]:
+            self.lower = lower[0]
+            self.lowerTitle = lower[1]
+        else:
+            self.lower = lower
+            self.lowerTitle = str(koundTeX(round(self.lower, self.digits)))
+
+        if type(upper) in [list, tuple]:
+            self.upper = upper[0]
+            self.upperTitle = upper[1]
+        else:
+            self.upper = upper
+            self.upperTitle = str(koundTeX(round(self.upper, self.digits)))
+
+        self.cmap = cmap
+        self.supports = [identities.XYPLOT, identities.XYZPLOT]
         self.batch = shapes.Batch()
+        self.width = width
+
+
+    def finalize(self, parent):
+        fontsize = parent.getAttr('fontSize')
+        leftMargin = fontsize # TODO: Style
+
+        windowHeight = parent.windowBox[3] - parent.windowBox[1]
+        height = int(windowHeight * 0.8)
+
+        if not self.width:
+            self.width = fontsize*2
+        
+        width = self.width # doven
+
+        self.pos = (parent.windowBox[2], parent.padding[1] + windowHeight//2 - height//2)
+
+        # spild af CPU her, men nemmere at læse, 
+        # altså det ville jo være bedre at lave et billed og bare loade det hver gang
+        arr = [self.cmap.getColor(self.upper - (i / height) * (self.upper - self.lower), self.lower, self.upper) for i in range(height)]
+        arr = [[i]*width for i in arr]
+
+        
+        # bottom text
+        self.lowerText = Text(
+            self.lowerTitle, 
+            0, 
+            0, 
+            batch=self.batch, 
+            anchor_x='center', 
+            anchor_y='top',
+            fontSize=fontsize
+        )
+        
+        self.lowerText.setLeftTopPos(self.pos[0]+width/2-self.lowerText.width//2, self.pos[1])
+
+
+        # top text
+        self.upperText = Text(
+            self.upperTitle,
+            self.pos[0]+width/2, 
+            self.pos[1]+height, 
+            batch=self.batch, 
+            anchor_x='center', 
+            anchor_y='',
+            fontSize=fontsize
+        )
+
+        # add margin between text and axis        
+        self.upperText.push(0, fontsize/8)
+        self.lowerText.push(0, -fontsize/8)
+
+        # parent.addPaddingCondition(right=width+scaleLeftMargin)
+
+        self.img = shapes.ImageArray(np.array(arr, np.uint8), *self.pos, batch=self.batch)
+        
+        # add space
+        lx, ly = self.lowerText.getLeftTopPos()
+        ux, uy = self.upperText.getLeftTopPos()
+
+        mx = min(lx, ux, self.pos[0])
+        off = self.pos[0] - mx
+
+        # add margin
+        self.batch.push(leftMargin+off, 0)
+
+
+
+        parent.include(self.pos[0]+width/2, self.pos[1]+height/2, width, height)
+        parent.includeElement(self.upperText)
+        parent.includeElement(self.lowerText)
+        #parent.hasColorScale = True
+
+
+    def push(self, x, y):
+        self.batch.push(x, y)
+
+
+    def draw(self, *args, **kwargs):
+        self.batch.draw(*args, **kwargs)
+
+
+class HeatMap:
+    def __init__(self, data, cmap=Colormaps.standard):
+        self.batch = shapes.Batch()
+        self.cmap = cmap
         
         self.data = data
-        self.digits = 2
 
         # max, min
         self.minValue = min([min(row) for row in self.data])
@@ -67,51 +147,16 @@ class ColorMap:
                 shapes.Rectangle(
                     *parent.pixel(cellNum, rowNum), 
                     width, height,
-                    color=tuple(mapTempToColor(cell, self.minValue, self.maxValue)), 
+                    color=self.cmap.getColor(cell, self.minValue, self.maxValue), 
                     batch=self.batch
                 )
-            
-        # scale
-        windowHeight = (parent.windowBox[3] - parent.windowBox[1])
-        height = int(windowHeight * 0.85)
         
-        fontsize = parent.getAttr('fontSize')
-
-        width = fontsize*3
-        scaleLeftMargin = fontsize
-        scaleStartPos = parent.windowBox[2]+scaleLeftMargin, parent.windowBox[1] + 1/2*windowHeight - height//2
-
-        # spild af CPU her, men nemmere at læse, 
-        # altså det ville jo være bedre at lave et billed og bare loade det hver gang
-        arr = [[mapTempToColor(self.maxValue - (i / height) * (self.maxValue - self.minValue), self.minValue, self.maxValue) for _ in range(width)] for i in range(height)]
-
-        # bottom text
-        self.topText = Text(
-            str(koundTeX(round(self.minValue, self.digits))), 
-            scaleStartPos[0]+width/2, 
-            scaleStartPos[1]-fontsize/4, 
-            batch=self.batch, 
-            anchor_x='center', 
-            anchor_y='',
-            fontSize=fontsize
-        )
+    
+    def addColorScale(self, parent):
+        parent.add(ColorScale(self.minValue, self.maxValue, cmap=self.cmap))
         
-        # top text
-        self.bottomText = Text(
-            str(koundTeX(round(self.maxValue, self.digits))),
-            scaleStartPos[0]+width/2, 
-            scaleStartPos[1]+height, 
-            batch=self.batch, 
-            anchor_x='center', 
-            anchor_y='',
-            fontSize=fontsize
-        )
-        
-        self.bottomText.push(0, self.bottomText.height + fontsize/4)
+        return self
 
-        self.img = shapes.ImageArray(np.array(arr, np.uint8), *scaleStartPos, batch=self.batch)
-        parent.addPaddingCondition(right=width+scaleLeftMargin)
-        #parent.hasColorScale = True 
 
     def push(self, x, y):
         self.batch.push(x, y)

@@ -48,6 +48,11 @@ def findMinMax(*pairs):
     return l
 
 
+def prepColor(color):
+    return tuple(int(round(i)) for i in color)
+
+
+
 # BATCH
 class Batch:
     def __init__(self):
@@ -102,7 +107,7 @@ class Rectangle(Shape):
         self.y = int(y)
         self.width = int(width)
         self.height = int(height)
-        self.color = color
+        self.color = prepColor(color)
         self.batch = batch
         super().__init__()
         if batch: batch.add(self)
