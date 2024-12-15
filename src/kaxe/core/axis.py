@@ -12,14 +12,9 @@ from PIL import Image
 from random import randint
 
 
-# AXIS COMPUTABLE STYLES
-stepSizeBandAttribute = ComputedAttribute(lambda a: [a.getAttr('fontSize')*7, a.getAttr('fontSize')*4])
-
-
 class Axis(AttrObject):
     
     defaults = MappingProxyType({
-        "stepSizeBand": stepSizeBandAttribute,
         "showArrow": False,
         "width": 4,
         "titleGap": ComputedAttribute(lambda map: map.getAttr('fontSize')*0.5),
@@ -31,7 +26,7 @@ class Axis(AttrObject):
 
     name = "Axis"
 
-    def __init__(self, directionVector:tuple, titleNormal:tuple):
+    def __init__(self, directionVector:tuple, titleNormal:tuple, numberOnAxisGoalReference:str):
         """
         
         Example (horisontal) axis:
@@ -53,7 +48,8 @@ class Axis(AttrObject):
         self.finalized = False    
         self.markers = []
         
-        # self.debugBatch = shapes.Batch()
+        # only a refernce for the name of attribute on parent object
+        self.numberOnAxisGoalReference = numberOnAxisGoalReference
 
 
     def get(self, x):
@@ -80,13 +76,29 @@ class Axis(AttrObject):
         pixelLength = vlen(vdiff(self.startPos, self.endPos))
         length = self.endNumber - self.startNumber
 
-        MARKERSTEPSIZE = self.getAttr('stepSizeBand')
+        [7, 12]
+        [5, 10]
+
+        numberOnAxisGoal = self.getAttr(self.numberOnAxisGoalReference)
+        if not numberOnAxisGoal: # default
+            numberOnAxisGoal = pixelLength // (5*self.getAttr('fontSize'))
+
+        if numberOnAxisGoal - 1 == 0:
+            numberOnAxisGoal = 2
+
+        acceptence = [numberOnAxisGoal-1, numberOnAxisGoal+1]
+
         MARKERSTEP = [2, 5, 10]
-        acceptence = [math.floor(pixelLength/MARKERSTEPSIZE[0]),math.floor(pixelLength/MARKERSTEPSIZE[1])]
         
         c = 0
         cameFromDirection = 0
+        tries = 0
         while True:
+            tries += 1
+
+            if tries > 1000:
+                #logging('Trying new stepsize')
+                acceptence = [min(acceptence[0]-1, 1), acceptence[1]+1]
 
             step = MARKERSTEP[c%len(MARKERSTEP)] * 10**(c//len(MARKERSTEP))
 
@@ -160,7 +172,6 @@ class Axis(AttrObject):
                     "pos" : p,
                     "style": []
                 })
-        
         
         drawMarkersAtEnd = self.getAttr('drawMarkersAtEnd')
         v = self.endPos - self.startPos
@@ -481,11 +492,20 @@ class Axis(AttrObject):
     def __checkMarkersOverlapping__(self, parent, axis):
         if not(len(self.markers) == 0 or len(axis.markers) == 0):
             
-            afirst = min(*self.markers, key=lambda x: x.x)
-            bfirst = min(*axis.markers, key=lambda x: x.x)
+            def min_(l):
+                if len(l) == 1:
+                    return l[0]
+                return min(*l, key=lambda x: x.x)
+            def max_(l):
+                if len(l) == 1:
+                    return l[0]
+                return max(*l, key=lambda x: x.x)
+
+            afirst = min_(self.markers)
+            bfirst = min_(axis.markers)
             
-            alast = max(*self.markers, key=lambda x: x.x)
-            blast = max(*axis.markers, key=lambda x: x.x)
+            alast = max_(self.markers)
+            blast = max_(axis.markers)
 
             l = [
                 (alast, blast),

@@ -63,11 +63,11 @@ class Function2D:
         try:
             y = self.function(x, *self.otherArgs, **self.otherKwargs)
         except Exception as e:
-            print('Bad value:', x, e)
+            #print('Bad value:', x, e)
             return
 
         if not (isRealNumber(x) and isRealNumber(y)):
-            print('Bad value:', x)
+            #print('Bad value:', x)
             return
 
         px, py = parent.pixel(x,y)

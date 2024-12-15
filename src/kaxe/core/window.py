@@ -52,6 +52,7 @@ class Window(AttrObject):
         self.attrmap.default(attr='outerPadding', value=[50,50,50,50])
         self.attrmap.default(attr='fontSize', value=50)
         self.attrmap.default(attr='color', value=(0,0,0,255))
+        
         self.setAttrMap(self.attrmap)
 
         self.attrmap.submit(LegendBox)

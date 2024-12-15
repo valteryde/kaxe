@@ -23,8 +23,13 @@ class Plot(Window):
         window:tuple [x0, x1, y0, y1] axis
         """
         
-        self.firstAxis = Axis((1,0), (0,-1))
-        self.secondAxis = Axis((0,1), (-1,0))
+        # NOTE: Does not really fit into the whole idea of styles
+        # but does serve a quality of life function
+        self.attrmap.default(attr='xNumbers', value=None)
+        self.attrmap.default(attr='yNumbers', value=None)
+
+        self.firstAxis = Axis((1,0), (0,-1), 'xNumbers')
+        self.secondAxis = Axis((0,1), (-1,0), 'yNumbers')
 
         # options
         self.windowAxis = window

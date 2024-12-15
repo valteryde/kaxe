@@ -25,14 +25,15 @@ class Bar(Window):
         self.attrmap.default('barGap', 100)
         self.attrmap.default('barSmallGapProc', 0.2)
         self.attrmap.default('barGapProc', 0.8)
+        self.attrmap.default('axisNumbers', None)
 
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
 
         if rotate:
-            self.axis = Axis((1,0), (0, -1))
+            self.axis = Axis((1,0), (0, -1), 'axisNumbers')
         else:
-            self.axis = Axis((0,1), (-1, 0))
+            self.axis = Axis((0,1), (-1, 0), 'axisNumbers')
 
         self.maxNumber = 0
         self.maxNumberAmount = 0

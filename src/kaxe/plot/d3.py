@@ -84,6 +84,9 @@ class Plot3D(Window):
         self.attrmap.setAttr('marker.showLine', False)
         self.attrmap.setAttr('marker.tickWidth', 2)
 
+        self.attrmap.default(attr='xNumbers', value=None)
+        self.attrmap.default(attr='yNumbers', value=None)
+        self.attrmap.default(attr='zNumbers', value=None)
 
         """
         window:tuple [x0, x1, y0, y1, z0, z1] axis
@@ -202,7 +205,7 @@ class Plot3D(Window):
 
         a, b = self.render.pixel(*line.p1) + offset, self.render.pixel(*line.p2) + offset
         v = b - a
-        axis = Axis(v, (-v[1]*normal, v[0]*normal))
+        axis = Axis(v, (-v[1]*normal, v[0]*normal), ["xNumbers", "yNumbers", "zNumbers"][i])
         axis.setPos(a, b)
         axis.addStartAndEnd(self.window[0+i*2], self.window[1+i*2])
         axis.finalize(self)

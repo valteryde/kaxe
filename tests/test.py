@@ -22,8 +22,10 @@ class Test:
 
     def testNormal():
         plot = kaxe.Plot()
+        plot.help()
 
         plot.save('tests/images/normal.png')
+        plot.show()
 
     def testPointPlot():
         plot = kaxe.Plot()
@@ -737,7 +739,6 @@ class Test:
 
 
     def test3DAnimation():
-
         for i in range(0,360, 30):
             plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[-10,i])
             plt.title('x aksen', 'y aksen', 'z aksen')
@@ -926,56 +927,56 @@ class Test:
         plt.style(fontSize=128, outerPadding=(900,500,500,500))
         t = [i/100 for i in range(0,10000)]
         plt.add(kaxe.Points2D(t, [x**2 for x in t], connect=True).legend('$\\frac{a}{b}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('howdi'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\eta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\phi$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\pi$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.LOLLIPOP).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.LOLLIPOP).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.LINE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.TRIANGLE).legend('$\\theta$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.LINE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
-        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('howdi'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\eta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\phi$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\pi$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.LOLLIPOP).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.LOLLIPOP).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.LINE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.TRIANGLE).legend('$\\theta$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.LINE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
+        plt.add(kaxe.Points2D(t, [x for x in t], connect=True, symbol=kaxe.Symbol.CIRCLE).legend('$\\frac{a^{a^{a^a}}}{b^c}$'))
         plt.save('tests/images/testPointsOutsideAndMultipleLegends.png')
         plt.show()
 
@@ -1018,7 +1019,11 @@ class Test:
 
 
 if __name__ == '__main__':
-    
-    pass
+    import os
+    try:
+        os.mkdir('tests/images/3d')
+    except FileExistsError:
+        pass
 
-# stepsizeband som en værdi udfra
+    Test.argument()
+

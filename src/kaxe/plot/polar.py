@@ -26,6 +26,9 @@ class PolarPlot(Window):
 
         self.attrmap.default('width', 2000)
         self.attrmap.default('height', 2000)
+
+        self.attrmap.default(attr='rNumbers', value=None)
+
         self.setAttrMap(self.attrmap)
 
         self.attrmap.submit(Marker)
@@ -38,7 +41,7 @@ class PolarPlot(Window):
 
         self.scale = (1,1)
         self.radiusTitle = None
-        self.radiusAxis = Axis((1,0), (0,1))
+        self.radiusAxis = Axis((1,0), (0,1), 'rNumbers')
 
         self.angleAxis = PolarAxis()
         self.batch = shapes.Batch()
@@ -220,7 +223,7 @@ class PolarPlot(Window):
 class PolarAxis(Axis):
 
     def __init__(self, degrees:bool=False):
-        super().__init__((1,0), (0,1))
+        super().__init__((1,0), (0,1), '')
         
         self.batch = shapes.Batch()
 
