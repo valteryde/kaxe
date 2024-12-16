@@ -151,7 +151,7 @@ plot.style({"Marker.showLine":False}, width=2000)
 
 Or use a predetermined theme with
 ```python
-plot.theme(kaxe.themes.A4Half)
+plot.theme(kaxe.Themes.A4Large)
 ```
 
 Axis titles can be changed with
@@ -164,3 +164,4 @@ plot.title(*titles:str)
 ![Style3DPlot](tests/images/3d-box-style.png)
 ![PrettyPlot3D2](tests/images/3d-function-pretty-2.png)
 ![Style3DPlot3](tests/images/3d-function-pretty-3.png)
+![AllLegends](tests/images/alllegeneds.png)
