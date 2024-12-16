@@ -231,23 +231,12 @@ class Test:
 
     def testThemes():
 
-        plot = kaxe.Plot([-10, 10, -10, 10])
-        
-        plot.theme(kaxe.Themes.A4Large)
-
-        eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
-        plot.add(eq)
-
-        plot.save('tests/images/theme_full.png')
-
-        plot = kaxe.Plot([-10, 10, -10, 10])
-        
-        plot.theme(kaxe.Themes.A4Small)
-
-        eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
-        plot.add(eq)
-
-        plot.save('tests/images/theme_half.png')
+        for i, theme in enumerate([kaxe.Themes.A4Large, kaxe.Themes.A4Medium, kaxe.Themes.A4Mini, kaxe.Themes.A4Slim, kaxe.Themes.A4Small]):
+            plot = kaxe.Plot([-randint(1,100), randint(1,100), -randint(1,100), randint(1,100)])
+            plot.theme(theme)
+            eq = kaxe.objects.Equation(lambda x, y: math.sin(y)*4, lambda x,y: x)
+            plot.add(eq)
+            plot.save(f'tests/images/theme_{i}.png')
     
 
     def testPolarPlot():
@@ -1025,5 +1014,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    # Test.testThemes()
     Test.argument()
-
