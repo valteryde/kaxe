@@ -1007,6 +1007,23 @@ class Test:
         plt.show()
 
 
+    def testTooManyNumbers():
+        
+        plt = kaxe.Plot()
+        plt.style(xNumbers=100, yNumbers=200)
+        # plt.show()
+
+        plt = kaxe.Plot()
+        plt.style({"marker.tickWidth":30, "marker.gridlineWidth":50}, xNumbers=5, yNumbers=5)
+        plt.add(kaxe.Points([5], [2]))
+        # plt.show()
+
+        plt = kaxe.Plot()
+        plt.style({"axis.ghostMarkers":True} , xNumbers=6, yNumbers=6)
+        plt.add(kaxe.Points([5], [2]))
+        plt.show()
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1014,5 +1031,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.testThemes()
+    # Test.testTooManyNumbers()
+
     Test.argument()
+    # Test.testLollipop()

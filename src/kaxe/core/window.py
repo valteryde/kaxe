@@ -304,18 +304,21 @@ class Window(AttrObject):
         if terminaltype == "terminal": pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        background = shapes.Rectangle(0,0,winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
+        background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
         surface = Image.new('RGBA', winSize)
 
         background.draw(surface)
 
         for shape in self.shapes:
+            
             shape.draw(surface)
+            
             if terminaltype == "terminal": pbar.update()
 
         surface.save(fname)
         if terminaltype == "terminal": pbar.close()
         logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
+        
         return surface
 
 

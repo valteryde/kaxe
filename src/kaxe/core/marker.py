@@ -23,9 +23,9 @@ class Marker(AttrObject):
         "showNumber": True,
         "showLine": True,
         "showTick":True,
-        "tickWidth" : 3,
+        "tickWidth" : 4,
         "tickLength": 15,
-        "gridlineColor" : (0,0,0,75),
+        "gridlineColor" : (0,0,0,100),
         "gridlineWidth": 2
     })
 

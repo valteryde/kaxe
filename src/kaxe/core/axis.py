@@ -22,6 +22,7 @@ class Axis(AttrObject):
         "drawAxis": True,
         "drawMarkersAtEnd": True,
         "axisColor": ComputedAttribute(lambda map: map.getAttr('color')),
+        "ghostMarkers": False,
     })
 
     name = "Axis"
@@ -75,9 +76,6 @@ class Axis(AttrObject):
 
         pixelLength = vlen(vdiff(self.startPos, self.endPos))
         length = self.endNumber - self.startNumber
-
-        [7, 12]
-        [5, 10]
 
         numberOnAxisGoal = self.getAttr(self.numberOnAxisGoalReference)
         if not numberOnAxisGoal: # default
@@ -206,9 +204,35 @@ class Axis(AttrObject):
         self.markers.append(marker)
 
 
-    def addMarkersToAxis(self, markers, parent):
+    def addMarkersToAxis(self, markers:list, parent):
+        """
+        Adds markers to axis
+
+        Also does overlap between markers on same axis
+
+        """
+
         self.setAttrMap(parent.attrmap)
-        
+
+        # Ghost markers
+        addGhostMarkers = self.getAttr('ghostMarkers')
+        if addGhostMarkers:
+            sortedMarkers = list(sorted(markers, key=lambda m: m["pos"]))
+            newcolor = list(self.getAttr('marker.gridlineColor'))
+            newcolor[3] = newcolor[3]//4
+            
+            
+            for i in range(len(sortedMarkers)-1):
+                markers.append({
+                    "text": "",
+                    "pos":(sortedMarkers[i]["pos"] + sortedMarkers[i+1]["pos"]) / 2,
+                    "style":[
+                        ('tickWidth', self.getAttr('marker.tickWidth')//2),
+                        ('gridlineColor', newcolor)
+                    ],
+                })
+
+
         for marker in markers:
             marker_ = Marker(
                 marker["text"],
@@ -220,9 +244,68 @@ class Axis(AttrObject):
 
             for style, val in marker["style"]:
                 marker_.setAttr(style, val)
-            
+    
             marker_.finalize(parent)
             self.markers.append(marker_)
+        
+        # get largets overlap
+        maxOverlays = 1
+        for a in self.markers:
+            overlays = 0
+            for b in self.markers:
+                if not hasattr(a, 'textLabel') or not hasattr(b, 'textLabel'):
+                    continue
+
+                overlays += self.__boxOverlays__(
+                    a.textLabel.getCenterPos(), 
+                    (a.textLabel.width, a.textLabel.height),
+                    b.textLabel.getCenterPos(), 
+                    (b.textLabel.width, b.textLabel.height)
+                )
+
+            maxOverlays = max(maxOverlays, overlays)
+        
+        # Burde ikke tælle sig selv med
+        # Dog når der tages modulo skal der plus en
+        # maxOverlays -= 1
+
+        # created markers
+        # Når der er et nul på aksen startes der ved 0 og så går op og springer over
+        # hver n element. Dette gøres så nul altid kommer med.
+        # Samme ide bruges andre steder
+        sortedMarkers = []
+
+        markerOffset = 1
+        if self.hasNull:
+            afterNull = [i for i in self.markers if i.x > 0]
+            afterNull.sort(key=lambda m: m.x)
+            beforeNull = [i for i in self.markers if i.x < 0]
+            beforeNull.sort(key=lambda m: -m.x)
+
+            sortedMarkers.append(afterNull)
+            sortedMarkers.append(beforeNull)
+
+        else:
+            sortedMarkers.append(self.markers)
+
+        for markers in sortedMarkers:
+
+            for i, marker in enumerate(markers):
+                
+                if (i + markerOffset) % maxOverlays != 0:
+                    marker.textLabel.img = Image.new('RGBA', (0,0))
+                    marker.line.color = (
+                        marker.line.color[0],
+                        marker.line.color[1],
+                        marker.line.color[2],
+                        marker.line.color[3]//4,
+                    )
+                    marker.tickLine.color = (
+                        marker.tickLine.color[0],
+                        marker.tickLine.color[1],
+                        marker.tickLine.color[2],
+                        marker.tickLine.color[3]//4,
+                    )
 
 
     def autoAddMarkers(self, parent):

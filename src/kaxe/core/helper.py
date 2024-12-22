@@ -2,7 +2,6 @@
 import math
 import numbers
 
-
 # math
 def intersectLines(n1, p1, n2, p2):
     """

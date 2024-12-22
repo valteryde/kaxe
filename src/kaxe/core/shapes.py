@@ -1,8 +1,11 @@
 
+# https://pypi.org/project/drawsvg/
+
 from random import randint
 from PIL import Image, ImageDraw
 from .styles import *
 from .helper import *
+from .line import drawLineOnPillowImage
 import os
 import numpy as np
 import logging
@@ -152,55 +155,51 @@ class Line(Shape):
         self.y1 += y
 
 
-    def drawPillowOld(self, surface:Image):
-        [y0, y1] = flipHorizontal(surface, self.y0, self.y1)
-        p1, p2 = (self.x0, y0), (self.x1, y1)
-        (mnx, _), (mny, _) = findMinMax((p1[0], p2[0]), (p1[1], p2[1]))
+    def drawPillowSimple(self, surface:Image):
+        # does not support alpha channel
 
-        width = max(self.x0, self.x1) - min(self.x0, self.x1)
-        height = max(self.y0, self.y1) - min(self.y0, self.y1)
-
-        if width > 10000 or height > 10000:
-            return
-
-        img = newImage(width+self.thickness*2, height+self.thickness*2, (0,0,0,0))
-        draw = ImageDraw.Draw(img)
-        
-        pos = (mnx, mny)
-        p1Local = vdiff(pos, p1)
-        p2Local = vdiff(pos, p2)
-
-        p1Local = (p1Local[0]+self.thickness, p1Local[1]+self.thickness)
-        p2Local = (p2Local[0]+self.thickness, p2Local[1]+self.thickness)
-
-        draw.line((*p1Local, *p2Local), fill=self.color, width=self.thickness)
-
-        vConnect = vdiff(p1Local, p2Local)
-
-        img = img.crop(img.getbbox())
-
-        vConnectLength = vlen(vConnect)
-
-        if vConnectLength == 0:
-            return
-
-        vConnect = (vConnect[1]/vConnectLength, vConnect[0]/vConnectLength)
-        if not self.centerAlign:
-            vConnect = (0,0)
-
-        if p1[1] > p2[1]:
-            vConnect = (-1*vConnect[0], vConnect[1])
-
-        blitImageToSurface(surface, img, (pos[0]-vConnect[0]*self.thickness//2, pos[1]-vConnect[1]*self.thickness//2))
-
-
-    def drawPillow(self, surface:Image):
         [y0, y1] = flipHorizontal(surface, self.y0, self.y1)
 
         draw = ImageDraw.Draw(surface)
 
         if self.thickness > 0:
             draw.line((self.x0, y0, self.x1, y1), fill=self.color, width=self.thickness)
+
+
+    def drawPillowNew(self, surface:Image):
+
+        [y0, y1] = flipHorizontal(surface, self.y0, self.y1)
+
+        # Make an overlay image the same size as the specified image, initialized to
+        # a fully transparent (0% opaque) version of the line color, then draw a
+        # semi-transparent line on it.
+        overlay = Image.new('RGBA', surface.size, (0,0,0,0))
+        draw = ImageDraw.Draw(overlay)  # Create a context for drawing things on it.
+        draw.line((self.x0, y0, self.x1, y1), fill=self.color, width=self.thickness)
+        # Alpha composite the overlay image onto the original.
+        surface.alpha_composite(overlay)
+
+    def drawFromNumpyArray(self, surface:Image):
+
+        [y0, y1] = flipHorizontal(surface, self.y0, self.y1)        
+
+        drawLineOnPillowImage(
+            surface,
+            self.x0,
+            y0,
+            self.x1,
+            y1,
+            self.color,
+            self.thickness
+        )
+
+
+
+    def drawPillow(self, surface:Image):
+        # return self.drawPillowAlpha(surface)
+        return self.drawFromNumpyArray(surface)
+        return self.drawPillowNew(surface)
+        return self.drawPillowSimple(surface)
 
 
 class Circle(Shape):
