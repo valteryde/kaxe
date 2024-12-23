@@ -1011,16 +1011,27 @@ class Test:
         
         plt = kaxe.Plot()
         plt.style(xNumbers=100, yNumbers=200)
-        # plt.show()
+        plt.save('tests/images/toomanynumbers100200.png')
 
         plt = kaxe.Plot()
         plt.style({"marker.tickWidth":30, "marker.gridlineWidth":50}, xNumbers=5, yNumbers=5)
         plt.add(kaxe.Points([5], [2]))
-        # plt.show()
+        plt.save('tests/images/toomanynumberdefault.png')
 
-        plt = kaxe.Plot()
-        plt.style({"axis.ghostMarkers":True} , xNumbers=6, yNumbers=6)
+        for i in [1,2,3,4,5]:
+            plt = kaxe.Plot()
+            plt.style({"axis.ghostMarkers":i} , xNumbers=6, yNumbers=6)
+            plt.add(kaxe.Points([5], [2]))
+            plt.save('tests/images/ghostpoints_{}.png'.format(i))
+
+            if i == 5:
+                plt.show()
+
+
+        plt = kaxe.LogPlot()
+        plt.style({"axis.ghostMarkers":5} , xNumbers=6, yNumbers=6)
         plt.add(kaxe.Points([5], [2]))
+        plt.save('tests/images/ghostpoints_loglog.png'.format(i))
         plt.show()
 
 
@@ -1031,7 +1042,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.testTooManyNumbers()
+    Test.testTooManyNumbers()
 
-    Test.argument()
+    # Test.argument()
     # Test.testLollipop()

@@ -215,22 +215,36 @@ class Axis(AttrObject):
         self.setAttrMap(parent.attrmap)
 
         # Ghost markers
-        addGhostMarkers = self.getAttr('ghostMarkers')
-        if addGhostMarkers:
+        ghostMarkersNumber = self.getAttr('ghostMarkers')
+        if ghostMarkersNumber:
             sortedMarkers = list(sorted(markers, key=lambda m: m["pos"]))
             newcolor = list(self.getAttr('marker.gridlineColor'))
             newcolor[3] = newcolor[3]//4
             
-            
-            for i in range(len(sortedMarkers)-1):
-                markers.append({
-                    "text": "",
-                    "pos":(sortedMarkers[i]["pos"] + sortedMarkers[i+1]["pos"]) / 2,
-                    "style":[
-                        ('tickWidth', self.getAttr('marker.tickWidth')//2),
-                        ('gridlineColor', newcolor)
-                    ],
-                })
+            diff = 0
+            for i in [*range(len(sortedMarkers)), None]:
+                
+                if i != len(sortedMarkers) - 1 and i != None:
+                    diff = sortedMarkers[i+1]["pos"] - sortedMarkers[i]["pos"]
+
+                for j in range(ghostMarkersNumber):
+                    if i == None:
+                        pos = sortedMarkers[0]["pos"] - diff * (j + 1) / (ghostMarkersNumber + 1)
+                    
+                    else:
+                        pos = sortedMarkers[i]["pos"] + diff * (j + 1) / (ghostMarkersNumber + 1)
+
+                    if not parent.inside(*self.get(pos)):
+                        continue
+
+                    markers.append({
+                        "text": "",
+                        "pos": pos,
+                        "style": [
+                            ('tickWidth', self.getAttr('marker.tickWidth') // 2),
+                            ('gridlineColor', newcolor)
+                        ],
+                    })
 
 
         for marker in markers:
