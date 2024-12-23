@@ -1042,7 +1042,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testTooManyNumbers()
+    #Test.testTooManyNumbers()
 
-    # Test.argument()
+    Test.argument()
     # Test.testLollipop()
