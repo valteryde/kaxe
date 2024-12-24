@@ -185,7 +185,6 @@ class Bar(Window):
 
 
 class GroupBar(Bar):
-
     
     # en måde at gøre den nemmer at ændre på er at dele tingene op i flere
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
