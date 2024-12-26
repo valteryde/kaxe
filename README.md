@@ -5,7 +5,7 @@
 
 Kaxe is an lightweight graphing tools for functions, equations, points and more written in pure python. Kaxe supports various plotting windows and charts.
 
-Kaxe documentation can be found [here](https://duckduckgo.com)
+Kaxe documentation can be found [here](https://kaxe.readthedocs.io/en/latest/)
 
 ## Goals
 
@@ -41,7 +41,7 @@ plt.add( ... ) # Object to be added
 plt.save("plot.png")
 ```
 
-This is all you need for a plot and some objects. To get started visit [the getting started section](https://duckduckgo.com)
+This is all you need for a plot and some objects. To get started visit [the getting started section](https://kaxe.readthedocs.io/en/latest/pages/start.html)
 
 ![AllLegends](tests/images/alllegeneds.png)
 ![Functions](tests/images/function.png)
