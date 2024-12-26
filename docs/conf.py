@@ -2,13 +2,9 @@
 import sys
 from pathlib import Path
 import os
-runImageCopies = True
-try:
-    from markdown_it import MarkdownIt
-    from mdit_py_plugins.front_matter import front_matter_plugin
-    from mdit_py_plugins.footnote import footnote_plugin
-except ImportError:
-    runImageCopies = False
+from markdown_it import MarkdownIt
+from mdit_py_plugins.front_matter import front_matter_plugin
+from mdit_py_plugins.footnote import footnote_plugin
 import shutil
 import math
 
@@ -178,6 +174,8 @@ def createAllDocImages():
     ), 'points3d')
     create3DWithObject(kaxe.Function3D(lambda x,y: math.sin(x*y/10)), 'function3d')
 
-if runImageCopies:
+try:
     copyImagesFromTest()
     createAllDocImages()
+except Exception as e:
+    print(e)
