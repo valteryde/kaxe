@@ -8,7 +8,21 @@ from .standard import Plot
 LOGPLOT = 'log'
 
 class LogPlot(Plot):
+    """
+    LogPlot class for creating logarithmic plots.
     
+    Parameters
+    ----------
+    window : list, optional
+        A list defining the axis window as [x0, x1, y0, y1]. Default is None.
+    firstAxisLog : bool, optional
+        If True, the first axis (x-axis) will be logarithmic. Default is False.
+    secondAxisLog : bool, optional
+        If True, the second axis (y-axis) will be logarithmic. Default is True.
+    hideUgly : bool, optional
+        If True, hides markers that are not round numbers in logarithmic scale. Default is True.
+    """
+
     def __init__(self,  window:list=None, firstAxisLog=False, secondAxisLog=True, hideUgly=True): # |
         super().__init__(window)
         self.identity = LOGPLOT

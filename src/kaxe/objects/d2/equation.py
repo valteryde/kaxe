@@ -11,6 +11,36 @@ import math
 
 
 class Equation:
+    """
+    A class to represent a mathematical equation from left and right side of equation.
+    
+    Supported in classical plots and polar plot
+
+    Parameters
+    ----------
+    left : callable
+        Left side of the equation
+    
+    right : callable
+        Right side of the equation
+    
+    color : tuple|list, optional
+        Color to display the equation , if default is None a random color will be assigned
+
+    width : int
+        Line thickness, default is 2
+    
+    Examples
+    --------
+    >>> def left(x, y):
+    ...     return x**2 + y**2
+    >>> def right(x, y):
+    ...     return 1
+    >>> eq = Equation(left, right)
+    >>> eq.legend("Circle", color=(255, 0, 0, 255))
+    >>> plt.add(eq)
+    """
+    
 
     def __init__(self, left, right, color:tuple=None, width:int=2):
         self.batch = shapes.Batch()
@@ -178,6 +208,24 @@ class Equation:
 
 
     def legend(self, text:str, symbol=symbol.LINE, color=None):
+        """
+        Adds a legend
+        
+        Parameters
+        ----------
+        text : str
+            The text to be displayed in the legend.
+        symbol : symbols, optional
+            The symbol to be used in the legend.
+        color : optional
+            The color to be used for the legend text. If not provided, the default color will be used.
+        
+        Returns
+        -------
+        self : object
+            Returns the instance of the arrow object with the updated legend.        
+        """
+        
         self.legendText = text
         self.legendSymbol = symbol
         if color:

@@ -8,6 +8,7 @@ from .objects import *
 from .core import koundTeX, setDefaultColors
 from .core import resetColor as resetColors
 from .core import symbol as Symbol
+from .core.window import Window, AttrObject, AttrMap
 
 try:
     ipy_str = str(type(get_ipython()))

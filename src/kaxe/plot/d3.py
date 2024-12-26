@@ -55,7 +55,19 @@ XYZPLOT = 'xyz'
 
 
 class Plot3D(Window):
+    """
+    A plotting window used to represent a boxed 3D Plot
     
+    Parameters
+    ----------
+    window : list, optional
+        The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
+    rotation : list, optional
+        The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    """
+    
+    
+
     def __init__(self,  window:list=None, rotation=[0, -20]):
         super().__init__()
 
@@ -195,7 +207,6 @@ class Plot3D(Window):
                 (315, 360): [(self.l1, 1), (self.l6, -1), (self.l3, 1)],
             }
         }
-
 
 
     def __createAxis__(self, line:Line3D, normal, i, addMarkers=True):
@@ -394,6 +405,23 @@ class Plot3D(Window):
 
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
+        """
+        Adds title to the plot.
+        
+        Parameters
+        ----------
+        firstAxis : str, optional
+            Title for the first axis.
+        secondAxis : str, optional
+            Title for the second axis.
+        thirdAxis : str, optional
+            Title for the third axis.
+
+        Returns
+        -------
+        Kaxe.Plot
+            The active plotting window
+        """
         
         if firstAxis:
             self.firstAxisTitle = firstAxis
@@ -404,6 +432,7 @@ class Plot3D(Window):
         if thirdAxis:
             self.thirdAxisTitle = thirdAxis
 
+        return self
 
     # legacy name
     # def translate(self, x:int, y:int, z:int) -> tuple:
@@ -435,6 +464,17 @@ class Plot3D(Window):
 
 
 class PlotCenter3D(Plot3D):
+    """
+    A plotting window used to represent a 3D Plot with axis placed correctly 
+    
+    Parameters
+    ----------
+    window : list, optional
+        The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
+    rotation : list, optional
+        The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    """
+
     def __init__(self,  window:list=None, rotation=[0, -20]):
         super().__init__(window, rotation)
         self.__boxed__ = False
@@ -443,6 +483,17 @@ class PlotCenter3D(Plot3D):
 
 
 class PlotFrame3D(Plot3D):
+    """
+    A plotting window used to represent a 3D Plot with only x-, y- and z-axis drawn
+    
+    Parameters
+    ----------
+    window : list, optional
+        The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
+    rotation : list, optional
+        The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    """
+
     def __init__(self,  window:list=None, rotation=[0, -20]):
         super().__init__(window, rotation)
         self.__boxed__ = True
@@ -451,6 +502,17 @@ class PlotFrame3D(Plot3D):
 
 
 class PlotEmpty3D(Plot3D):
+    """
+    A plotting window used to represent a 3D Plot without axis drawn
+    
+    Parameters
+    ----------
+    window : list, optional
+        The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
+    rotation : list, optional
+        The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    """
+
     def __init__(self,  window:list=None, rotation=[0, -20]):
         super().__init__(window, rotation)
         self.__boxed__ = False

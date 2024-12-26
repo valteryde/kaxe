@@ -14,7 +14,24 @@ import math
 import time
 
 class Function3D(Base3DObject):
+    """
+    Create a Function in 3D given .. math:: z=f(x,y)
+    
+    Parameters
+    ----------
+    f : callable
+        The function to be plotted.
+    color : Colormap, optional
+        The colormap to be used for plotting. If None, the standard colormap is used.
+    numPoints : int, optional
+        The number of points to be used for plotting. If None, defaults to 150 if `fill` is True, otherwise 25.
+    fill : bool
+        Whether to fill the plot. default is True
+    """
+    
     def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True):
+        
+
         super().__init__()
 
         self.f = f
@@ -168,6 +185,25 @@ class Function3D(Base3DObject):
 
 
     def legend(self, text:str, color=None, symbol=None):
+        """
+        Adds a legend
+        
+        Parameters
+        ----------
+        text : str
+            The text to be displayed in the legend.
+        symbol : symbols, optional
+            The symbol to be used in the legend.
+        color : optional
+            The color to be used for the legend text. If not provided, the default color will be used.
+        
+        Returns
+        -------
+        self : object
+            Returns the instance of the arrow object with the updated legend.        
+        """
+        
+
         self.legendText = text
 
         if color:

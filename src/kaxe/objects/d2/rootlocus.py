@@ -32,10 +32,21 @@ def poly(lst, x):
 
 
 class RootLocus:
+    """
+    Solving 1 + k * f(s) = 0 for k in range(r[0], r[1])
+    
+    Parameters
+    ----------
+    den : array_like
+        Coefficients of the denominator polynomial d(s).
+    num : array_like
+        Coefficients of the numerator polynomial n(s).
+    r : list, optional
+        Range of k values [k1, k2] to compute the root locus. Default is [0, 10**12].
+
+    """
+    
     def __init__(self, den, num, r=[0, 10**12]):
-        """
-        Solving 1 + k * f(s) = 0 for k in range(r[0], r[1])
-        """
 
         self.batch = shapes.Batch()
         

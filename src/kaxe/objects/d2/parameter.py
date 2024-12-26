@@ -12,6 +12,27 @@ from .function import Function2D
 from typing import Union
 
 class ParametricEquation:
+    """
+    A class to represent a parametric equation.
+    
+    Supports classical plots, polar plot is experimential
+
+    Parameters
+    ----------
+    f : Callable
+        The parametric function.
+    interval : Union[tuple, list]
+        The interval over which the function is defined.
+    color : tuple, optional
+        The color of the parametric equation, by default None.
+    width : int, optional
+        The width of the line representing the parametric equation, by default 10.
+    *args : tuple
+        Additional positional arguments.
+    **kwargs : dict
+        Additional keyword arguments.
+    """
+
 
     def __init__(self, 
                  f:Callable, 
@@ -106,7 +127,17 @@ class ParametricEquation:
 
 
     def tangent(self, t, dt=10**(-5)):
-         
+        """
+        Creates an tangent using central diffrence quotient
+
+        Parameters
+        ----------
+        t : int|float
+            t-value where tangent will be placed
+        dt : int|float, optional
+            Step size for CFDM
+        """
+
         # central diff quo
         x, y = self.function(t)
         dx, dy = vdiff((x,y), self.function(t+dt))
@@ -130,6 +161,24 @@ class ParametricEquation:
     
 
     def legend(self, text:str, symbol=symbol.LINE, color=None):
+        """
+        Adds a legend
+        
+        Parameters
+        ----------
+        text : str
+            The text to be displayed in the legend.
+        symbol : symbols, optional
+            The symbol to be used in the legend.
+        color : optional
+            The color to be used for the legend text. If not provided, the default color will be used.
+        
+        Returns
+        -------
+        self : object
+            Returns the instance of the arrow object with the updated legend.        
+        """
+        
         self.legendText = text
         self.legendSymbol = symbol
         if color:
