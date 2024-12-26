@@ -6,3 +6,4 @@ openpyxl
 tqdm
 numba
 markdown-it-py
+myst-parser
