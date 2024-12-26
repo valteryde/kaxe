@@ -5,4 +5,4 @@ scipy
 openpyxl
 tqdm
 numba
-markdown-it
+markdown-it-py
