@@ -11,6 +11,42 @@ from random import randint
 from typing import Union
 
 class Function2D:
+    """
+    A class to represent a 2D function for plotting
+
+    Supports classical plots, polar plots and logarithmic plot
+
+    Parameters
+    ----------
+    f : callable
+        The function to be plotted. It should take a single argument and return a value y.
+        The function is not contained to a domain.
+    color : tuple, optional
+        The color of the function plot. If not provided, a random color will be used.
+    width : int, optional
+        The thickness of the function plot line. Default is 10.
+    dotted : int, optional
+        If greater than 0, the function plot line will be dotted with the specified distance between dots. Default is 0.
+    dashed : int, optional
+        If greater than 0, the function plot line will be dashed with the specified distance between dashes. Default is 0.
+    args : tuple, optional
+        Additional positional arguments to be passed to the function f.
+    kwargs : dict, optional
+        Additional keyword arguments to be passed to the function f.
+
+    Methods
+    __call__(x)
+        Evaluates the function at a given x value.
+    
+    Examples
+    --------
+    >>> def f(x):
+    ...     return 2*x
+    >>> func = kaxe.Function2D(f(x))
+    >>> func(2)
+    4
+    >>> plt.add(func)
+    """
 
     def __init__(self, 
                  f:Callable, 
@@ -168,7 +204,18 @@ class Function2D:
 
 
     def tangent(self, x, dx=10**(-5)):
-         
+        """
+        Creates an tangent using central diffrence quotient
+
+        Parameters
+        ----------
+        x : int|float
+            x-value where tangent will be placed
+        dx : int|float, optional
+            Step size for CFDM
+        """
+
+
         # central diff quo
         dy = self.function(x+dx/2) - self.function(x-dx/2)
         
@@ -182,6 +229,17 @@ class Function2D:
 
     
     def fill(self, x0, x1): 
+        """
+        Fills the area in the graph between x0 and x1
+
+        Parameters
+        ----------
+        x0 : int|float
+            Left first axis value to start the fill
+        x1 : int|float
+            Right first axis value to end the fill
+        """
+        
         self.fillAreasBorders.append((x0,x1))
         
 
@@ -196,6 +254,24 @@ class Function2D:
     
 
     def legend(self, text:str, symbol=None, color=None):
+        """
+        Adds a legend
+        
+        Parameters
+        ----------
+        text : str
+            The text to be displayed in the legend.
+        symbol : symbols, optional
+            The symbol to be used in the legend.
+        color : optional
+            The color to be used for the legend text. If not provided, the default color will be used.
+        
+        Returns
+        -------
+        self : object
+            Returns the instance of the arrow object with the updated legend.        
+        """
+        
         self.legendText = text
         if symbol:
             self.legendSymbol = symbol

@@ -34,7 +34,14 @@ except:
     pass
 
 class Window(AttrObject):
+    """
+    The main window class that handles the rendering and layout of graphical elements.
     
+    It manages padding, styles, and the inclusion of various elements such as shapes and legends.
+    The window can be rendered and saved as an image, and it supports 
+    different terminal types including Jupyter and IPython.
+    """
+
     name = "Window"
 
     def __init__(self): # |
@@ -95,10 +102,24 @@ class Window(AttrObject):
 
     def theme(self, theme):
         """
-        use a defined theme
+        Applies a theme to the window by updating its style attributes.
 
-        calls self.style
+        Parameters
+        ----------
+        theme : dict
+            A dictionary containing style attributes and their values.
+        
+            
+        Examples
+        --------
+        >>> plt.theme(kaxe.Themes.A4Full)
+
+        See also
+        --------
+        Kaxe.Plot.styles
+
         """
+        
         self.style(**theme)
 
 
@@ -330,6 +351,24 @@ class Window(AttrObject):
 
     # save and show    
     def save(self, fname):
+        """
+        Save the current window image to a file.
+        
+        If a cached image is available, it will be used to save the file.
+        Otherwise, the image will be generated and then saved.
+        
+        Parameters
+        ----------
+        fname : str
+            The filename where the image will be saved.
+        
+        Examples
+        --------
+        >>> plt.save( path/where/image/saved.png )
+
+        """
+        
+
         if self.__bakedImage__:
             logging.log(0, 'Using cached plot window')
             self.__bakedImage__.save(fname)
@@ -343,8 +382,18 @@ class Window(AttrObject):
         logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
     
     
-    
     def show(self):
+        """
+        Show the current image using `Pillow.Image.Show`
+        
+        If a cached image is available, it will be used to save the file.
+        Otherwise, the image will be generated and then saved.
+
+        Examples
+        --------
+        >>> plt.show( )
+        """
+
         fname = 'plot{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
 
         if terminaltype != "terminal":
@@ -368,12 +417,27 @@ class Window(AttrObject):
         self.shapes.append((shape, z))
 
     # api
-    def add(self, o):
-        if self.identity in o.supports:
-            self.objects.append(o)
+    def add(self, obj):
+        """
+        Adds object to plotting window
+
+        Paramaters
+        ----------
+        obj
+            Object to be added to the plot
+
+        Examples
+        --------
+        >>> plt.add(kaxe.Function( ... ))
+        >>> plt.add(kaxe.Points( ... ))
+        """
+
+        if self.identity in obj.supports:
+            self.objects.append(obj)
         else:
-            logging.error(f'{o}, is not supported in {self}')
-        return o
+            logging.error(f'{obj}, is not supported in {self}')
+        
+        return obj
 
 
     # defaults, may lead to problems

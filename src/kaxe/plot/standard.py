@@ -10,6 +10,22 @@ from ..core.window import Window
 XYPLOT = 'xy'
 
 class Plot(Window):
+    """
+    A simple plotting window for cartesian coordinates
+    
+    Parameters
+    ----------
+    window : list
+        A list representing the axis window [x0, x1, y0, y1].
+    
+    Examples
+    --------
+    >>> import kaxe
+    >>> plt = kaxe.Plot()
+    >>> plt.add( ... )
+    >>> plt.show( )
+
+    """
     
     # en måde at gøre den nemmer at ændre på er at dele tingene op i flere
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
@@ -70,7 +86,6 @@ class Plot(Window):
 
         self.secondAxis.finalize(self)
 
-
     def __prepare__(self):
         # finish making plot
         # fit "plot" into window
@@ -93,6 +108,23 @@ class Plot(Window):
 
     # special api
     def title(self, first=None, second=None):
+        """
+        Adds title to the plot.
+        
+        Parameters
+        ----------
+        first : str, optional
+            Title for the first axis.
+        second : str, optional
+            Title for the second axis.
+
+        Returns
+        -------
+        Kaxe.Plot
+            The active plotting window
+        
+        """
+
         self.firstTitle = first
         self.secondTitle = second
         return self

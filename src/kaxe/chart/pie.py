@@ -88,7 +88,22 @@ class PieSlice:
 
 
 class Pie(Window):
+    """
+    A class used to represent a Pie Chart.
     
+    This class also inherits from Window and therby can access 
+    the methods `styles`, `show` and `save`
+
+    Examples
+    --------
+    >>> import kaxe
+    >>> chart = kaxe.Pie()
+    >>> chart.add( 5.0 , legend="a", label="5")
+    >>> chart.add( 3.0 , legend="b", label="3+1-1" )
+    >>> chart.add( 2.5 , legend="c", label="2 < x < 3" )
+    >>> chart.show()
+    """
+
     def __init__(self): # |
         super().__init__()
         self.identity = 'piechart'
@@ -160,13 +175,33 @@ class Pie(Window):
             self.center = center[0]+x, center[1]
 
 
-    def add(self, number, legend=None, label=None):
+    def add(self, number:Union[int, float], legend:str=None, label:str=None):
+        """
+        Adds data to chart
+
+        Paramaters
+        ----------
+        number : int
+            The datapoint to be added to the pie chart
+        
+        legend : str, optional
+            Legend to be added in the legendbox
+        
+        label : str, optional
+            Label to display on the chart
+        """
+
+
         self.objects.append(PieSlice(number, legend, label))
         self.pieslices += 1
         self.sum += number
 
 
     # special api
-    def title(self, title=None):
+    def title(self, title:str=None):
+        """
+        Sets title for the chart
+        """
+
         self.titleText = title
         return self

@@ -5,6 +5,36 @@ from typing import Union, Callable
 from inspect import signature
 
 class Function:
+    """
+    Function to be added to any plot type
+    
+    Parameters
+    ----------
+    f : Callable
+        The function to be plotted. Should accept one parameter for 2D functions and two parameters for 3D functions.
+    color : tuple, optional
+        The color of the function plot. Default is None.
+    width : int, optional
+        The width of the function plot line for 2D functions. Default is 10.
+    numPoints : int, optional
+        The number of points to plot for 3D functions. Default is None.
+    fill : bool, optional
+        Whether to fill the area under the function plot for 3D functions. Default is True.
+    *args : tuple
+        Additional positional arguments to pass to the function f.
+    **kwargs : dict
+        Additional keyword arguments to pass to the function f. 
+
+    Returns
+    -------
+    Object : Function2D|Function3D
+        Correct Function class based on the parameters
+    
+    See also
+    --------
+    kaxe.Function2D
+    kaxe.Function3D
+    """
 
     def __new__(self, 
                  f:Callable, # both

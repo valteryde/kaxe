@@ -7,12 +7,30 @@ from ..core.symbol import symbol
 from ..core.window import Window
 
 class Bar(Window):
+    """
+    Single Bar chart
     
+    Parameters
+    ----------
+    rotate : bool, optional
+        Toggle for rotating the bars. Default is False
+
+    Examples
+    --------
+    >>> import kaxe
+    >>> chart = kaxe.Bar()
+    >>> chart.add("a", [1,2,3,4])
+    >>> chart.add("b", [2,4])
+    >>> chart.add("c", [4])
+    >>> chart.show()
+
+    """
+
     # en måde at gøre den nemmer at ændre på er at dele tingene op i flere
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
     # akserne i nederste hjørne
 
-    def __init__(self, rotate=False): # |
+    def __init__(self, rotate:bool=False): # |
         super().__init__()
         self.identity = 'barchart'
         self.rotate = rotate
@@ -164,7 +182,21 @@ class Bar(Window):
             x += barWidth + barGap
 
 
-    def add(self, label, numbers):
+    def add(self, label:str, numbers:Union[list, int, float]):
+        """
+        Add a new bar to the chart.
+        
+        When doing multiple numbers the bar will consist of diffrent colors
+
+        Parameters
+        ----------
+        label : str
+            The label for the bar.
+        numbers : int or list of int
+            The numerical values for the bar. If a single integer is provided, it will be converted to a list.
+        
+        """
+
         if type(numbers) is not list: numbers = [numbers]
         filterednums = [i for i in numbers if i is not None]
         self.maxNumber = max(sum(filterednums), self.maxNumber)
@@ -174,10 +206,42 @@ class Bar(Window):
 
     
     def legends(self, *legends):
+        """
+        Set the legends for the bar chart.
+        
+        Parameters
+        ----------
+        *legends : list
+            Diffrent legends corresponding to the colors on the bar when supplying more values to the `add` method
+        
+        Examples
+        --------
+        >>> chart.add("Bar1", [1,2,3,4])
+        >>> chart.legends("Legend for the datapoint 1", "Legend for the datapoint 2", ...)
+        """
+        
         self.legendsLabels = legends
 
 
     def title(self, firstAxis:str=None, secondAxis:str=None, title=None):
+        """
+        Set the titles for the chart and the charts axis
+        
+        Parameters
+        ----------
+        firstAxis : str, optional
+            The title for the first axis. Default is None.
+        secondAxis : str, optional
+            The title for the second axis. Default is None.
+        title : str, optional
+            The main title of the chart. Default is None.
+        
+        Returns
+        -------
+        self : object
+            Returns the instance of the chart
+        """
+    
         self.titleText = title
         self.firstAxisTitle=firstAxis
         self.secondAxisTitle=secondAxis
@@ -185,7 +249,31 @@ class Bar(Window):
 
 
 class GroupBar(Bar):
+    """
+    Single Bar chart with multiple bars grouped
     
+    Instead of stacking the bars there is diffrent bars created
+
+    Parameters
+    ----------
+    rotate : bool, optional
+        Toggle for rotating the bars. Default is False
+
+    Examples
+    --------
+    >>> import kaxe
+    >>> chart = kaxe.Bar()
+    >>> chart.add("a", [1,2,3,4])
+    >>> chart.add("b", [2,4])
+    >>> chart.add("c", [4])
+    >>> chart.show()
+
+    See also
+    --------
+    kaxe.Bar
+
+    """
+
     # en måde at gøre den nemmer at ændre på er at dele tingene op i flere
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
     # akserne i nederste hjørne

@@ -15,7 +15,12 @@ POLARPLOT = 'polar'
 
 class PolarPlot(Window):
     """
-    polarplot er en del mere stringent end plot og kan en del mindre
+    A polar plot with radians on the radial axis
+
+    Note
+    ----
+    This plotting window supports fewer objects than that of the classical plotting windows
+    
     """
     
     def __init__(self,  window:list=None): # |
@@ -108,6 +113,20 @@ class PolarPlot(Window):
 
     # special api
     def title(self, title:str):
+        """
+        Adds title to the plot.
+        
+        Parameters
+        ----------
+        title : str
+            Title for the axis.
+
+        Returns
+        -------
+        Kaxe.Plot
+            The active plotting window
+        """
+
         self.radiusTitle = title
         return self
 

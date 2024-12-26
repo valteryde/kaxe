@@ -169,13 +169,42 @@ class AttrMap:
     
     # API to pass along to user
     def styles(self, styles:dict={}, **kstyles):
+        """
+        Set multiple styles for the object.
+        
+        Parameters
+        ----------
+        styles : dict, optional
+            A dictionary of styles to set. Default is an empty dictionary.
+        **kstyles : keyword arguments
+            Additional styles to set as keyword arguments.
 
+        Examples
+        --------
+        >>> plt.styles(color=(255,0,0,255), fontSize=128)
+        >>> plt.styles({'marker.tickWidth': 10}, fontSize=64)
+        
+        See also
+        --------
+        Kaxe.Plot.help
+
+        """
+        
         astyles = {**styles, **kstyles}
         for key in astyles:
             self.setAttr(key, astyles[key])
 
 
     def help(self):
+        """
+        Prints all available styles.
+                
+        Examples
+        --------
+        >>> plt.help()
+        """
+        
+
         print(f'{bcolors.BOLD}Styles{bcolors.ENDC}')
 
         for key in self.__defaults__:

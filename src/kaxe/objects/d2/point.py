@@ -7,7 +7,28 @@ from ...core.helper import *
 from ...plot import identities
 
 class Points2D:
-    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False):
+    """
+    Create points on 2D plane
+        
+    Parameters
+    ----------
+    x : list or array-like
+        The x-coordinates of the points.
+    y : list or array-like
+        The y-coordinates of the points.
+    color : tuple, optional
+        The color of the points in RGB format. If None, a random color is assigned.
+    size : int, optional
+        The size of the points. Default is None.
+    symbol : str, optional
+        The symbol used to represent the points. Default is None.
+    connect : bool, optional
+        If True, the points will be connected by lines. Default is False.
+    lollipop : bool, optional
+        If True, the points will be represented as lollipops. Default is False.
+    """
+
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False):        
         self.batch = shapes.Batch()
         self.points = []
         self.lines = []
@@ -108,6 +129,24 @@ class Points2D:
 
 
     def legend(self, text:str, symbol=None, color=None):
+        """
+        Adds a legend
+        
+        Parameters
+        ----------
+        text : str
+            The text to be displayed in the legend.
+        symbol : symbols, optional
+            The symbol to be used in the legend. If not provided, the symbol used to display the points will be used.
+        color : optional
+            The color to be used for the legend text. If not provided, the default color will be used.
+        
+        Returns
+        -------
+        self : object
+            Returns the instance of the arrow object with the updated legend.        
+        """
+
         self.legendText = text
         if symbol:
             self.legendSymbol = symbol

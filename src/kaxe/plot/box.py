@@ -7,7 +7,15 @@ from ..core.styles import ComputedAttribute
 from typing import Union
 
 class BoxPlot(Plot):
+    """
+    A class used to create a plot where the axis is always to the left and at the bottom.
     
+    Parameters
+    ----------
+    window : list|tuple|None, optional
+        A list or tuple defining the window for the plot, by default None.
+    """    
+
     def __init__(self, window:Union[list, tuple, None]=None):
         super().__init__(window)
 

@@ -11,6 +11,23 @@ from ..color import Colormaps
 
 
 class ColorScale:
+    """
+    ColorScale to be added in the right middle of the window
+
+    Supports all plots
+
+    Parameters
+    ----------
+    lower : Union[float, int, tuple]
+        The lower bound of the color scale. Can be a number or a tuple of length 2 with value and title as values.
+    upper : Union[float, int, tuple]
+        The upper bound of the color scale. Can be a number or a tuple of length 2 with value and title as values.
+    cmap : Colormaps, optional
+        The colormap to use for the color scale. Default is Colormaps.standard.
+    width : Union[int, None], optional
+        The width of the color scale. Default is None.
+
+    """
 
     def __init__(self, lower:Union[float, int, tuple], upper:Union[float, int, tuple], cmap=Colormaps.standard, width:Union[int, None]=None):
         """
@@ -118,6 +135,17 @@ class ColorScale:
 
 
 class HeatMap:
+    """
+    A class to represent a heatmap visualization.
+    
+    Parameters
+    ----------
+    data : list of list of float or int
+        A 2D list containing the data values for the heatmap.
+    cmap : Colormap, optional
+        A colormap instance to map data values to colors (default is Colormaps.standard).
+    """
+
     def __init__(self, data, cmap=Colormaps.standard):
         self.batch = shapes.Batch()
         self.cmap = cmap
@@ -153,6 +181,10 @@ class HeatMap:
         
     
     def addColorScale(self, parent):
+        """
+        Add a color scale to the parent
+        """
+
         parent.add(ColorScale(self.minValue, self.maxValue, cmap=self.cmap))
         
         return self
