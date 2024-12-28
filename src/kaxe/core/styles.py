@@ -167,8 +167,8 @@ class AttrMap:
         if rattr is not None: return rattr
 
     
-    # API to pass along to user
-    def styles(self, styles:dict={}, **kstyles):
+    # API to pass along to user    
+    def style(self, styles:dict={}, **kstyles):
         """
         Set multiple styles for the object.
         
@@ -189,7 +189,7 @@ class AttrMap:
         Kaxe.Plot.help
 
         """
-        
+
         astyles = {**styles, **kstyles}
         for key in astyles:
             self.setAttr(key, astyles[key])

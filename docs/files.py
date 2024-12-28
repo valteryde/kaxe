@@ -97,6 +97,9 @@ def createAllDocImages():
     plt = kaxe.PlotFrame3D()
     plt.save(j('plotframe3d'))
 
+    plt = kaxe.DoubleAxisPlot([0, 10, 0, 10, 0, 5])
+    plt.save(j('doubleaxisplot'))
+
     # ???
     # plt = kaxe.PlotEmpty3D()
     # plt.save(j('plotempty3d.png'))

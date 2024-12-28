@@ -73,7 +73,7 @@ class Window(AttrObject):
 
         self.padding = [0,0,0,0] #computed padding
 
-        self.style = self.attrmap.styles
+        self.style = self.attrmap.style # for backwards compatibility
         self.help = self.attrmap.help
         
         self.__included__ = []
@@ -109,7 +109,7 @@ class Window(AttrObject):
         theme : dict
             A dictionary containing style attributes and their values.
         
-            
+
         Examples
         --------
         >>> plt.theme(kaxe.Themes.A4Full)
@@ -309,12 +309,16 @@ class Window(AttrObject):
         self.legendbox.finalize(self)
 
 
+    # enables this code to be manipulated with in other subclasses
+    def __callFinalizeObject__(self, obj):
+        obj.finalize(self)
+
     def __addInnerContent__(self):
         
         # finalizeing objects
         if terminaltype == "terminal": pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
         for obj in self.objects:
-            obj.finalize(self)
+            self.__callFinalizeObject__(obj)
             if terminaltype == "terminal": pbar.update()
             self.addDrawingFunction(obj)
         if terminaltype == "terminal":pbar.close()

@@ -9,7 +9,7 @@ All plots inherits from the Window base class. This class should not be used in 
     :exclude-members: clamp, include, inside, inversetranslate, pointOnWindowBorderFromLine, translate
     :show-inheritance:
 
-    .. automethod:: kaxe.AttrMap.styles
+    .. automethod:: kaxe.AttrMap.style
         
     .. automethod:: kaxe.AttrMap.help
 
@@ -48,6 +48,15 @@ Classical Plot
     .. note:: Yes, its blank
     
 
+.. autoclass:: kaxe.DoubleAxisPlot
+    :show-inheritance:
+    :members:
+
+    .. image:: /_static/doubleaxisplot.png
+        :width: 400 px
+
+    .. note:: This plot window is still in early devolplement
+    
 
 Polar plot
 ----------

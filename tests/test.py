@@ -1035,6 +1035,27 @@ class Test:
         plt.show()
 
 
+    def dobuleAxisPlot():
+
+        plt = kaxe.Plot()
+        plt.add(kaxe.Function(lambda x: x))
+        # plt.show()
+        
+        plt = kaxe.DoubleAxisPlot([0, 20, 0, 2, 10, 15])
+        
+        plt.add1(kaxe.Function2D(lambda x: x).legend('left'))
+        plt.add2(kaxe.Function2D(lambda x: x).legend('right'))
+        plt.add1(kaxe.Points(range(0,20), range(0,20)).legend('left'))
+        plt.add2(kaxe.Points(range(0,20), range(0,20)).legend('right'))
+
+        plt.add1(kaxe.Equation(lambda x,y: (x-1)**2+(y-1)**2, lambda x,y: 1).legend('left'))
+        plt.add2(kaxe.Equation(lambda x,y: (x-13)**2+(y-13)**2, lambda x,y: 1).legend('right'))
+
+        plt.title('x', 'y left', 'y right')
+
+        plt.save('tests/images/doubleaxis.png')
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1046,3 +1067,4 @@ if __name__ == '__main__':
 
     Test.argument()
     # Test.testLollipop()
+    # Test.dobuleAxisPlot()

@@ -114,7 +114,7 @@ class Function2D:
         if not self.__lastPoint__:
             self.__lastPoint__ = [px, py]
             return
-                        
+
         if fills != None:
             # add fill areas under curve
             for x0, x1 in self.fillAreasBorders:
