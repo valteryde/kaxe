@@ -1035,7 +1035,7 @@ class Test:
         plt.show()
 
 
-    def dobuleAxisPlot():
+    def testDobuleAxisPlot():
 
         plt = kaxe.Plot()
         plt.add(kaxe.Function(lambda x: x))
@@ -1065,6 +1065,6 @@ if __name__ == '__main__':
 
     #Test.testTooManyNumbers()
 
-    Test.argument()
+    # Test.argument()
     # Test.testLollipop()
-    # Test.dobuleAxisPlot()
+    # Test.testDobuleAxisPlot()
