@@ -21,16 +21,8 @@ class Points:
         X coordinates of the points.
     y : array-like
         Y coordinates of the points.
-    z : array-like, optional
-        Z coordinates of the points for 3D plots. Default is None.
-    color : Union[tuple, Colormap], optional
-        Color of the points. Default is None.
-    size : int, optional
-        Size of the points. Default is None.
-    symbol : str, optional
-        Symbol used for the points. Default is symbols.CIRCLE.
-    connect : bool, optional
-        Whether to connect the points with lines. Default is False.
+    **kwargs
+        Additional keyword arguments. For the appropiate keyworks see arguments for Points2D and Points3D.
 
     Returns
     -------
@@ -43,15 +35,8 @@ class Points:
     kaxe.Points3D
     """
 
-    def __new__(self, 
-                 x, y, 
-                 z = None,
-                 color:Union[tuple, Colormap]=None, 
-                 size:int=None, 
-                 symbol:str=symbols.CIRCLE, 
-                 connect:bool=False                 
-                ) -> Union[Points2D, Points3D]:
+    def __new__(self, x, y, z = None, **kwargs) -> Union[Points2D, Points3D]:
     
         if z:
-            return Points3D(x, y, z, color=color, size=size, connect=connect)
-        return Points2D(x, y, color=color, size=size, symbol=symbol, connect=connect)
+            return Points3D(x, y, z, **kwargs)
+        return Points2D(x, y, **kwargs)
