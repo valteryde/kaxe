@@ -181,6 +181,9 @@ class Line(Shape):
 
     def drawFromNumpyArray(self, surface:Image):
 
+        if self.width == 0:
+            return
+
         [y0, y1] = flipHorizontal(surface, self.y0, self.y1)        
 
         drawLineOnPillowImage(
