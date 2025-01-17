@@ -35,6 +35,7 @@ class Function2D:
         Additional keyword arguments to be passed to the function f.
 
     Methods
+    -------
     __call__(x)
         Evaluates the function at a given x value.
     
@@ -92,7 +93,7 @@ class Function2D:
 
 
     def __call__(self, x):
-        return self.function(x)
+        return self.function(x, *self.otherArgs, **self.otherKwargs)
 
 
     def __setPoint__(self, x, parent, firstaxisy:Union[int, None]=None, fills:Union[list, None]=None):

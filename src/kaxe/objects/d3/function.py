@@ -27,14 +27,23 @@ class Function3D(Base3DObject):
         The number of points to be used for plotting. If None, defaults to 150 if `fill` is True, otherwise 25.
     fill : bool
         Whether to fill the plot. default is True
+    
+    Methods
+    -------
+    __call__(x)
+        Evaluates the function at a given x value.
+
     """
     
-    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True):
+    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True, *args, **kwargs):
         
 
         super().__init__()
 
         self.f = f
+        self.otherArgs = args
+        self.otherKwargs = kwargs
+
         self.fill = fill
         
         self.supports = [identities.XYZPLOT]
@@ -213,3 +222,7 @@ class Function3D(Base3DObject):
             self.legendSymbol = symbol
 
         return self
+
+
+    def __call__(self, x, y):
+        return self.f(x, y, *self.otherArgs, **self.otherKwargs)

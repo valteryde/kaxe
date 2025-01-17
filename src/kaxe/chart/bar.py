@@ -9,6 +9,8 @@ from ..core.window import Window
 class Bar(Window):
     """
     Single Bar chart
+
+    Colors can be changed through Bar.style
     
     Parameters
     ----------
@@ -253,6 +255,7 @@ class GroupBar(Bar):
     Single Bar chart with multiple bars grouped
     
     Instead of stacking the bars there is diffrent bars created
+    Colors can be changed through Bar.style
 
     Parameters
     ----------
