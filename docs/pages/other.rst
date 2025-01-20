@@ -47,5 +47,8 @@ Kaxe has multiple symbols and themes such as
 .. autoclass:: kaxe.Symbol
     :members:
 
+.. autoclass:: kaxe.symbol
+    :members:
+
 .. autoclass:: kaxe.Themes
     :members:
