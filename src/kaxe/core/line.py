@@ -83,6 +83,9 @@ def drawLineOnPillowImage(
 
     for i in range(len(a)):
 
-        pos = (a[i], b[i])
-        newcolor = colorBlend(*color[:3], int(color[3]*c[i]), *pixels[pos])
-        pixels[pos] = tuple(newcolor)
+        try:
+            pos = (a[i], b[i])
+            newcolor = colorBlend(*color[:3], int(color[3]*c[i]), *pixels[pos])
+            pixels[pos] = tuple(newcolor)
+        except IndexError:
+            pass

@@ -1,5 +1,7 @@
 
+from io import BytesIO
 import time
+from typing import Union
 from .helper import *
 import logging
 from .styles import *
@@ -81,6 +83,8 @@ class Window(AttrObject):
 
         self.legendbox = LegendBox()
         self.offset = [0,0]
+        self.showProgressBar = terminaltype == "terminal" 
+        self.printDebugInfo = True
         #self.scale = [1,1], if not set axis will help set it
 
 
@@ -298,7 +302,8 @@ class Window(AttrObject):
         # add style padding
         self.addPaddingCondition(*self.getAttr('outerPadding'))
 
-        logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
+        if self.printDebugInfo:
+            logging.info('Compiled in {}s'.format(str(round(time.time() - startTime, 4))))
         self.__baked__ = True
 
 
@@ -316,17 +321,17 @@ class Window(AttrObject):
     def __addInnerContent__(self):
         
         # finalizeing objects
-        if terminaltype == "terminal": pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
+        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
         for obj in self.objects:
             self.__callFinalizeObject__(obj)
-            if terminaltype == "terminal": pbar.update()
+            if self.showProgressBar: pbar.update()
             self.addDrawingFunction(obj)
-        if terminaltype == "terminal":pbar.close()
+        if self.showProgressBar:pbar.close()
 
 
     def __pillowPaint__(self, fname):
         startTime = time.time()
-        if terminaltype == "terminal": pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
+        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
@@ -338,11 +343,15 @@ class Window(AttrObject):
             
             shape.draw(surface)
             
-            if terminaltype == "terminal": pbar.update()
+            if self.showProgressBar: pbar.update()
 
-        surface.save(fname)
-        if terminaltype == "terminal": pbar.close()
-        logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
+        if fname is str:
+            surface.save(fname)
+        else:
+            surface.save(fname, format="png")
+
+        if self.showProgressBar: pbar.close()
+        if self.printDebugInfo: logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
         
         return surface
 
@@ -354,7 +363,7 @@ class Window(AttrObject):
 
 
     # save and show    
-    def save(self, fname):
+    def save(self, fname:Union[str, BytesIO]):
         """
         Save the current window image to a file.
         
@@ -363,8 +372,8 @@ class Window(AttrObject):
         
         Parameters
         ----------
-        fname : str
-            The filename where the image will be saved.
+        fname : str | BytesIO
+            The filename where the image will be saved or a BytesIO object to save the image in memory.
         
         Examples
         --------
@@ -383,7 +392,8 @@ class Window(AttrObject):
         self.__bake__()
         self.__bakedImage__ = self.__paint__(fname)
         
-        logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
+        if self.printDebugInfo:
+            logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
     
     
     def show(self):

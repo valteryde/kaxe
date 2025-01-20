@@ -8,6 +8,28 @@ import kaxe
 from random import randint
 import numpy as np
 
+
+def randomObject():
+    
+    pointLength = randint(50, 1000)
+
+    a = randint(-1000000,1000000)
+    b = randint(-1000000,1000000)
+
+    l = min(a, b)
+    u = max(a, b)
+
+    x = [randint(l, u) for i in range(pointLength)]
+    y = [randint(l, u) for i in range(pointLength)]
+
+    point = kaxe.Points2D(x, y)
+    
+    point.legend(str(a))
+    
+    return point
+    
+
+
 class Test:
     def argument():
         if len(sys.argv) == 1:
@@ -1056,6 +1078,56 @@ class Test:
         plt.save('tests/images/doubleaxis.png')
 
 
+    def testBodePlotGrid():
+
+        from scipy.signal import TransferFunction, bode
+        
+        num = [1, 3, 3]
+        den = [1, 2, 1]
+        tf = TransferFunction(num, den)
+
+        w, mag, phase = bode(tf)
+
+        grid = kaxe.Grid()
+        grid.style(width=3000, height=1000)
+
+        # magnitude
+        plt1 = kaxe.LogPlot(firstAxisLog=True, secondAxisLog=False)
+        plt1.add(kaxe.Points2D(w, mag))
+
+        # plot 2
+        plt2 = kaxe.LogPlot(firstAxisLog=True, secondAxisLog=False)
+        plt2.add(kaxe.Points2D(w, phase))
+
+        grid.addColumn(plt1, plt2)
+
+        grid.show()
+
+    
+    def testGridLayout():
+        
+        grid = kaxe.Grid()
+        grid.style(width=500, height=500)
+
+        for i in range(5):
+            
+            row = []
+
+            for j in range(4):
+                
+                # magnitude
+                plt = kaxe.Plot()
+                # plt.style(backgroundColor=(255,200,255,255))
+                for i in range(randint(0, 4)):
+                    plt.add(randomObject())
+                row.append(plt)
+
+            grid.addRow(*row)
+
+        grid.show()
+        grid.save('tests/images/gridlayoutlarge.png')
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1068,3 +1140,5 @@ if __name__ == '__main__':
     # Test.argument()
     # Test.testLollipop()
     # Test.testDobuleAxisPlot()
+    Test.testBodePlotGrid()
+    Test.testGridLayout()
