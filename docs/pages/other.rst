@@ -2,12 +2,22 @@
 Other
 =====
 
-Data load excel
+This section covers various functionalities of Kaxe that do not fit into other specific categories. 
+Below are some of the additional features and utilities provided by Kaxe.
+
+
+Small excel data loader
+-----------------------
+
+
+Firstly Kaxe has a simple excel data loader:
 
 .. automethod:: kaxe.data.loadExcel
 
 
-.. warning:: Work in progress
+Color gradients
+---------------
+For gradients kaxe has an colormap. i.g. in 3D graphs kaxe uses theese as colors
 
 .. autoclass:: kaxe.Colormap
     :members: 
@@ -19,12 +29,23 @@ Data load excel
     :members: 
 
 
-Symbols
+Default colors
+--------------
 
-Themes
+To change the behavior of the default colors, you can use the following functions:
 
-ColorMap
+.. autofunction:: kaxe.SetDefaultColor
 
-SetDefaultColor
+.. autofunction:: kaxe.resetColor
 
-resetColor
+
+Symbols and themes
+------------------
+
+Kaxe has multiple symbols and themes such as
+
+.. autoclass:: kaxe.Symbol
+    :members:
+
+.. autoclass:: kaxe.Themes
+    :members:

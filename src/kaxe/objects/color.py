@@ -6,6 +6,15 @@ from typing import Union
 
 
 class Colormap:
+    """
+    A class to represent a colormap that interpolates colors from a gradient.
+    
+    Parameters
+    ----------
+    colorGradientSteps : Union[list, tuple]
+        A list or tuple of colors representing the gradient steps. Colors can be in hexadecimal string format or RGBA arrays.    
+    """
+
     def __init__(self, colorGradientSteps:Union[list, tuple]):
         self.colorGradientSteps = colorGradientSteps
         for i, phex in enumerate(colorGradientSteps):
@@ -14,7 +23,35 @@ class Colormap:
 
     
     def getColor(self, value:Union[int, float], start:Union[int, float], end:Union[int, float]):
+        """
+        Get the interpolated color from the color gradient steps based on the input value.
+        Parameters
+        ----------
+        value : Union[int, float]
+            The value for which the color needs to be determined.
+        start : Union[int, float]
+            The start value of the range.
+        end : Union[int, float]
+            The end value of the range.
         
+        Returns
+        -------
+        color
+            The interpolated color from the color gradient steps.
+        
+        Notes
+        -----
+        - If `value` is less than `start`, the first color in the gradient steps is returned.
+        - If `value` is greater than `end`, the last color in the gradient steps is returned.
+        - The interpolation is linear between the two nearest colors in the gradient steps.
+        
+        Examples
+        --------
+        >>> cmap.getColor(3.5, 0, 10)
+            (125, 215, 51, 255)
+        """
+        
+
         if value < start:
             return self.colorGradientSteps[0]
         if value > end:
@@ -29,6 +66,24 @@ class Colormap:
 
 
 class SingleColormap(Colormap):
+    """
+    SingleColormap is a subclass of Colormap that generates a colormap based on a single color.
+    
+    Parameters
+    ----------
+    color : str or list or tuple
+        The base color for the colormap. If a string is provided, it should be a hex color code.
+        If a list or tuple is provided, it should contain RGB or RGBA values.
+    diff : list, optional
+        A list containing two float values that define the range of color differences.
+        Default is [0.3, 0.7].
+    
+    See also
+    --------
+    kaxe.Colormap
+    """
+    
+
     def __init__(self, color, diff=[0.3, 0.7]):
 
         if type(color) is str:
@@ -49,8 +104,29 @@ class SingleColormap(Colormap):
         super().__init__(arr)
 
 
-
 class Colormaps:
+    """
+    A collection of predefined colormaps for various color schemes.
+    
+    Attributes
+    ----------
+    standard : Colormap
+        A colormap with a standard set of colors.
+    green : Colormap
+        A colormap with various shades of green.
+    brown : Colormap
+        A colormap with various shades of brown.
+    blue : Colormap
+        A colormap with various shades of blue.
+    yellow : Colormap
+        A colormap with various shades of yellow.
+    cream : Colormap
+        A colormap with a cream color scheme.
+    red : SingleColormap
+        A single color colormap with the color red.
+    """
+
+
     standard = Colormap([
         "#AFE3C0",
         "#90C290",

@@ -1158,9 +1158,9 @@ if __name__ == '__main__':
 
     #Test.testTooManyNumbers()
 
-    # Test.argument()
+    Test.argument()
     # Test.testLollipop()
     # Test.testDobuleAxisPlot()
     # Test.testBodePlotGrid()
     # Test.testGridLayout()
-    Test.testBubbles()
+    # Test.testBubbles()

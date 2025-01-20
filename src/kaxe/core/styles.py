@@ -14,6 +14,17 @@ def getRandomColor() -> tuple:
     return colors[colorNum%(len(colors))]
 
 def resetColor() -> None:
+    """
+    Resets the global color number to its initial state.
+    This function sets the global variable `colorNum` to -1, effectively
+    resetting any color-related state that depends on this variable.
+
+    Note
+    ----
+    This resets all plot color progress
+
+    """
+
     global colorNum
     colorNum = -1
 
@@ -39,6 +50,19 @@ colors = [
 ]
 
 def setDefaultColors(colorList:list):
+    """
+    Set the global default colors for all plots
+    
+    Parameters
+    ----------
+    colorList : list
+        A list of colors to be set as the default colors.
+    
+    Notes
+    -----
+    This function sets the global variable `colors` to the provided list of colors.
+    """
+
     global colors
     colors = colorList
 

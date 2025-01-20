@@ -27,6 +27,27 @@ class CustomSymbol(ImageShape):
 
 # SYMBOLS
 class symbol:
+    """
+    A class representing various symbols.
+    
+    Attributes
+    ----------
+    CIRCLE : str
+        Represents a circle symbol.
+    LINE : str
+        Represents a line symbol.
+    TRIANGLE : str
+        Represents a triangle symbol.
+    STAR : str
+        Represents a star symbol.
+    RECTANGLE : str
+        Represents a rectangle symbol.
+    LOLLIPOP : str
+        Represents a lollipop symbol.
+    THICKLINE : str
+        Represents a thick line symbol.
+    """
+
     CIRCLE = 'o'
     LINE = 'LINE'
     TRIANGLE = 'TRI'

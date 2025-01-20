@@ -1,5 +1,21 @@
 
 class Themes:
+    """
+    A class used to represent different themes for plotting.
+
+    Attributes
+    ----------
+    A4Large : dict
+        A dictionary containing settings for a large A4 plot.
+    A4Medium : dict
+        A dictionary containing settings for a medium A4 plot.
+    A4Small : dict
+        A dictionary containing settings for a small A4 plot.
+    A4Slim : dict
+        A dictionary containing settings for a slim A4 plot.
+    A4Mini : dict
+        A dictionary containing settings for a mini A4 plot.
+    """
 
     A4Large = {"xNumbers": 12, "yNumbers":10, "marker.tickLength":50, "marker.tickWidth":4,  "height":3000, "width":5000, "fontSize":146}
     A4Medium = {"xNumbers": 10, "yNumbers":8, "marker.tickLength":50, "marker.tickWidth":4,  "height":3000, "width":4000, "fontSize":132}
