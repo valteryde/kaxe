@@ -65,14 +65,22 @@ Smart objects adapts to which input is given at creates the corrosponding object
     .. image:: /_static/pillars.png
         :width: 400 px
 
-.. autoclass:: kaxe.RootLocus
+.. .. autoclass:: kaxe.RootLocus
+..     :members:
+
+..     .. image:: /_static/rootlocus.png
+..         :width: 400 px
+
+..     .. warning:: This feature is experimential and is therby still in devolplement
+
+
+.. autoclass:: kaxe.Bubble
     :members:
 
-    .. image:: /_static/rootlocus.png
+    .. image:: /_static/bubble.png
         :width: 400 px
 
-    .. warning:: This feature is experimential and is therby still in devolplement
-    
+
 
 3D Objects
 ----------

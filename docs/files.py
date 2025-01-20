@@ -131,6 +131,7 @@ def createAllDocImages():
     create2DWithObject(kaxe.ParametricEquation(lambda t: (t**2-9, math.sin(t)), [0, 10]), 'parametricequation')
     create2DWithObject(kaxe.Pillars([0, 1, 2], [1, 2, 1]), 'pillars')
     create2DWithObject(kaxe.RootLocus([1, 0, 0, 0, 0, -1], [0, 0, 0, 1, 0, 1]), 'rootlocus', [-1, 1, -2, 2])
+    create2DWithObject(kaxe.Bubble("Text inside bubble", (3,2), (-1, 0)), 'bubble')
 
     nums = 50
     points = [
