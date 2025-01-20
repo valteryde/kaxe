@@ -25,6 +25,7 @@ class Colormap:
     def getColor(self, value:Union[int, float], start:Union[int, float], end:Union[int, float]):
         """
         Get the interpolated color from the color gradient steps based on the input value.
+        
         Parameters
         ----------
         value : Union[int, float]
