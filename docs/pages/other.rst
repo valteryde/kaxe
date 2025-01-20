@@ -34,9 +34,11 @@ Default colors
 
 To change the behavior of the default colors, you can use the following functions:
 
+.. automethod:: kaxe.SetDefaultColors
+
 .. automethod:: kaxe.SetDefaultColor
 
-.. automethod:: kaxe.resetColor
+.. automethod:: kaxe.resetColors
 
 
 Symbols and themes
