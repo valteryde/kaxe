@@ -7,3 +7,4 @@ from .map import HeatMap, ColorScale
 from .parameter import ParametricEquation
 from .arrow import Arrow
 from .rootlocus import RootLocus
+from .bubble import Bubble

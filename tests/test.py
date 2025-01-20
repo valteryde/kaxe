@@ -7,6 +7,7 @@ import math
 import kaxe
 from random import randint
 import numpy as np
+import random, string
 
 
 def randomObject():
@@ -28,6 +29,10 @@ def randomObject():
     
     return point
     
+
+def randomword(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
 
 
 class Test:
@@ -1083,21 +1088,23 @@ class Test:
         from scipy.signal import TransferFunction, bode
         
         num = [1, 3, 3]
-        den = [1, 2, 1]
+        den = [1, 2, 1, 1]
         tf = TransferFunction(num, den)
-
-        w, mag, phase = bode(tf)
+        w, mag, phase = bode(tf, n=1000)
 
         grid = kaxe.Grid()
-        grid.style(width=3000, height=1000)
+        grid.style(width=3000, height=800)
 
         # magnitude
-        plt1 = kaxe.LogPlot(firstAxisLog=True, secondAxisLog=False)
-        plt1.add(kaxe.Points2D(w, mag))
+        plt1 = kaxe.BoxLogPlot(firstAxisLog=True, secondAxisLog=False)
+        plt1.title('$\\omega$ [$\\frac{rad}{s}$]', second="[dB]")
+        
+        plt1.add(kaxe.Points2D(w, mag, connect=True))
 
         # plot 2
-        plt2 = kaxe.LogPlot(firstAxisLog=True, secondAxisLog=False)
-        plt2.add(kaxe.Points2D(w, phase))
+        plt2 = kaxe.BoxLogPlot(firstAxisLog=True, secondAxisLog=False)
+        plt2.add(kaxe.Points2D(w, phase, connect=True, color=(109,69,76,255)))
+        plt2.title(second="[rad]")
 
         grid.addColumn(plt1, plt2)
 
@@ -1128,6 +1135,20 @@ class Test:
         grid.save('tests/images/gridlayoutlarge.png')
 
 
+    def testBubbles():
+        
+        plt = kaxe.Plot([-10, 10, -10, 10])
+
+        plt.add(kaxe.Function(lambda x: x))
+
+        for i in range(2):
+            v = randint(-10, 10)
+            plt.add(kaxe.Bubble(randomword(randint(1, 20)), (randint(-10, 10), randint(-10, 10)), (v,v)))
+
+        plt.show()
+
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1140,5 +1161,6 @@ if __name__ == '__main__':
     # Test.argument()
     # Test.testLollipop()
     # Test.testDobuleAxisPlot()
-    Test.testBodePlotGrid()
-    Test.testGridLayout()
+    # Test.testBodePlotGrid()
+    # Test.testGridLayout()
+    Test.testBubbles()

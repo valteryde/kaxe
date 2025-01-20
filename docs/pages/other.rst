@@ -2,6 +2,11 @@
 Other
 =====
 
+Data load excel
+
+.. automethod:: kaxe.data.loadExcel
+
+
 .. warning:: Work in progress
 
 .. autoclass:: kaxe.Colormap
@@ -13,8 +18,6 @@ Other
 .. autoclass:: kaxe.SingleColormap
     :members: 
 
-
-Data load excel
 
 Symbols
 

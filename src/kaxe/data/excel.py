@@ -5,6 +5,29 @@ LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def loadExcel(fname, sheet:str, top:tuple, bottom:tuple, flip:bool=False):
+    """
+    Load data from an Excel sheet within a specified range.
+
+    Parameters
+    ----------
+    fname : str
+        The filename of the Excel workbook.
+    sheet : str
+        The name of the sheet to load data from.
+    top : tuple
+        A tuple (column, row) representing the top-left corner of the range.
+    bottom : tuple
+        A tuple (column, row) representing the bottom-right corner of the range. 
+        If the row is -1, it will be set to the maximum row of the sheet.
+    flip : bool, optional
+        If True, the data will be transposed (flipped). Defaults to False.
+
+    Returns
+    -------
+    list
+        A 2D list containing the data from the specified range in the Excel sheet.
+    """
+    
     wb = load_workbook(filename = fname)
     ws = wb[sheet]
 
