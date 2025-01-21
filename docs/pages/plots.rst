@@ -117,3 +117,10 @@ Logarithmic Plot
 
     .. note:: This one is also just empty
 
+
+Grid
+----
+
+.. autoclass:: kaxe.Grid
+    :show-inheritance:
+    :members:
