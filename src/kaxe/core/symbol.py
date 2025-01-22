@@ -7,6 +7,7 @@ from .fileloader import loadFile
 
 triangle = Image.open(loadFile('symboltriangle.png'))
 lollipop = Image.open(loadFile('symbollollipop.png'))
+cross = Image.open(loadFile('symbolcross.png'))
 
 class CustomSymbol(ImageShape):
     def __init__(self, symbimg:Image, width:int, height:int, color:tuple=BLACK, batch:Batch=None):
@@ -27,27 +28,6 @@ class CustomSymbol(ImageShape):
 
 # SYMBOLS
 class symbol:
-    """
-    A class representing various symbols.
-    
-    Attributes
-    ----------
-    CIRCLE : str
-        Represents a circle symbol.
-    LINE : str
-        Represents a line symbol.
-    TRIANGLE : str
-        Represents a triangle symbol.
-    STAR : str
-        Represents a star symbol.
-    RECTANGLE : str
-        Represents a rectangle symbol.
-    LOLLIPOP : str
-        Represents a lollipop symbol.
-    THICKLINE : str
-        Represents a thick line symbol.
-    """
-
     CIRCLE = 'o'
     LINE = 'LINE'
     TRIANGLE = 'TRI'
@@ -55,6 +35,7 @@ class symbol:
     RECTANGLE = "RECT"
     LOLLIPOP = 'LOLLIPOP'
     THICKLINE = 'THICKLINE'
+    CROSS = "CROSS"
 
 
 def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
@@ -70,3 +51,5 @@ def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
         return CustomSymbol(triangle, height, height, color=color, batch=batch)
     if symb == symbol.LOLLIPOP:
         return CustomSymbol(lollipop, height, height, color=color, batch=batch)
+    if symb == symbol.CROSS:
+        return CustomSymbol(cross, height, height, color=color, batch=batch)

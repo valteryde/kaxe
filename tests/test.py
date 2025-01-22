@@ -1148,6 +1148,15 @@ class Test:
         plt.show()
 
 
+    def testCross():
+
+        plt = kaxe.Plot([-8, 8, -4, 4])
+
+        plt.add(kaxe.Points2D([0, -5.2820, -1.9794, 5.1407], [0, 0, 0, 0], size=50).legend('Plant'))
+        plt.add(kaxe.Points2D([-7, -5.2820, -1.9794, -7], [3, 0, 0, -3], size=40, symbol=kaxe.Symbol.CROSS).legend('Placed poles'))
+
+        plt.show()
+
 
 if __name__ == '__main__':
     import os
@@ -1158,7 +1167,8 @@ if __name__ == '__main__':
 
     #Test.testTooManyNumbers()
 
-    Test.argument()
+    Test.testCross()
+    # Test.argument()
     # Test.testLollipop()
     # Test.testDobuleAxisPlot()
     # Test.testBodePlotGrid()
