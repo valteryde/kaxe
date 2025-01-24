@@ -40,6 +40,7 @@ from .core import symbol as Symbol
 from .core import symbol
 from .core import Colormaps, SingleColormap, Colormap
 from .core.window import Window, AttrObject, AttrMap
+from .core import Axis
 
 try:
     ipy_str = str(type(get_ipython()))

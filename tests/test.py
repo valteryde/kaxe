@@ -1246,3 +1246,4 @@ if __name__ == '__main__':
     #Test.testTooManyNumbers()
     
     Test.argument()
+    kaxe.Axis

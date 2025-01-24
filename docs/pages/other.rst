@@ -52,3 +52,13 @@ Kaxe has multiple symbols and themes such as
 
 .. autoclass:: kaxe.Themes
     :members:
+
+
+Axis
+----
+
+The axis used in most of the plots also contains some attributes and methods that could be useful:
+
+.. autoclass:: kaxe.Axis
+    
+    .. automethod:: kaxe.Axis.add

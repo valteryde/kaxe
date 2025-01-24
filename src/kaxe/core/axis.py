@@ -13,7 +13,10 @@ from random import randint
 
 
 class Axis(AttrObject):
-    
+    """
+    Axis is a class for creating and managing axes in a plot.
+    """
+
     defaults = MappingProxyType({
         "showArrow": False,
         "width": 4,
