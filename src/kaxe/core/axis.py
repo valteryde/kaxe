@@ -51,6 +51,28 @@ class Axis(AttrObject):
         
         # only a refernce for the name of attribute on parent object
         self.numberOnAxisGoalReference = numberOnAxisGoalReference
+        self.userAddedMarkers = []
+
+    def add(self, text:str, pos:Union[int, float], showLine:bool=True):
+        """
+        Add markers to the axis.
+
+        Parameters
+        ----------
+        text : str
+            The text label for the marker.
+        pos : int | float
+            The position of the marker on the axis.
+        showLine : bool, optional
+            Whether to show a line for the marker (default is True).
+
+        """
+
+        self.userAddedMarkers.append({
+            "text": text,
+            "pos" : pos,
+            "style": [('showNumber', True), ('showLine', showLine)]
+        })
 
 
     def get(self, x):
@@ -246,6 +268,7 @@ class Axis(AttrObject):
                         ],
                     })
 
+        markers += self.userAddedMarkers
 
         for marker in markers:
             marker_ = Marker(
@@ -258,7 +281,7 @@ class Axis(AttrObject):
 
             for style, val in marker["style"]:
                 marker_.setAttr(style, val)
-    
+
             marker_.finalize(parent)
             self.markers.append(marker_)
         

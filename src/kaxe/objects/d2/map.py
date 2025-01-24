@@ -7,7 +7,7 @@ from ...core.text import Text
 from ...core.round import koundTeX
 from ...plot import identities
 from typing import Union
-from ..color import Colormaps
+from ...core.color import Colormaps
 
 
 class ColorScale:

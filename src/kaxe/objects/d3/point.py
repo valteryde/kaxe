@@ -7,7 +7,7 @@ from ...core.helper import isRealNumber
 # 3d
 from ...core.d3.objects import Point3D, Line3D
 from ...core.d3.helper import rc
-from ..color import Colormaps
+from ...core.color import Colormaps
 
 # packages
 import numpy as np

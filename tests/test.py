@@ -1158,6 +1158,84 @@ class Test:
         plt.show()
 
 
+    def testAddMarkers():
+        FARVE1 = (15,163,177,255)
+        FARVE2 = (51,44,35,255)
+        FARVE3 = (179,57,81,255)
+        FARVE4 = (209, 122, 34, 255)
+        FARVE5 = (64,78,77,255)
+        FARVE6 = (240, 200, 200)
+
+        eu = 0.5
+        exd = 0.5
+
+        F_kinetic = 2.8
+
+        x = 0.5
+
+        def frik(u, xdot):
+
+            F_stiction = 3.1
+            
+            if abs(u) > eu:
+                if abs(xdot) > exd:
+                    u += F_kinetic*np.sign(xdot)
+                else:
+                    u += F_stiction*np.sign(xdot)
+
+            return u
+
+        def mod(u, xdot):
+            
+            F_stiction = -0.463 * x + 3.338
+
+            if abs(u) > eu:
+
+                if abs(xdot) > exd:
+                    if xdot > exd:
+                        u += F_kinetic
+                    if xdot < -exd:
+                        u -= F_kinetic
+                    
+                elif abs(u) < F_stiction:
+                    u = np.sign(u) * F_stiction
+                
+                else:
+                    u += np.sign(u) * F_stiction
+            
+            return u
+
+        grid = kaxe.Grid()
+
+        p1 = kaxe.EmptyPlot([0, 10, 0, 10])
+        p1.title('u ind', 'U ud')
+        
+        p1.secondAxis.add('valter', F_kinetic)
+        
+        p1.add(kaxe.Function2D(lambda u: u, dashed=50, color=FARVE5, width=5).legend('Uden kompensering', color=(200,200,200,255)))
+        p1.add(kaxe.Function2D(frik,  xdot = 0.01, color=FARVE2).legend('Original'))
+        p1.add(kaxe.Function2D(mod, xdot = 0.01, color=FARVE3).legend('Modificeret'))
+
+        p2 = kaxe.EmptyPlot([0, 10, 0, 10])
+        # p2.firstAxis.addMarkerAtPos(3.1, 'Valter')
+        p2.firstAxis
+
+        p2.title('u ind', 'U ud')
+
+        # sæt marker på ved kinetic og sårn
+        p2.secondAxis.add('valter', F_kinetic)
+
+        p2.add(kaxe.Function2D(lambda u: u, dashed=50, color=FARVE5, width=5).legend('Uden kompensering', color=(200,200,200,255)))
+        p2.add(kaxe.Function2D(frik,  xdot = 1, color=FARVE2).legend('Original'))
+        p2.add(kaxe.Function2D(mod, xdot = 1, color=FARVE3).legend('Modificeret'))
+
+        grid.addRow(p1, p2)
+        # plt.title('')
+
+        grid.show()
+
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1166,11 +1244,5 @@ if __name__ == '__main__':
         pass
 
     #Test.testTooManyNumbers()
-
-    Test.testCross()
-    # Test.argument()
-    # Test.testLollipop()
-    # Test.testDobuleAxisPlot()
-    # Test.testBodePlotGrid()
-    # Test.testGridLayout()
-    # Test.testBubbles()
+    
+    Test.argument()

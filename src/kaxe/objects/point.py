@@ -5,7 +5,7 @@ from .d3.point import Points3D
 from typing import Union, Callable
 from inspect import signature
 from ..core.symbol import symbol as symbols
-from .color import Colormap
+from ..core.color import Colormap
 
 # 2d
 # self, x, y, color:tuple=None, size:int=None, symbol:str=symbols.CIRCLE, connect:bool=False

@@ -63,7 +63,7 @@ class Colormap:
         x1 = math.ceil(x)
 
         x -= x0
-        return (1 - x) * self.colorGradientSteps[x0] + (x) * self.colorGradientSteps[x1]
+        return tuple(round(i) for i in (1 - x) * self.colorGradientSteps[x0] + (x) * self.colorGradientSteps[x1])
 
 
 class SingleColormap(Colormap):
