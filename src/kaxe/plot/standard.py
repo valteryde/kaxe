@@ -13,6 +13,13 @@ class Plot(Window):
     """
     A simple plotting window for cartesian coordinates
     
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+
     Parameters
     ----------
     window : list

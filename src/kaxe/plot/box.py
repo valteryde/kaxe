@@ -7,11 +7,19 @@ class BoxPlot(Plot):
     """
     A class used to create a plot where the axis is always to the left and at the bottom.
     
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+
+
     Parameters
     ----------
     window : list|tuple|None, optional
         A list or tuple defining the window for the plot, by default None.
-    """    
+    """
 
     def __init__(self, window:Union[list, tuple, None]=None):
         super().__init__(window)

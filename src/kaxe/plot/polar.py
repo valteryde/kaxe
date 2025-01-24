@@ -17,6 +17,11 @@ class PolarPlot(Window):
     """
     A polar plot with radians on the radial axis
 
+    Attributes
+    ----------
+    radiusAxis : Kaxe.Axis
+        The radial axis of the polar plot.
+
     Note
     ----
     This plotting window supports fewer objects than that of the classical plotting windows

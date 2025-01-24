@@ -11,6 +11,13 @@ class LogPlot(Plot):
     """
     LogPlot class for creating logarithmic plots.
     
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+
     Parameters
     ----------
     window : list, optional
@@ -169,6 +176,28 @@ class LogPlot(Plot):
 
 
 class BoxLogPlot(LogPlot):
+    """
+    BoxLogPlot class for creating logarithmic plots with axis placed at borders.
+    
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+
+    Parameters
+    ----------
+    window : list, optional
+        A list defining the axis window as [x0, x1, y0, y1]. Default is None.
+    firstAxisLog : bool, optional
+        If True, the first axis (x-axis) will be logarithmic. Default is False.
+    secondAxisLog : bool, optional
+        If True, the second axis (y-axis) will be logarithmic. Default is True.
+    hideUgly : bool, optional
+        If True, hides markers that are not round numbers in logarithmic scale. Default is True.
+    """
+
     def __init__(self, window = None, firstAxisLog=False, secondAxisLog=True, hideUgly=True):
         super().__init__(window, firstAxisLog, secondAxisLog, hideUgly)
     

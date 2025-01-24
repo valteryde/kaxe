@@ -80,6 +80,17 @@ Logarithmic Plot
     .. image:: /_static/logplot.png
         :width: 400 px
 
+
+.. autoclass:: kaxe.BoxLogPlot
+    :show-inheritance:
+    :members:
+    :exclude-members: hideUgly, inversepixel, pixel
+
+    .. image:: /_static/boxlogplot.png
+        :width: 400 px
+
+
+
 3D Plots
 --------
 

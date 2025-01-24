@@ -58,12 +58,22 @@ class Plot3D(Window):
     """
     A plotting window used to represent a boxed 3D Plot
     
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+    thirdAxis : Kaxe.Axis
+        The third axis of the plot.
+
     Parameters
     ----------
     window : list, optional
         The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
     rotation : list, optional
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    
     """
     
     

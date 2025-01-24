@@ -45,6 +45,13 @@ class DoubleAxisPlot(Plot):
     """
     A plotting window with two y-axis placed on each end of axis
 
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+
     Parameters
     ----------
     window: list|tuple|None

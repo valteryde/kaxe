@@ -100,6 +100,9 @@ def createAllDocImages():
     plt = kaxe.DoubleAxisPlot([0, 10, 0, 10, 0, 5])
     plt.save(j('doubleaxisplot'))
 
+    plt = kaxe.BoxLogPlot()
+    plt.save(j('boxlogplot'))
+
     # ???
     # plt = kaxe.PlotEmpty3D()
     # plt.save(j('plotempty3d.png'))

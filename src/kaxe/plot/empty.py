@@ -10,6 +10,13 @@ class EmptyPlot(Plot):
     """
     A almost empty plotting window. Axis have no numbers
 
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
+
     Parameters
     ----------
     window : Union[list, tuple, None], optional
@@ -20,9 +27,17 @@ class EmptyPlot(Plot):
         super().__init__(window)
         self.style({'marker.showNumber': False, 'axis.showArrow':True})
 
+
 class EmptyWindow(Plot):
     """
     A completely empty plotting window.
+
+    Attributes
+    ----------
+    firstAxis : Kaxe.Axis
+        The first axis of the plot.
+    secondAxis : Kaxe.Axis
+        The second axis of the plot.
 
     Parameters
     ----------
