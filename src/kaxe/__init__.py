@@ -38,6 +38,7 @@ from .core import resetColor as resetColors
 from .core import resetColor
 from .core import symbol as Symbol
 from .core import symbol
+from .core import Colormaps, SingleColormap, Colormap
 from .core.window import Window, AttrObject, AttrMap
 
 try:
