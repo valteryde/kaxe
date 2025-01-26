@@ -471,6 +471,10 @@ class LineSegment(Shape):
 class Arc(Shape):
     
     def __init__(self, phaseshift:int, angle:int, center:tuple, radius:int, color:tuple=BLACK, batch:Batch=None, *args, **kwargs):
+        """
+        phaseshift and angle is in degrees
+        """
+
         self.phaseshift = phaseshift
         self.angle = angle
         self.radius = int(radius)

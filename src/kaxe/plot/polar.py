@@ -28,9 +28,11 @@ class PolarPlot(Window):
     
     """
     
-    def __init__(self,  window:list=None): # |
+    def __init__(self,  window:list=None, useDegrees:bool=False): # |
         super().__init__()
         self.identity = POLARPLOT
+
+        self.useDegrees = useDegrees
         
         self.axis = [lambda: self.radiusAxis]
 
@@ -51,9 +53,9 @@ class PolarPlot(Window):
 
         self.scale = (1,1)
         self.radiusTitle = None
-        self.radiusAxis = Axis((1,0), (0,1), 'rNumbers')
+        self.radiusAxis = Axis((1,0), (0,-1), 'rNumbers')
 
-        self.angleAxis = PolarAxis()
+        self.angleAxis = PolarAxis(useDegrees)
         self.batch = shapes.Batch()
 
 
@@ -302,7 +304,7 @@ class PolarAxis(Axis):
                 batch=self.batch, 
                 anchor_x="center", 
                 anchor_y="center", 
-                fontSize=int(fontsize*1.5), 
+                fontSize=int(fontsize), 
                 color=parent.getAttr('color')
             )
 

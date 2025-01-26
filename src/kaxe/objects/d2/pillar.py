@@ -1,4 +1,5 @@
 
+from typing import Union
 from ...core.styles import *
 from ...core.shapes import shapes
 from ...core.symbol import makeSymbolShapes
@@ -33,7 +34,6 @@ class Pillars:
 
     def __init__(self, x, heights, color:tuple=None, width:int=None) -> None:
     
-
         self.x = x
         self.heights = heights
         self.width = width
@@ -42,8 +42,10 @@ class Pillars:
         self.rects = []
         
         # color
+        self.randomColor = False
         if color is None:
             self.color = getRandomColor()
+            self.randomColor = True
         else:
             self.color = color
 
@@ -56,11 +58,36 @@ class Pillars:
         self.farTop = max(self.heights)
         self.farBottom = 0
 
-        self.supports = [identities.XYPLOT]
+        self.supports = [identities.XYPLOT, identities.POLAR]
 
     
     def finalize(self, parent):
+        
+        if parent.identity == identities.XYPLOT:
+            self.finalizeXYPLOT(parent)
+        
+        elif parent.identity == identities.POLAR:
+            self.finalizePOLAR(parent)
 
+
+    def finalizePOLAR(self, parent):
+        
+        if self.width is None:
+            self.width = 5
+
+        if self.randomColor:
+            self.color = list(self.color)
+            self.color[-1] = 150
+            self.color = tuple(self.color)
+
+        for i, angle in enumerate(self.x):
+            h = self.heights[i]
+
+            shapes.Arc(math.degrees(angle)-90-self.width/2, self.width, parent.pixel(0,0), vlen(vdiff(parent.pixel(0,0), parent.pixel(0, h))), batch=self.batch, color=self.color)
+
+
+    def finalizeXYPLOT(self, parent):
+        
         x0, y0 = parent.pixel(0, 0)
         x1, _ = parent.pixel(len(self.x) / (self.farRight - self.farLeft), 0)
         width = (x1 - x0) * 0.75

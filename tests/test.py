@@ -1235,6 +1235,25 @@ class Test:
         grid.show()
 
 
+    def testBarPolarPlot():
+        
+        plt = kaxe.PolarPlot(useDegrees=True)
+        
+        for _ in range(10):
+        
+            N = randint(1, 10)
+            theta = np.linspace(0.0, 2 * np.pi, N)
+            radii = 10 * np.random.rand(N)
+
+            pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20))
+
+            # pillar = kaxe.Pillars([math.pi], [5], width=random.randint(1, 10))
+            
+            plt.add(pillar)
+
+        plt.show()
+
+
 
 if __name__ == '__main__':
     import os
@@ -1245,5 +1264,4 @@ if __name__ == '__main__':
 
     #Test.testTooManyNumbers()
     
-    Test.argument()
-    kaxe.Axis
+    Test.testBarPolarPlot()

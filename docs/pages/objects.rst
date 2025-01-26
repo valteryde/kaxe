@@ -64,6 +64,9 @@ Smart objects adapts to which input is given at creates the corrosponding object
 
     .. image:: /_static/pillars.png
         :width: 400 px
+    
+    .. image:: /_static/pillarspolar.png
+        :width: 400 px
 
 .. .. autoclass:: kaxe.RootLocus
 ..     :members:

@@ -7,6 +7,8 @@ from mdit_py_plugins.footnote import footnote_plugin
 import shutil
 import math
 import sys
+import random
+import numpy as np
 
 sys.path.insert(0, str(Path('src').resolve()))
 import kaxe
@@ -145,6 +147,23 @@ def createAllDocImages():
         [x for x,y,z in points], [y for x,y,z in points], [z for x,y,z in points]
     ), 'points3d')
     create3DWithObject(kaxe.Function3D(lambda x,y: math.sin(x*y/10)), 'function3d')
+
+    plt = kaxe.PolarPlot(useDegrees=True)
+        
+    for _ in range(10):
+        
+        N = random.randint(1, 10)
+        theta = np.linspace(0.0, 2 * np.pi, N)
+        radii = 10 * np.random.rand(N)
+
+        pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20))
+
+        # pillar = kaxe.Pillars([math.pi], [5], width=random.randint(1, 10))
+            
+        plt.add(pillar)
+
+    plt.save(j('pillarspolar'))
+
 
 try:
     copyImagesFromTest()
