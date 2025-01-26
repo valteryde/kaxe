@@ -13,6 +13,9 @@ def sign(p1, p2, p3):
 def barycentricWeights(a,b,c,p):
     bottom = sign(a,b,c)
 
+    if bottom == 0:
+        return -1, -1, -1
+
     w1 = ((b[1] - c[1])*(p[0] - c[0]) + (c[0] - b[0])*(p[1] - c[1])) / bottom
     w2 = ((c[1] - a[1])*(p[0] - c[0]) + (a[0] - c[0])*(p[1] - c[1])) / bottom
 
@@ -54,7 +57,7 @@ def drawTriangle(zbuffer,
             # self.__calcRotatedVector__()
             
             z = rp1[2] * k1 + rp2[2] * k2 + rp3[2] * k3
-                
+
             z = w - z
 
             if zbuffer[y][x] > z:

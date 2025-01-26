@@ -13,6 +13,7 @@ import numpy as np
 import math
 import time
 
+
 class Function3D(Base3DObject):
     """
     Create a Function in 3D given .. math:: z=f(x,y)
@@ -61,41 +62,74 @@ class Function3D(Base3DObject):
             self.numPoints = 25
 
 
-    def __fill__(self, render, matrix, xn, yn, color):
-        if all(i[0] is not None for i in [matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1]]):
-                
-            render.add3DObject(
-                Triangle(
-                    matrix[xn][yn],
-                    matrix[xn+1][yn],
-                    matrix[xn][yn+1],
-                    color=color
-                )
+    def __getTriangleNormal__(self, p1, p2, p3):
+
+        Ax, Ay, Az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
+        Bx, By, Bz = p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]
+
+        Nx = Ay * Bz - Az * By
+        Ny = Az * Bx - Ax * Bz
+        Nz = Ax * By - Ay * Bx
+
+        return (Nx, Ny, Nz)
+
+
+    def __isHorizontalTriangle__(self, p1, p2, p3):
+        normal = self.__getTriangleNormal__(p1, p2, p3)
+
+        return (
+            np.isclose(normal[0], 0) and 
+            np.isclose(normal[1], 0) and 
+            (not np.isclose(normal[2], 0))
+        )
+
+
+    def __addTriangle__(self, render, p1, p2, p3, color, isRealpoint):
+        
+        # dont draw vertical vertices
+        if self.__isHorizontalTriangle__(p1, p2, p3) and not isRealpoint:
+            return
+
+        render.add3DObject(
+            Triangle(
+                p1,
+                p2,
+                p3,
+                color=color
             )
+        )
+
+
+    def __fill__(self, render, matrix, xn, yn, color, isRealpoint):
+        
+        if all(i[0] is not None for i in [matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1]]):
+            
+            self.__addTriangle__(render, matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1], color, isRealpoint)
 
         if all(i[0] is not None for i in [matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1]]):
                     
-            render.add3DObject(
-                Triangle(
-                    matrix[xn+1][yn+1],
-                    matrix[xn+1][yn],
-                    matrix[xn][yn+1],
-                    color=color
-                )
-            )
+            self.__addTriangle__(render, matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1], color, isRealpoint)
         
 
-    def __outline__(self, render, matrix, xn, yn, color):
+    def __addTriangleOutline__(self, render, p1, p2, p3, color, isRealpoint):
+        
+        # dont draw vertical vertices
+        if self.__isHorizontalTriangle__(p1, p2, p3) and not isRealpoint:
+            return
+
+        render.add3DObject(Line3D(p1,p2,color=color))
+        render.add3DObject(Line3D(p1,p3,color=color))
+        render.add3DObject(Line3D(p2,p3,color=color))
+
+
+    def __outline__(self, render, matrix, xn, yn, color, isRealpoint):
         if all(i[0] is not None for i in [matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1]]):
-                
-            render.add3DObject(Line3D(matrix[xn][yn],matrix[xn][yn+1],color=color))
-            render.add3DObject(Line3D(matrix[xn][yn],matrix[xn+1][yn],color=color))
-            render.add3DObject(Line3D(matrix[xn][yn+1],matrix[xn+1][yn],color=color))
+
+            self.__addTriangleOutline__(render, matrix[xn][yn], matrix[xn][yn+1],matrix[xn+1][yn], color, isRealpoint)
         
         if all(i[0] is not None for i in [matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1]]):
-                    
-            render.add3DObject(Line3D(matrix[xn+1][yn+1],matrix[xn+1][yn],color=color))
-            render.add3DObject(Line3D(matrix[xn+1][yn+1],matrix[xn][yn+1],color=color))
+            
+            self.__addTriangleOutline__(render, matrix[xn][yn+1], matrix[xn+1][yn+1], matrix[xn+1][yn], color, isRealpoint)
 
 
     def finalize(self, parent):
@@ -108,10 +142,13 @@ class Function3D(Base3DObject):
         
         matrix = np.empty((self.numPoints, self.numPoints), dtype=tuple)
         matrix.fill(np.array((None, None, None)))
+        
         zmap = np.empty((self.numPoints, self.numPoints), dtype=float)
         zmap.fill(-math.inf)
 
-        badPoints = []
+        realpoint = np.empty((self.numPoints, self.numPoints), dtype=bool)
+        realpoint.fill(True)
+        
 
         # get points
         for xn in range(self.numPoints):
@@ -123,16 +160,19 @@ class Function3D(Base3DObject):
                 try:
                     z = self.f(x,y)
                 except Exception:
-                    badPoints.append((xn,yn))
                     continue
                 
                 if type(z) not in [int, float]:
-                    badPoints.append((xn,yn))
                     continue
 
                 if not parent.inside3D(x,y,z):
-                    badPoints.append((xn,yn))
-                    continue
+                    if z > parent.window[5]:
+                        z = parent.window[5]
+                    if z < parent.window[4]:
+                        z = parent.window[4]
+                    
+                    realpoint[xn][yn] = False
+                    
 
                 matrix[xn][yn] = parent.pixel(x,y,z)
                 zmap[xn][yn] = z
@@ -146,51 +186,9 @@ class Function3D(Base3DObject):
                 color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[4], parent.windowAxis[5])
                 
                 if self.fill:
-                    self.__fill__(render, matrix, xn, yn, color)
+                    self.__fill__(render, matrix, xn, yn, color, realpoint[xn][yn])
                 else:
-                    self.__outline__(render, matrix, xn, yn, color)
-
-        # draw ends
-        # NOTE: der er en del punkter der måske kan sorteres fra
-        for xn, yn in badPoints:
-            p1 = xn-1, yn-1
-            p2 = xn-1, yn
-            p3 = xn-1, yn+1
-            p4 = xn  , yn+1
-            p6 = xn  , yn-1
-            p7 = xn+1, yn-1
-            p8 = xn+1, yn
-            p9 = xn+1, yn+1
-
-            p = [p1, p2, p3, p4, p6, p7, p8, p9]
-            for i in p:
-                for j in p:
-                    if i == j: continue
-                    for k in p:
-                        if i == k or j == k: continue
-                        
-                        # behøver ikke være en funktion, men gør bare det hele så meget pænere
-                        self.__createTriangleAtEnd__(parent, matrix, zmap, *i, *j, *k)
-
-
-    def __createTriangleAtEnd__(self, parent, matrix, zmap, x0, y0, x1, y1, x2, y2):
-        if x0 < 0 or y0 < 0 or x1 < 0 or y1 < 0 or x2 < 0 or y2 < 0:
-            return
-
-        render = parent.render
-
-        try:
-            if matrix[x0][y0][0] is not None and matrix[x1][y1][0] is not None and matrix[x2][y2][0] is not None:
-                color = self.cmap.getColor(zmap[x0][y0], parent.windowAxis[4], parent.windowAxis[5])
-                if self.fill:
-                    render.add3DObject(Triangle(matrix[x0][y0], matrix[x1][y1], matrix[x2][y2], color=color))
-                else:
-                    render.add3DObject(Line3D(matrix[x0][y0], matrix[x1][y1], color=color))
-                    render.add3DObject(Line3D(matrix[x0][y0], matrix[x2][y2], color=color))
-                    render.add3DObject(Line3D(matrix[x1][y1], matrix[x2][y2], color=color))
-                                                
-        except IndexError:
-            pass
+                    self.__outline__(render, matrix, xn, yn, color, realpoint[xn][yn])
 
 
     def legend(self, text:str, color=None, symbol=None):

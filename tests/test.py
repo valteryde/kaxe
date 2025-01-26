@@ -1256,6 +1256,29 @@ class Test:
         plt.show()
 
 
+    def test3DBadFunctions():
+        
+        plt = kaxe.Plot3D()
+
+        plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 12))
+        plt.add(kaxe.Function3D(lambda x,y: -2))
+
+        # plt.show()
+
+        plt = kaxe.Plot3D()
+
+        plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 12, fill=False, numPoints=50))
+        plt.add(kaxe.Function3D(lambda x,y: -2, fill=False))
+
+        plt.show()
+
+        plt = kaxe.Plot3D()
+
+        plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 12))
+        plt.add(kaxe.Function3D(lambda x,y: -2, fill=False))
+
+        plt.show()
+
 
 if __name__ == '__main__':
     import os
@@ -1263,3 +1286,5 @@ if __name__ == '__main__':
         os.mkdir('tests/images/3d')
     except FileExistsError:
         pass
+
+    Test.test3DBadFunctions()
