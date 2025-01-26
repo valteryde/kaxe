@@ -62,3 +62,10 @@ The axis used in most of the plots also contains some attributes and methods tha
 .. autoclass:: kaxe.Axis
     
     .. automethod:: kaxe.Axis.add
+
+
+Legends not attatched to objects
+--------------------------------
+
+.. autoclass:: kaxe.GhostLegend
+    :members:

@@ -1229,6 +1229,8 @@ class Test:
         p2.add(kaxe.Function2D(frik,  xdot = 1, color=FARVE2).legend('Original'))
         p2.add(kaxe.Function2D(mod, xdot = 1, color=FARVE3).legend('Modificeret'))
 
+        p2.add(kaxe.GhostLegend('Valter', (255,0,0,255), kaxe.symbol.CIRCLE))
+
         grid.addRow(p1, p2)
         # plt.title('')
 
@@ -1261,7 +1263,3 @@ if __name__ == '__main__':
         os.mkdir('tests/images/3d')
     except FileExistsError:
         pass
-
-    #Test.testTooManyNumbers()
-    
-    Test.testBarPolarPlot()
