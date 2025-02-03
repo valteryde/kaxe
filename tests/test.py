@@ -1287,4 +1287,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.test3DBadFunctions()
+    Test.testGridLayout()
+    # Test.test3DBadFunctions()

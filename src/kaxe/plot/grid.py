@@ -4,7 +4,7 @@ from ..core.window import Window
 from typing import Union
 from PIL import Image
 
-class Grid:
+class Grid(Window):
     """
     Assemble multiple plots in one image.
     
@@ -20,6 +20,7 @@ class Grid:
     """
 
     def __init__(self):
+        super().__init__()
 
         self.grid = []
         self.gridGap = [20, 20]
@@ -215,10 +216,11 @@ class Grid:
         img.save(fpath)
 
 
-    def show(self):
-        if self.__bakedImage__:
-            self.__bakedImage__.show()
-            return
+    
+    # def show(self):
+    #     if self.__bakedImage__:
+    #         self.__bakedImage__.show()
+    #         return
 
-        img = self.__bake__()
-        img.show()
+    #     img = self.__bake__()
+    #     img.show()
