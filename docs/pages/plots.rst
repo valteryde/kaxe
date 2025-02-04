@@ -24,11 +24,11 @@ Classical Plot
     .. image:: /_static/plot.png
         :width: 400 px
 
-.. autoclass:: kaxe.BoxPlot
+.. autoclass:: kaxe.BoxedPlot
     :show-inheritance:
     :members:
 
-    .. image:: /_static/boxplot.png
+    .. image:: /_static/boxedplot.png
         :width: 400 px
 
 .. autoclass:: kaxe.EmptyPlot
@@ -81,12 +81,12 @@ Logarithmic Plot
         :width: 400 px
 
 
-.. autoclass:: kaxe.BoxLogPlot
+.. autoclass:: kaxe.BoxedLogPlot
     :show-inheritance:
     :members:
     :exclude-members: hideUgly, inversepixel, pixel
 
-    .. image:: /_static/boxlogplot.png
+    .. image:: /_static/boxedlogplot.png
         :width: 400 px
 
 

@@ -34,7 +34,7 @@ from .chart import *
 from .data import data
 from .objects import *
 from .core import koundTeX, setDefaultColors
-from .core import resetColor as resetColors
+from .core import getRandomColor
 from .core import resetColor
 from .core import symbol as Symbol
 from .core import symbol

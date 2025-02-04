@@ -24,3 +24,11 @@ Charts
 
     .. image:: /_static/groupbar.png
         :width: 600 px
+
+
+.. autoclass:: kaxe.BoxPlot
+    :show-inheritance:
+    :members:
+
+    .. image:: /_static/boxplot.png
+        :width: 600 px

@@ -175,7 +175,7 @@ class LogPlot(Plot):
         return self.xtransinv(x), self.ytransinv(y)
 
 
-class BoxLogPlot(LogPlot):
+class BoxedLogPlot(LogPlot):
     """
     BoxLogPlot class for creating logarithmic plots with axis placed at borders.
     

@@ -9,6 +9,7 @@ import math
 import sys
 import random
 import numpy as np
+from random import randint
 
 sys.path.insert(0, str(Path('src').resolve()))
 import kaxe
@@ -75,8 +76,8 @@ def createAllDocImages():
     plt = kaxe.Plot()
     plt.save(j('plot'))
 
-    plt = kaxe.BoxPlot()
-    plt.save(j('boxplot'))
+    plt = kaxe.BoxedPlot()
+    plt.save(j('boxedplot'))
 
     plt = kaxe.EmptyPlot()
     plt.save(j('emptyplot'))
@@ -102,8 +103,8 @@ def createAllDocImages():
     plt = kaxe.DoubleAxisPlot([0, 10, 0, 10, 0, 5])
     plt.save(j('doubleaxisplot'))
 
-    plt = kaxe.BoxLogPlot()
-    plt.save(j('boxlogplot'))
+    plt = kaxe.BoxedLogPlot()
+    plt.save(j('boxedlogplot'))
 
     # ???
     # plt = kaxe.PlotEmpty3D()
@@ -149,20 +150,40 @@ def createAllDocImages():
     create3DWithObject(kaxe.Function3D(lambda x,y: math.sin(x*y/10)), 'function3d')
 
     plt = kaxe.PolarPlot(useDegrees=True)
-        
-    for _ in range(10):
+    
+    for i in range(10):
         
         N = random.randint(1, 10)
         theta = np.linspace(0.0, 2 * np.pi, N)
         radii = 10 * np.random.rand(N)
 
-        pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20))
-
-        # pillar = kaxe.Pillars([math.pi], [5], width=random.randint(1, 10))
+        pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20), color=kaxe.Colormaps.standard.getColor(i, 0, 10))
             
         plt.add(pillar)
 
     plt.save(j('pillarspolar'))
+
+    # boxplot
+    kaxe.resetColor()
+
+    boxplot = kaxe.BoxPlot()
+
+    l = ['valter', 'kaxe', 'data3', 'data4']
+    symbols = [kaxe.symbol.CIRCLE, kaxe.symbol.CROSS, kaxe.symbol.CIRCLE, kaxe.symbol.CROSS]
+
+    for symb in symbols:
+        a, b = randint(-1000, 1000), randint(-1000, 1000)
+        a, b = min(a,b), max(a,b)
+        data = [randint(a, b) for i in range(1000)]
+
+        for _ in range(randint(0, 100)):
+            data.append(randint(-1200, 1200))
+
+        boxplot.add(data, symbol=symb)
+
+    boxplot.legends(*l)
+
+    boxplot.save(j('box'))
 
 
 try:

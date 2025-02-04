@@ -301,10 +301,10 @@ class Test:
         plt.save('tests/images/polar.png')
 
 
-    def testBoxPlot():
+    def testBoxedPlot():
         
         #plt = kaxe.Plot([-4, 4, -2, 5])
-        plt = kaxe.BoxPlot([-math.pi-1, math.pi+1, -1, 4])
+        plt = kaxe.BoxedPlot([-math.pi-1, math.pi+1, -1, 4])
 
         def s_N(x, N):
             if -math.pi < x < math.pi:
@@ -363,10 +363,10 @@ class Test:
         plt.save('tests/images/linearfunc.png')
 
 
-    def testBoxPlotNoGridLines():
+    def testBoxedPlotNoGridLines():
         
         #plt = kaxe.Plot([-4, 4, -2, 5])
-        plt = kaxe.BoxPlot([-math.pi-1, math.pi+1, -1, 4])
+        plt = kaxe.BoxedPlot([-math.pi-1, math.pi+1, -1, 4])
 
         plt.help()
         plt.style({'marker.showLine':False})
@@ -882,7 +882,7 @@ class Test:
 
 
     def testCrossOverMarker():
-        plt = kaxe.BoxPlot([-2000,6000,-1,1])
+        plt = kaxe.BoxedPlot([-2000,6000,-1,1])
         plt.save('tests/images/crossover.png')
 
         plt = kaxe.Plot3D()
@@ -1019,7 +1019,7 @@ class Test:
 
     def testLegendBoxAgain():
         
-        plt = kaxe.BoxPlot()
+        plt = kaxe.BoxedPlot()
         plt.style(outerPadding=(0,0,0,0))
         plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('Experiment 1'))
         plt.add(kaxe.Points([0,1,2], [0,1,2]).legend('$\\theta=\\theta_0 * \\mu * \\text{e}^{-\\frac{c}{2 *J} * t} * \\cos(\\frac{a * t}{2 * J} + \\alpha)$'))
@@ -1096,13 +1096,13 @@ class Test:
         grid.style(width=3000, height=800)
 
         # magnitude
-        plt1 = kaxe.BoxLogPlot(firstAxisLog=True, secondAxisLog=False)
+        plt1 = kaxe.BoxedLogPlot(firstAxisLog=True, secondAxisLog=False)
         plt1.title('$\\omega$ [$\\frac{rad}{s}$]', second="[dB]")
         
         plt1.add(kaxe.Points2D(w, mag, connect=True))
 
         # plot 2
-        plt2 = kaxe.BoxLogPlot(firstAxisLog=True, secondAxisLog=False)
+        plt2 = kaxe.BoxedLogPlot(firstAxisLog=True, secondAxisLog=False)
         plt2.add(kaxe.Points2D(w, phase, connect=True, color=(109,69,76,255)))
         plt2.title(second="[rad]")
 
@@ -1280,6 +1280,29 @@ class Test:
         plt.show()
 
 
+    def testBoxedPlot():
+        
+        boxplot = kaxe.BoxPlot()
+
+        l = ['valter', 'kaxe', 'data3', 'data4']
+        symbols = [kaxe.symbol.CIRCLE, kaxe.symbol.CROSS, kaxe.symbol.CIRCLE, kaxe.symbol.CROSS]
+
+        for symb in symbols:
+            a, b = randint(-1000, 1000), randint(-1000, 1000)
+            a, b = min(a,b), max(a,b)
+            data = [randint(a, b) for i in range(1000)]
+
+            for _ in range(randint(0, 100)):
+                data.append(randint(-1200, 1200))
+
+            boxplot.add(data, symbol=symb)
+
+        boxplot.legends(*l)
+
+        boxplot.show()
+
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1287,5 +1310,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testGridLayout()
-    # Test.test3DBadFunctions()
+    Test.testBoxedPlot()

@@ -3,7 +3,7 @@
 from .standard import Plot, XYPLOT
 from typing import Union
 
-class BoxPlot(Plot):
+class BoxedPlot(Plot):
     """
     A class used to create a plot where the axis is always to the left and at the bottom.
     
