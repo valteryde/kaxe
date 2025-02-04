@@ -167,21 +167,10 @@ def createAllDocImages():
     kaxe.resetColor()
 
     boxplot = kaxe.BoxPlot()
-
-    l = ['valter', 'kaxe', 'data3', 'data4']
-    symbols = [kaxe.symbol.CIRCLE, kaxe.symbol.CROSS, kaxe.symbol.CIRCLE, kaxe.symbol.CROSS]
-
-    for symb in symbols:
-        a, b = randint(-1000, 1000), randint(-1000, 1000)
-        a, b = min(a,b), max(a,b)
-        data = [randint(a, b) for i in range(1000)]
-
-        for _ in range(randint(0, 100)):
-            data.append(randint(-1200, 1200))
-
-        boxplot.add(data, symbol=symb)
-
-    boxplot.legends(*l)
+    boxplot.add([-1,-5,1,2,3,4,21, 22])
+    boxplot.add([4,1,6,1,6.3,1,6.2,7,9.1, -2])
+    boxplot.add([-12, -10, 10, 12, 25])
+    boxplot.legends('dataset 1', 'dataset 2', 'dataset 3')
 
     boxplot.save(j('box'))
 

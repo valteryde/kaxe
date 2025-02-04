@@ -16,8 +16,9 @@ class BoxPlot(Window):
     --------
     >>> import kaxe
     >>> chart = kaxe.BoxPlot()
-    >>> chart.add("dataset1", [1,2,3,4])
-    >>> chart.add("dataset2", [4,1,6,1,6.3,1,6.2,7,9.1])
+    >>> chart.add([1,2,3,4])
+    >>> chart.add([4,1,6,1,6.3,1,6.2,7,9.1])
+    >>> chart.legends('dataset 1', 'dataset 2')
     >>> chart.show()
 
     """
