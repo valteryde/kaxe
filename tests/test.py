@@ -1114,6 +1114,7 @@ class Test:
     def testGridLayout():
         
         grid = kaxe.Grid()
+        
         grid.style(width=500, height=500)
 
         for i in range(5):
@@ -1310,4 +1311,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.argument()
+    # Test.argument()
+    Test.testGridLayout()

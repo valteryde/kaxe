@@ -20,7 +20,6 @@ class Grid(Window):
     """
 
     def __init__(self):
-        super().__init__()
 
         self.grid = []
         self.gridGap = [20, 20]
