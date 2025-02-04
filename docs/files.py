@@ -167,9 +167,9 @@ def createAllDocImages():
     kaxe.resetColor()
 
     boxplot = kaxe.BoxPlot()
-    boxplot.add([-1,-5,1,2,3,4,21, 22])
+    boxplot.add([-5,1,2,3,4,21, 22])
     boxplot.add([4,1,6,1,6.3,1,6.2,7,9.1, -2])
-    boxplot.add([-12, -10, 10, 12, 25])
+    boxplot.add([-12, -10, 10, 12, 25], symbol=kaxe.symbol.CROSS)
     boxplot.legends('dataset 1', 'dataset 2', 'dataset 3')
 
     boxplot.save(j('box'))
