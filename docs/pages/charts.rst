@@ -30,5 +30,5 @@ Charts
     :show-inheritance:
     :members:
 
-    .. image:: /_static/boxplot.png
+    .. image:: /_static/box.png
         :width: 600 px
