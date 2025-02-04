@@ -1310,4 +1310,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testBoxedPlot()
+    Test.argument()
