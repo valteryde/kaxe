@@ -23,10 +23,11 @@ Polar plots
 ![Polar plot](tests/images/polar.png)
 
 3D Plots
-![3DPlot](tests/images/3d-box.png)
-![Style3DPlot](tests/images/3d-box-style.png)
 ![PrettyPlot3D2](tests/images/3d-function-pretty-2.png)
-![Style3DPlot3](tests/images/3d-function-pretty-3.png)
+
+Grids
+![Contour grid](tests/images/contourgrid.png)
+
 
 
 ## Preview of Code
@@ -47,4 +48,3 @@ This is all you need for a plot and some objects. To get started visit [the gett
 ![Functions](tests/images/function.png)
 ![Points](tests/images/labels.png)
 ![Equations](tests/images/equation.png)
-

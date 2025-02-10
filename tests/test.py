@@ -1303,6 +1303,27 @@ class Test:
         boxplot.show()
 
 
+    def testContour():
+
+        def f(x,y):
+            return 4 * math.sin(x) + 4 * math.cos(y) + x**2 - y
+
+        plt2d = kaxe.Plot()
+        plt2d.add( kaxe.Contour(f) )
+        
+        plt3d = kaxe.Plot3D(rotation=[0, -20])
+        plt3d.style(fontSize=40)
+        plt3d.add( kaxe.Function3D(f, numPoints=1000).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+
+        grid = kaxe.Grid()
+        grid.style(width=2000, height=2000)
+
+        grid.addRow(plt2d, plt3d)
+
+        grid.show()
+        grid.save('tests/images/contourgrid.png')
+
+
 
 if __name__ == '__main__':
     import os
@@ -1311,5 +1332,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    Test.testContour()
     # Test.argument()
     # Test.testGridLayout()

@@ -228,13 +228,13 @@ class Window(AttrObject):
                 if self.windowAxis[2] is None: 
                     self.windowAxis[2] = min(vertical)
             except Exception as e:
-                self.windowAxis[2] = -5
+                self.windowAxis[2] = -10
             
             try:
                 if self.windowAxis[3] is None: 
                     self.windowAxis[3] = max(vertical)
             except Exception as e:
-                self.windowAxis[3] = 5
+                self.windowAxis[3] = 10
         
         # if optimal is one dimensionel
         if self.windowAxis[0] == self.windowAxis[1]:
