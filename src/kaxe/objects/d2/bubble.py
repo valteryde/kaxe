@@ -12,10 +12,6 @@ class Bubble:
     """
     A class to represent a bubble with text and a line pointing to it.
 
-    Examples
-    --------
-    >>> plt.add( Bubble("kaxe is cool", (0,1), (2, 5)) )
-
     Parameters
     ----------
     text : str
@@ -31,6 +27,9 @@ class Bubble:
     fontSize : int, optional
         The font size of the text inside the bubble, by default 32.
 
+    Examples
+    --------
+    >>> plt.add( Bubble("kaxe is cool", (0,1), (2, 5)) )
     """
     
     def __init__(self, text:str, centerPos, lineEndPos, color:tuple=BLACK, lineThickness:int=5, fontSize:int=32):

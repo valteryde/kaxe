@@ -20,13 +20,10 @@ class Equation:
     ----------
     left : callable
         Left side of the equation
-    
     right : callable
         Right side of the equation
-    
     color : tuple|list, optional
         Color to display the equation , if default is None a random color will be assigned
-
     width : int
         Line thickness, default is 2
     
@@ -186,6 +183,7 @@ class Equation:
                     width=self.width*2,
                     color=self.color
                 )
+
 
     def finalize(self, parent):
         box = parent.windowBox
