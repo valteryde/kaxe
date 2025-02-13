@@ -20,10 +20,10 @@ Modules:
 - core.window: Contains classes for window management and attribute mapping.
 
 Example:
-    >>> import kaxe
-    >>> kaxe.Plot()
-    >>> kaxe.add( ... )
-    >>> kaxe.show()
+>>> import kaxe
+>>> plt = kaxe.Plot()
+>>> plt.add( ... )
+>>> plt.show()
 """
 
 

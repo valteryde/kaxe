@@ -9,3 +9,4 @@ from .arrow import Arrow
 from .rootlocus import RootLocus
 from .bubble import Bubble
 from .contour import Contour
+from .fill import Fill

@@ -152,6 +152,8 @@ class Function2D:
         
         
         elif parent == identities.LOGPLOT:
+            # avoid clustering
+
             for n in range(0, parent.windowBox[2]):
                 try:
                     x, _ = parent.inversepixel(n,1)

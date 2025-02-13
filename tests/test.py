@@ -8,7 +8,7 @@ import kaxe
 from random import randint
 import numpy as np
 import random, string
-
+import scipy.interpolate
 
 def randomObject():
     
@@ -1324,6 +1324,116 @@ class Test:
         grid.save('tests/images/contourgrid.png')
 
 
+    def testFillObject():
+        
+        plt = kaxe.Plot([0, 10])
+        
+        f = lambda x: x**2 - x*8 + 6
+        g = lambda x: x-1
+        
+        plt.add( kaxe.Fill(f, g) )
+        
+        plt.add( kaxe.Function(f) )
+        plt.add( kaxe.Function(g) )
+
+        plt.show()
+
+
+    def testProjectionFill():
+        
+        plt = kaxe.BoxedPlot([2000, 2060, 0, 1000000])
+        
+        plt.style({'axis.ghostMarkers':2})
+
+        def f(x):
+            x -= 2000
+            return 300*x**2
+
+        amp = 1.15
+        def of(x):
+            return f(x)*amp
+        def uf(x):
+            return f(x)/amp
+
+        def kf(x):
+            if x < 2025:
+                return f(x)
+
+        func = kaxe.Function2D(f, dashed=30, color=kaxe.getRandomColor())
+        func.legend('Projection over the next years')
+
+        color = list(func.color)
+        color[3] = 100
+
+        plt.add(kaxe.Fill(of, uf, color=tuple(color)))
+        plt.add(kaxe.Function2D(kf, color=func.color))
+        plt.add(func)
+
+        plt.show()
+
+
+
+    def __createFunc(plt, func, slope, color):
+        l = [(x, func(x)+randint(-10,10)/10 ) for x in range(100)]
+        xs, ys = [x for x, y in l], [y for x, y in l]
+        plt.add( kaxe.Points2D(xs, ys, color=color).legend('Hadouken!') )
+        
+        x0 = 100
+        dx = 5
+        y0 = func(x0)
+
+        # slope = 1/8
+
+        a = randint(0,100)/200
+        b = randint(0,100)/200
+        c = randint(0,100)/200
+        d = randint(0,100)/200
+
+        def over(x, slope):
+            if x > x0:
+                return slope*(x-x0+dx)+y0 + a*math.sin(b*x) + b*math.sin(c*x) + c*math.sin(d*x) + d*math.sin(a*x)
+        def under(x, slope):
+            if x > x0:
+                return -slope*(x-x0+dx)+y0 + a*math.sin(b*x) + b*math.sin(c*x) + c*math.sin(d*x) + d*math.sin(a*x)
+
+        plt.add( kaxe.Fill(lambda x: over(x, slope), lambda x: under(x, slope), color=(color[0], color[1], color[2], 100)) )
+        def bf(x):
+            if x < x0:
+                return func(x)
+        def af(x):
+            if x > x0:
+                return func(x)
+
+        plt.add( kaxe.Function2D(bf, color=color) )
+        plt.add( kaxe.Function2D(af, dotted=30, width=5, color=color) )
+
+
+    def testProjectionFillV2():
+
+        plt = kaxe.Plot([0, 200, -20, 40])
+
+        f1 = lambda x: 10*math.exp(-x/50) + 10
+        f2 = lambda x: 30*math.exp(-x/10) - 2
+        kaxe.getRandomColor()
+        kaxe.getRandomColor()
+        for func, slope, color in [(f1, 1/6, kaxe.getRandomColor()), (f2, 1/8, kaxe.getRandomColor())]:
+            Test.__createFunc(plt, func, slope, color)
+        
+        plt.show()
+
+
+    def testFillV3():
+        
+        plt = kaxe.Plot([0, 10])
+        
+        f = lambda x: 1/x
+
+        plt.add( kaxe.Fill(f) )
+
+        plt.show()
+
+
+
 
 if __name__ == '__main__':
     import os
@@ -1332,6 +1442,9 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testContour()
+    
+    Test.testFillV3()
+    # Test.testFillObject()
+
     # Test.argument()
     # Test.testGridLayout()
