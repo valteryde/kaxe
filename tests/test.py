@@ -1458,7 +1458,7 @@ class Test:
         plt3d.add( kaxe.Contour(f, a=0, b=40, steps=20) )
         
         plt3d.style(fontSize=40)
-        plt3d.add( kaxe.Function3D(f, numPoints=1000).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+        plt3d.add( kaxe.Function3D(f, numPoints=100).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
         plt3d.show()
         plt3d.save('tests/images/contour3d.png')
 
@@ -1471,7 +1471,7 @@ if __name__ == '__main__':
         pass
 
     
-    Test.test2DIn3D()
+    Test.testPrettyContour2DIn3D()
     # Test.testFillV3()
     # Test.testFillObject()
 

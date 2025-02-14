@@ -63,16 +63,5 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
         #### Circle
         if type(shape) is Circle:
             x, y = plt2d.inversepixel(shape.x, shape.y)
-            render.add3DObject( Point3D(*plt3d.pixel(x, y, 0), 2, color=shape.color) )
+            render.add3DObject( Point3D(*plt3d.pixel(x, y, 0), shape.radius, color=shape.color) )
     
-    # render.add3DObject(
-    #     Triangle(
-    #         p1,
-    #         p2,
-    #         p3,
-    #         color=color
-    #     )
-    # )
-
-
-
