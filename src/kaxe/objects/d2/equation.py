@@ -16,7 +16,7 @@ class Equation:
     """
     A class to represent a mathematical equation from left and right side of equation.
     
-    Supported in classical plots and polar plot
+    Supported in classical plots, polar plot and 3D plots as a 2D object with `z=0`
 
     Parameters
     ----------

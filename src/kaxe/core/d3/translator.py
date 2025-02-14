@@ -7,18 +7,19 @@ from .objects import * # Line3D, Point3D, TextureQuad, Triangle
 from ...plot.empty import EmptyWindow
 from ...plot.d3 import Plot3D
 
-# 
 def getEquivalent2DPlot(parent:Plot3D) -> EmptyWindow:
+
     plt = EmptyWindow(parent.window[:5])
     plt.style(
-        width=parent.getAttr('width'), 
-        height=parent.getAttr('height'),
+        width=2000, 
+        height=2000,
         outerPadding=[0,0,0,0]
     )
+    plt.showProgressBar = False
+    plt.printDebugInfo = False
     plt.__bake__()
-
+    del plt.__bakedImage__ # dont save large image in memory
     
-    # add 
     plt.__3DPlotRef = parent
     return plt
 

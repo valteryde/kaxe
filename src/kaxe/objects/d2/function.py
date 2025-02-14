@@ -89,7 +89,7 @@ class Function2D:
         self.otherArgs = args
         self.otherKwargs = kwargs
 
-        self.supports = [identities.XYPLOT, identities.POLAR, identities.LOGPLOT]
+        self.supports = [identities.XYPLOT, identities.POLAR, identities.LOGPLOT, identities.XYZPLOT]
 
 
     def __call__(self, x):

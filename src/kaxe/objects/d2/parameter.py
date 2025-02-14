@@ -39,7 +39,6 @@ class ParametricEquation:
                  interval:Union[tuple, list],
                  color:tuple=None, 
                  width:int=10,
-                 #dotted:bool=0,
                  *args, 
                  **kwargs
                 ):
@@ -107,11 +106,6 @@ class ParametricEquation:
                 if i:lineSegments[-1].append(i)
                 elif len(lineSegments[-1]) > 0: lineSegments.append([])
         
-        # elif parent == identities.POLAR:
-        #     for angle in range(0, 360*fidelity, 5):
-        #         angle = math.radians(angle / fidelity)
-        #         self.__setPoint__(angle, parent)
-
         # piece together linesegments
         for ls in lineSegments:
             shapes.LineSegment(
