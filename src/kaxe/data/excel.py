@@ -1,5 +1,8 @@
 
-from openpyxl import load_workbook
+try:
+    from openpyxl import load_workbook
+except ImportError:
+    pass
 
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
