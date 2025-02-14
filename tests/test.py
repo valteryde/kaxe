@@ -1433,8 +1433,36 @@ class Test:
         plt.show()
 
 
+    def test2DIn3D():
+        
+        # cigar
+        plt = kaxe.Plot3D([-3, 3, -3, 3, 0, 10], rotation=[20, -30])
+
+        func = lambda x,y: x**2 + y**2 + 2
+
+        plt.add(kaxe.Function3D( func ))
+        plt.add(kaxe.Equation( func, lambda x,y: 3 ))
+
+        plt2d = kaxe.Plot([-3, 3, -3, 3])
+        plt2d.add(kaxe.Equation( func, lambda x,y: 3 ))
+
+        # plt.show()
 
 
+        # contour flot
+        plt3d = kaxe.Plot3D(rotation=[0, -20])
+        
+        def f(x,y):
+            return 4 * math.sin(x) + 4 * math.cos(y) + x**2 - y
+
+        plt3d.add( kaxe.Contour(f, a=1, b=2) )
+        
+        plt3d.style(fontSize=40)
+        plt3d.add( kaxe.Function3D(f, numPoints=1000).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+
+        plt3d.show()
+
+        
 if __name__ == '__main__':
     import os
     try:
@@ -1443,7 +1471,8 @@ if __name__ == '__main__':
         pass
 
     
-    Test.testFillV3()
+    Test.test2DIn3D()
+    # Test.testFillV3()
     # Test.testFillObject()
 
     # Test.argument()

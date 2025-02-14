@@ -466,11 +466,23 @@ class Plot3D(Window):
             self.windowAxis[4] <= z <= self.windowAxis[5],
         ])
 
-    # for safety (check if any leaks from old code)
-    # method will NOT work in 3 dimensions
-    # and should thereby NEVER be used
+    
+    # For adding 2D objects into 3D windows 
+    # theese functions should acts as an 2D inverse
     def inversepixel(self, x:int, y:int):
-        raise NotImplementedError
+        w, h = self.getAttr('width'), self.getAttr('height')
+        
+        p = [None, None]
+        if not x is None: p[0] = (x+self.offset[0]-self.padding[0])/w
+        if not y is None: p[1] = (y+self.offset[1]-self.padding[1])/h
+
+        return p
+
+
+
+
+    def inversetranslate(self, x:int, y:int):
+        return self.inversepixel(x, y)
 
 
 class PlotCenter3D(Plot3D):

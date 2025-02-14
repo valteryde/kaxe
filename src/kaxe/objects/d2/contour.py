@@ -58,7 +58,7 @@ class Contour:
     
         self.legendColor = self.color.getColor(5, -10, 10)
 
-        self.supports = [identities.XYPLOT, identities.POLAR]
+        self.supports = [identities.XYPLOT, identities.POLAR, identities.XYZPLOT]
 
         self.__equations = []
 

@@ -9,6 +9,8 @@ from ...core.helper import vdiff, vlen
 from sympy import solve
 import math
 
+from ...core.d3.translator import translate2DTo3DObjects, getEquivalent2DPlot, has3DReference
+
 
 class Equation:
     """
@@ -57,7 +59,7 @@ class Equation:
 
         self.steps = [1, 10, 100]
 
-        self.supports = [identities.XYPLOT, identities.POLAR]
+        self.supports = [identities.XYPLOT, identities.POLAR, identities.XYZPLOT]
 
 
     def __getPointsInBox__(self, box, step, parent):
@@ -87,7 +89,7 @@ class Equation:
                     x1, y1 = parent.inversetranslate(px, py+delta)
                     x2, y2 = parent.inversetranslate(px+delta, py)
                     x3, y3 = parent.inversetranslate(px+delta, py+delta)
-
+                    
                 d1 = self.left(x0, y0) - self.right(x0, y0)
                 d2 = self.left(x1,y1) - self.right(x1, y1)
                 d3 = self.left(x2,y2) - self.right(x2, y2)
@@ -186,10 +188,17 @@ class Equation:
 
 
     def finalize(self, parent):
+        # Translate to 3D plot
+        if parent == identities.XYZPLOT:
+            parent = getEquivalent2DPlot(parent)
         box = parent.windowBox
         box = [box[0], box[2], box[1], box[3]]
         self.__getPointsInBox__(box, len(self.steps)-1, parent)
-        
+
+        # Translate to 3D plot
+        if has3DReference(parent):
+            translate2DTo3DObjects(parent, self.batch)
+
         # algoritmen burde findes alle pixels hvor ligningen går op
         # for plots der ikke er standard XY skal pixelesne warpes rundt
         # der kan komme "huller" i plots hvor warpen ikke er ens med standard XY
