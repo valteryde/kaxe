@@ -1462,6 +1462,13 @@ class Test:
         plt3d.show()
         plt3d.save('tests/images/contour3d.png')
 
+
+    def test3DFunction():
+        
+        plt = kaxe.Plot3D()
+        plt.add( kaxe.Function2D( lambda x: x**2 ) )
+        plt.show()
+
         
 if __name__ == '__main__':
     import os
@@ -1471,7 +1478,7 @@ if __name__ == '__main__':
         pass
 
     
-    Test.testPrettyContour2DIn3D()
+    Test.test3DFunction()
     # Test.testFillV3()
     # Test.testFillObject()
 
