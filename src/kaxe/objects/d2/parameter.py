@@ -2,6 +2,7 @@
 from typing import Callable
 from .point import Points2D
 from ...core.styles import getRandomColor
+from ...core.color import Colormap
 from ...core.helper import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol
@@ -10,6 +11,8 @@ import numbers
 from random import randint
 from .function import Function2D
 from typing import Union
+from ...core.d3.objects import Line3D, Point3D
+from ...core.d3.render import Render
 
 class ParametricEquation:
     """
@@ -23,10 +26,14 @@ class ParametricEquation:
         The parametric function.
     interval : Union[tuple, list]
         The interval over which the function is defined.
-    color : tuple, optional
-        The color of the parametric equation, by default None.
+    color : tuple | kaxe.Colormap, optional
+        The color of the parametric equation, by default None. ColorMap only works in 3D plots.
     width : int, optional
         The width of the line representing the parametric equation, by default 10.
+    dotted : int, optional
+        If greater than 0, the function plot line will be dotted with the specified distance between dots. Default is 0.
+    dashed : int, optional
+        If greater than 0, the function plot line will be dashed with the specified distance between dashes. Default is 0.
     *args : tuple
         Additional positional arguments.
     **kwargs : dict
@@ -39,6 +46,8 @@ class ParametricEquation:
                  interval:Union[tuple, list],
                  color:tuple=None, 
                  width:int=10,
+                 dashed:int=0,
+                 dotted:int=0,
                  *args, 
                  **kwargs
                 ):
@@ -47,29 +56,33 @@ class ParametricEquation:
         self.interval = interval
         self.batch = shapes.Batch()
         
+        self.dashed = dashed
+        self.dotted = dotted
+
         self.tangentFunctions = []
-        #self.dotted = dotted
-        self.fidelity = 100
 
         if color is None:
             self.color = getRandomColor()
         else:
             self.color = color
+        
         self.legendColor = self.color
+        if type(self.color) is Colormap:
+            self.legendColor = self.color.getColor(0, 1, 2)
 
         self.thickness = width
 
         self.otherArgs = args
         self.otherKwargs = kwargs
 
-        self.supports = [identities.XYPLOT, identities.POLAR]
+        self.supports = [identities.XYPLOT, identities.XYZPLOT]
 
 
     def __call__(self, x):
         return self.function(x)
 
 
-    def __half__(self, t0, t1, parent):
+    def __half__(self, t0, t1, parent, fidelity):
 
         p0 = self.function(t0)
         p1 = self.function(t1)
@@ -77,19 +90,19 @@ class ParametricEquation:
         pixel0 = parent.pixel(*p0)
         pixel1 = parent.pixel(*p1)
 
-        diff = vlen(vdiff(pixel0, pixel1))
+        diff = vlen(vdiff(pixel0, pixel1)) * fidelity
 
         if diff > 10:
             badPoints = not parent.inside(*pixel0) or not parent.inside(*pixel1)
             half = (t0 + t1) / 2
             
             if badPoints:
-                return self.__half__(t0, half, parent) + [None] + self.__half__(half, t1, parent)
+                return self.__half__(t0, half, parent, fidelity) + [None] + self.__half__(half, t1, parent, fidelity)
             else:
-                return self.__half__(t0, half, parent) + self.__half__(half, t1, parent)
+                return self.__half__(t0, half, parent, fidelity) + self.__half__(half, t1, parent, fidelity)
 
         else:
-            return [pixel0, pixel1]
+            return [list(pixel0) + [t0], list(pixel1) + [t1]]
 
 
     def finalize(self, parent):
@@ -97,33 +110,63 @@ class ParametricEquation:
         self.lineSegments = [[]]
         self.__lastPoint__ = []
 
+        lineSegments = [[]]
+
+        fidelity = 1
+        if parent == identities.XYZPLOT:
+            fidelity = 2000
+
+        for i in self.__half__(*self.interval, parent, fidelity=fidelity):
+            if i:lineSegments[-1].append(i)
+            elif len(lineSegments[-1]) > 0: lineSegments.append([])
+
         if parent == identities.XYPLOT:
-        
+                
+            # piece together linesegments
+            for ls in lineSegments:
+                shapes.LineSegment(
+                    [(i[0], i[1]) for i in ls], 
+                    color=self.color, 
+                    width=self.thickness, 
+                    batch=self.batch, 
+                    dotted=self.dotted > 0,
+                    dashed=self.dashed > 0,
+                    dashedDist=self.dashed,
+                    dottedDist=self.dotted
+                )
 
-            lineSegments = [[]]
+            # add tangent
+            for tf in self.tangentFunctions:
+                parent.add(tf)
 
-            for i in self.__half__(*self.interval, parent):
-                if i:lineSegments[-1].append(i)
-                elif len(lineSegments[-1]) > 0: lineSegments.append([])
-        
-        # piece together linesegments
-        for ls in lineSegments:
-            shapes.LineSegment(
-                ls, 
-                color=self.color, 
-                width=self.thickness, 
-                batch=self.batch, 
-            )
+        elif parent == identities.XYZPLOT:
+            render:Render = parent.render
 
-        # add tangent
-        for tf in self.tangentFunctions:
-            parent.add(tf)
+            for ls in lineSegments:
+
+                for i in range(len(ls)-1):
+                    color = self.color
+                    if type(self.color) is Colormap:
+                        color = self.color.getColor(ls[i][3], *self.interval)
+
+                    render.add3DObject( Line3D(
+                        (ls[i][0], ls[i][1], ls[i][2]), 
+                        (ls[i+1][0], ls[i+1][1], ls[i+1][2]), 
+                        color=color, 
+                        width=self.thickness, 
+                    ))
+                    render.add3DObject( Point3D(
+                        ls[i][0], ls[i][1], ls[i][2], 
+                        color=color, 
+                        radius=self.thickness/2, 
+                    ))
 
 
     def tangent(self, t, dt=10**(-5)):
         """
         Creates an tangent using central diffrence quotient
-
+        Does not work on 3D plots
+        
         Parameters
         ----------
         t : int|float

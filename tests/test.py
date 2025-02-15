@@ -728,9 +728,17 @@ class Test:
         plt = kaxe.Plot([-2, 2, -2, 2])
         #func = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t)), [-math.pi,math.pi])
         #func = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t*6)), [-100, 100])
-        func = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t)), [0, math.pi])
-        plt.add(func)
+        peq = kaxe.ParametricEquation(lambda t: (math.cos(t), math.sin(t)), [0, math.pi])
+        plt.add(peq)
         plt.save('tests/images/parametricequation.png')
+
+        b = 4*math.pi
+        plt = kaxe.Plot3D([-2, 2, -2, 2, 0, b])
+        omega = 4
+        peq = kaxe.ParametricEquation(lambda t: (math.cos(omega*t), math.sin(omega*t), t), [0, b], width=10, color=kaxe.Colormaps.standard)
+        plt.add(peq)
+        plt.save('tests/images/parametricequation3d.png')
+        plt.show()
 
     def testArrow():
         plt = kaxe.Plot([-2, 2, -2, 2])
@@ -1462,13 +1470,6 @@ class Test:
         plt3d.show()
         plt3d.save('tests/images/contour3d.png')
 
-
-    def test3DFunction():
-        
-        plt = kaxe.Plot3D()
-        plt.add( kaxe.Function2D( lambda x: x**2 ) )
-        plt.show()
-
         
 if __name__ == '__main__':
     import os
@@ -1477,8 +1478,8 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    Test.testParametricEquation()
     
-    Test.test3DFunction()
     # Test.testFillV3()
     # Test.testFillObject()
 

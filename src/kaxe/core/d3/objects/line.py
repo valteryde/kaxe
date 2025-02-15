@@ -13,8 +13,16 @@ def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, in
     c = -p1_proj[0] * nx - p1_proj[1] * ny
 
     line_len = magnitude(p2_proj - p1_proj)
+    if line_len == 0:
+        return
+
     r_line_len = 1/line_len
-    d = 1/magnitude(array((nx, ny)))
+    
+    mag_ = magnitude(array((nx, ny)))
+    if mag_ == 0:
+        return
+    
+    d = 1/mag_
 
     rp1 = R @ p1
     rp2 = R @ p2
@@ -34,7 +42,9 @@ def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, in
     BA = p1_proj - p2_proj
     BA_x, BA_y = BA
 
-    d = 1/magnitude(array((nx, ny)))
+    mag_ = magnitude(array((nx, ny)))
+    if mag_ == 0: return
+    d = 1/mag_
 
     for x in range(x1, x2):
 
