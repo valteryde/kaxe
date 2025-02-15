@@ -141,6 +141,8 @@ def createAllDocImages():
     create2DWithObject(kaxe.Contour(lambda x, y: 4 * math.sin(x) + 4 * math.cos(y) + x**2 - y), 'contour')
     create2DWithObject(kaxe.Fill(lambda x: math.sin(x), lambda x: 2*math.sin(x*3/4)), 'fill', [-10, 10, -3, 3])
 
+    create3DWithObject(kaxe.ParametricEquation(lambda t: (math.cos(4*t), math.sin(4*t), t), [0, 4*math.pi], width=10, color=kaxe.Colormaps.standard), 'parametricequation3d', [-2, 2, -2, 2, 0, 4*math.pi])
+
     nums = 50
     points = [
         (10*i/nums,10*j/nums,math.sin(i*j/(nums*5))) for j in range(-nums, nums)

@@ -13,6 +13,15 @@ Smart objects adapts to which input is given at creates the corrosponding object
 .. autoclass:: kaxe.Function
     :members: 
 
+.. autoclass:: kaxe.ParametricEquation
+    :members:
+
+    .. image:: /_static/parametricequation.png
+        :width: 400 px
+
+    .. image:: /_static/parametricequation3d.png
+        :width: 400 px
+
 2D Objects
 ----------
 
@@ -53,11 +62,6 @@ Smart objects adapts to which input is given at creates the corrosponding object
     .. image:: /_static/heatmap.png
         :width: 400 px
 
-.. autoclass:: kaxe.ParametricEquation
-    :members:
-
-    .. image:: /_static/parametricequation.png
-        :width: 400 px
 
 .. autoclass:: kaxe.Pillars
     :members:
