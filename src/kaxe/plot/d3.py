@@ -101,8 +101,9 @@ class Plot3D(Window):
 
         """
 
-        # rotation = [randint(-360, 360), randint(-360, 360)]
-        rotation = [-272, 103]
+        # rotation = [-272, 103]
+        rotation = [60, 60] # den vender forkert lige pt
+        rotation = [randint(-360, 360), randint(-360, 360)]
 
         if window is None:
             window = [-10, 10, -10, 10, -10, 10]
@@ -131,7 +132,7 @@ class Plot3D(Window):
 
         self.attrmap.default(attr='xNumbers', value=None)
         self.attrmap.default(attr='yNumbers', value=None)
-        self.attrmap.default(attr='zNumbers', value=None)
+        self.attrmap.default(attr='zNumbers', value=5)
 
         """
         window:tuple [x0, x1, y0, y1, z0, z1] axis
@@ -149,6 +150,8 @@ class Plot3D(Window):
             rotation[1] = 360 + rotation[1]%360
 
         self.rotation = [rotation[0]%360, rotation[1]%360]
+
+        self.isRotatedPastZValue = self.rotation[1] > 180
 
 
     def __createAxisBoxLine__(self, p1, p2, axisType, color=(0,0,0,255)):
@@ -231,9 +234,6 @@ class Plot3D(Window):
             (self.l3, self.l5, self.l4, self.l2), # grøn, lilla, mørkegrøn
             (self.l12, self.l7, self.l10, self.l4), # lilla, blå, lyseblå
         ]
-
-        self.V = np.array([0, self.h, self.h])
-
 
     def __createAxis__(self, line:Line3D, i, addMarkers=True):
         
@@ -377,10 +377,36 @@ class Plot3D(Window):
         self.render.add3DObject(Point3D(*self.p7, radius, color=(0,255,255,255))) # p7=lyseblå
         self.render.add3DObject(Point3D(*self.p8, radius, color=(100,100,100,255))) # p8=grå
 
+
+        # add center triangle
+        a = 4
+        p1 = (0, self.h/a, 0)
+        p2 = (-self.h/a, -self.h/a, 0)
+        p3 = (self.h/a, -self.h/a, 0)
+        p4 = (0, 0, self.h/a)
+        self.render.add3DObject(Triangle(p1, p2, p4, color=(255,0,0,255)))
+        self.render.add3DObject(Triangle(p1, p3, p4, color=(0,255,0,255)))
+        self.render.add3DObject(Triangle(p1, p2, p3, color=(0,0,255,255)))
+        self.render.add3DObject(Triangle(p2, p4, p3, color=(0,0,0,255)))
+
+
         # world view camera (y er op?)
         getFaceCenter = lambda p1, p2, p3: p1 + (p2 - p1)/2 + (p3 - p1)/2
 
-        for p1, p2, p3, p4, v1, v2 in self.faceNormals:
+        colors = [
+            (255,0,0,255),
+            (0,255,0,255),
+            (0,0,255,255),
+            (0,255,255,255),
+            (255,0,255,255),
+            (255,255,0,255),
+        ]
+
+
+        for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
+
+            self.render.add3DObject(Triangle(p1, p2, p3, color=colors[i]))
+            self.render.add3DObject(Triangle(p4, p2, p3, color=colors[i]))
 
             n = np.cross(v1, v2)
 
@@ -395,7 +421,8 @@ class Plot3D(Window):
             
             n = np.array([n[0], n[1], -n[2]])
 
-            if np.dot(self.render.camera.R @ n, self.V) > 0:
+            x,y,z = self.render.camera.R @ n
+            if y < 0:
                 color = (0,255,0,255)
             
             self.render.add3DObject(Point3D(
@@ -403,6 +430,47 @@ class Plot3D(Window):
                 10,
                 color=color
             ))
+
+
+    def __drawBackground__(self, i, xyz):
+        # add background
+
+        backgroundColor = (250, 250, 250, 255)
+        # backgroundColor = (200, 250, 250, 255)
+
+        p1, p2, p3, p4, v1, v2 = self.faceNormals[i]
+        
+        n = np.cross(v1, v2)
+        smallzOffset = (n/np.linalg.norm(n))/500
+        smallzOffset *= 1
+
+        # self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor))
+        # self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor))
+                
+        # find den koordinat som de alle sammen har altså holdes konstant igennem fladen
+        for i in range(3): # 3 koordinater
+            if p1[i] == p2[i] == p3[i] == p4[i]:
+                        
+                if p1[i] < 0:
+                    xyz[i] = self.windowAxis[i*2]
+                else:
+                    xyz[i] = self.windowAxis[i*2+1]
+
+
+    def __drawGridLines__(self, axisx:Axis, axisy:Axis, axisz:Axis, xyz):
+        axisLineColor = (200,200,200,255)
+
+        for i in axisx.markers:
+            self.render.add3DObject(Line3D(self.pixel(i.x, self.windowAxis[2], xyz[2]), self.pixel(i.x, self.windowAxis[3], xyz[2]), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(i.x, xyz[1], self.windowAxis[4]), self.pixel(i.x, xyz[1], self.windowAxis[5]), color=axisLineColor))
+            
+        for i in axisy.markers:
+            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], i.x, xyz[2]), self.pixel(self.windowAxis[1], i.x, xyz[2]), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(xyz[0], i.x, self.windowAxis[4]), self.pixel(xyz[0], i.x, self.windowAxis[5]), color=axisLineColor))
+            
+        for i in axisz.markers:
+            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], i.x), self.pixel(self.windowAxis[1], xyz[1], i.x), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], i.x), self.pixel(xyz[0], self.windowAxis[3], i.x), color=axisLineColor))
 
 
     def __after__(self):
@@ -417,18 +485,57 @@ class Plot3D(Window):
             #### Add axis to correct line 
             # Calculate faces facing camera and bottom <-h, h, -h>
             faces = []
-            print('Vector((' + ','.join([str(i) for i in (self.V)]) + '))')
+
+            xyz = {}
+            
+            closestAxis = [
+                (math.inf, None), 
+                (math.inf, None), 
+                (math.inf, None)
+            ]
+
+            for i, lines in enumerate(self.lines):
+                
+                for possibleAxis in lines:
+                    p1 = possibleAxis.p1
+                    p2 = possibleAxis.p2
+                    p3 = (possibleAxis.p1 + possibleAxis.p2) / 2
+
+                    camera = np.array([0, 0, 100])
+                    p1 = self.render.camera.R @ p1 - camera
+                    p2 = self.render.camera.R @ p2 - camera
+                    p3 = self.render.camera.R @ p3 - camera
+
+                    dist = min(np.linalg.norm(p1), np.linalg.norm(p2), np.linalg.norm(p3))
+
+                    if dist < closestAxis[i][0]:
+                        closestAxis[i] = (dist, possibleAxis)
+
+            print(closestAxis)
 
             for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
 
+                ### nyt 
+
+
+                ####
+
+
                 n = np.cross(v1, v2)
-                n = [n[0], n[1], -n[2]]
+                x,y,z = self.render.camera.R @ n
 
-                print('Vector((' + ','.join([str(i) for i in (self.render.camera.R @ n)]) + '))')
-
-                if np.dot(self.render.camera.R @ n, self.V) > 0:
+                if y > 0:
                     faces.append(i)
-            
+                
+                n = np.array([n[0], n[1], -n[2]])
+                x,y,z = self.render.camera.R @ n
+
+                if y < 0: continue
+
+
+                self.__drawBackground__(i, xyz)
+
+
             # find shared lines between two faces
             sharedLines = set()
 
@@ -452,58 +559,28 @@ class Plot3D(Window):
 
             sharedLines = list(sharedLines)
 
+            # for line in sharedLines:
+            #     if line.__axisType == "x":
+            #         axisx = self.__createAxis__(line, 0)
+            #     elif line.__axisType == "y":
+            #         axisy = self.__createAxis__(line, 1)
+            #     elif line.__axisType == "z": 
+            #         axisz = self.__createAxis__(line, 2)
+
             for line in sharedLines:
                 if line.__axisType == "x":
-                    axisx = self.__createAxis__(line, 0)
+                    axisx = self.__createAxis__(closestAxis[0][1], 0)
                 elif line.__axisType == "y":
-                    axisy = self.__createAxis__(line, 1)
+                    axisy = self.__createAxis__(closestAxis[1][1], 1)
                 elif line.__axisType == "z": 
-                    axisz = self.__createAxis__(line, 2)
+                    axisz = self.__createAxis__(closestAxis[2][1], 2)
 
             axisx.checkCrossOvers(self, axisy)
             axisx.checkCrossOvers(self, axisz)
             axisy.checkCrossOvers(self, axisz)
-
-
-            # add background
-            xyz = {}
-            for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
-
-                n = np.cross(v1, v2)
-                # n = [n[0], n[1], -n[2]]
-
-                if np.dot(self.render.camera.R @ n, self.V) > 0:
-                    continue
-                
-                p1, p2, p3, p4, v1, v2 = self.faceNormals[i]
-                n = np.cross(v1, v2)
-                smallzOffset = (n/np.linalg.norm(n))/500
-                self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=(230,230,230,255)))
-                self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=(230,230,230,255)))
-                
-                # find den koordinat som de alle sammen har altså holdes konstant igennem fladen
-                for i in range(3): # 3 koordinater
-                    if p1[i] == p2[i] == p3[i] == p4[i]:
-                        
-                        if p1[i] < 0:
-                            xyz[i] = self.windowAxis[i*2]
-                        else:
-                            xyz[i] = self.windowAxis[i*2+1]
-
-            axisLineColor = (200,200,200,255)
-
-            # tilføj linjer
-            for i in axisx.markers:
-                self.render.add3DObject(Line3D(self.pixel(i.x, self.windowAxis[2], xyz[2]), self.pixel(i.x, self.windowAxis[3], xyz[2]), color=axisLineColor))
-                self.render.add3DObject(Line3D(self.pixel(i.x, xyz[1], self.windowAxis[4]), self.pixel(i.x, xyz[1], self.windowAxis[5]), color=axisLineColor))
             
-            for i in axisy.markers:
-                self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], i.x, xyz[2]), self.pixel(self.windowAxis[1], i.x, xyz[2]), color=axisLineColor))
-                self.render.add3DObject(Line3D(self.pixel(xyz[0], i.x, self.windowAxis[4]), self.pixel(xyz[0], i.x, self.windowAxis[5]), color=axisLineColor))
-            
-            for i in axisz.markers:
-                self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], i.x), self.pixel(self.windowAxis[1], xyz[1], i.x), color=axisLineColor))
-                self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], i.x), self.pixel(xyz[0], self.windowAxis[3], i.x), color=axisLineColor))
+            #### Add grid lines
+            # self.__drawGridLines__(axisx, axisy, axisz, xyz)
 
         
         # AXIS IN THE MIDDLE

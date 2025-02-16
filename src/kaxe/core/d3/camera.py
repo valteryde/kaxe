@@ -31,7 +31,7 @@ class Camera:
     def satelite(self, azimuth, zenith, d=2):
 
         self.scale = 1/d
-        self.angle = array([azimuth+math.radians(225), 0, zenith+math.radians(-45)])
+        self.angle = array([azimuth, 0, zenith])
 
         self.__calculateRotationMatrix__()
 
