@@ -764,7 +764,7 @@ class Test:
 
     def test3DAnimation():
         for i in range(0,360, 30):
-            plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[i,-20])
+            plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[i,-70])
             plt.title('x aksen', 'y aksen', 'z aksen')
             plt.style(width=1500, height=1500, outerPadding=(50,50,50,50))
             
@@ -780,13 +780,12 @@ class Test:
                 [x for x,y,z in points],
                 [y for x,y,z in points],
                 [z for x,y,z in points],
-            )#.legend('Kaxe nu i 3D')
+            ).legend('Kaxe nu i 3D')
 
-            # plt.add(cloud) # indsæt
+            plt.add(cloud) # indsæt
 
             plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
-            plt.show() # slet
-            break
+            # plt.show() # slet
             # ffmpeg -framerate 30 -i tests/images/3d/3d-cloud-%d.png -c:v libx264 -r 30 tests/3d.mp4
 
     
@@ -1321,7 +1320,7 @@ class Test:
         plt2d = kaxe.Plot()
         plt2d.add( kaxe.Contour(f) )
         
-        plt3d = kaxe.Plot3D(rotation=[0, -20])
+        plt3d = kaxe.Plot3D(rotation=[0, 0])
         plt3d.style(fontSize=40)
         plt3d.add( kaxe.Function3D(f, numPoints=1000).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
 
