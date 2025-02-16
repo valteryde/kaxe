@@ -764,9 +764,9 @@ class Test:
 
     def test3DAnimation():
         for i in range(0,360, 30):
-            plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[-10,i])
+            plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[i,-20])
             plt.title('x aksen', 'y aksen', 'z aksen')
-            plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
+            plt.style(width=1500, height=1500, outerPadding=(50,50,50,50))
             
             points = []
             n = 50
@@ -782,9 +782,11 @@ class Test:
                 [z for x,y,z in points],
             )#.legend('Kaxe nu i 3D')
 
-            plt.add(cloud)
+            # plt.add(cloud) # indsæt
 
             plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
+            plt.show() # slet
+            break
             # ffmpeg -framerate 30 -i tests/images/3d/3d-cloud-%d.png -c:v libx264 -r 30 tests/3d.mp4
 
     
@@ -1478,10 +1480,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testParametricEquation()
-    
-    # Test.testFillV3()
-    # Test.testFillObject()
-
-    # Test.argument()
-    # Test.testGridLayout()
+    Test.test3DAnimation()
