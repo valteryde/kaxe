@@ -87,14 +87,23 @@ class PolarPlot(Window):
         self.addDrawingFunction(self.batch)
 
 
+    def __pre__(self):
+        height = self.getAttr('height')
+        width = self.getAttr('width')
+        if width != height:
+            largets = max(width, height)
+            self.setAttr('width', largets)
+            self.setAttr('height', largets)
+            logging.info('Changed size of plot')
+
+
     def __prepare__(self):
         # finish making plot
-        # fit "plot" into window 
+        # fit "plot" into window     
         
         self.height = self.getAttr('height')
         self.width = self.getAttr('width')
 
-        assert self.height == self.width
         self.__calculateWindowBorders__()
 
         self.radius = self.height/2

@@ -269,12 +269,18 @@ class Window(AttrObject):
             self.height+self.padding[1]
         ]
 
+    
+    def __pre__(self):
+        pass
+
 
     # baking
     def __bake__(self):
         # finish making plot
         # fit "plot" into window 
         startTime = time.time()        
+
+        self.__pre__()
 
         # get styles
         self.width = self.getAttr('width')
