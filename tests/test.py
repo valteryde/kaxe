@@ -1468,6 +1468,7 @@ class Test:
 
     def testPrettyContour2DIn3D():
         # contour flot
+        
         plt3d = kaxe.Plot3D([-10, 10, -10, 10, 0, 40], rotation=[-45, -60], drawBackground=True)
 
         def f(x,y):
@@ -1490,4 +1491,5 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
-    Test.testBoxedPlot()
+    # Test.testBoxedPlot()
+    Test.testPrettyContour2DIn3D()

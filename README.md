@@ -27,7 +27,7 @@ Polar plots
 
 Grids
 ![Contour grid](tests/images/contourgrid.png)
-![Contour same](tests/images/contour3d_pretty.png)
+![Contour same](tests/images/contour3d.png)
 
 
 ## Preview of Code
