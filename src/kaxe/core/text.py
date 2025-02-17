@@ -113,6 +113,9 @@ class Text(Shape):
 
 
     def push(self, x, y):
+        if np.isnan(x) or np.isnan(y):
+            return
+        
         self.__center__[0] += int(x)
         self.__center__[1] += int(y)
         self.__leftTop__[0] += int(x)

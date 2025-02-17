@@ -80,11 +80,12 @@ class Plot3D(Window):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     
     """
-    
-    
+        
 
-    def __init__(self,  window:list=None, rotation=[45, -70]):
+    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=False):
         super().__init__()
+
+        rotation[0] -= 90
 
         """
         
@@ -106,6 +107,8 @@ class Plot3D(Window):
         # rotation = [60, 60] # den vender forkert lige pt
         # rotation = [randint(-360, 360), randint(-360, 360)]
         # rotation = [200, 240] # den vender forkert lige pt
+        # rotation = [180, -70]
+        # rotation = [270, -70]
 
         if window is None:
             window = [-10, 10, -10, 10, -10, 10]
@@ -116,6 +119,7 @@ class Plot3D(Window):
         self.__boxed__ = True
         self.__frame__ = False
         self.__normal__ = False
+        self.__isBackgroundDrawn__ = drawBackground
 
         self.firstAxisTitle = None
         self.secondAxisTitle = None
@@ -266,15 +270,6 @@ class Plot3D(Window):
         self.axisLines[i] = line
         self.axis[i] = axis
         
-        # FRAME
-        if self.__frame__ and self.__boxed__:
-            for otherline in self.lines[i]:
-                if otherline != line:
-                    otherline.hide()
-
-        # e = np.array([0,0,0])
-        # e[i] = 1
-        
         # adjust to perspective distance
         # ved stor nok w er det ikke nødvendigt        
         # markers centeres omkring 0! Ikke starten (altså mindste tal)!
@@ -342,7 +337,7 @@ class Plot3D(Window):
         
         # add color to wireframe
         lineBoxColor = self.getAttr('Axis.axisColor')
-        if self.__boxed__:
+        if self.__boxed__ or self.__frame__:
             for i in self.lines:
                 for line in i:
                     line.color = lineBoxColor
@@ -441,7 +436,7 @@ class Plot3D(Window):
         p1, p2, p3, p4, v1, v2 = self.faceNormals[i]
         
         n = np.cross(v1, v2)
-        smallzOffset = (n/np.linalg.norm(n))/500
+        smallzOffset = (n/np.linalg.norm(n))/5000
         smallzOffset *= 1
 
         self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor))
@@ -461,25 +456,37 @@ class Plot3D(Window):
         axisLineColor = self.getAttr('axisLineColorBackdrop')
 
         for i in axisx.markers:
-            if i.x == self.windowAxis[0] or i.x == self.windowAxis[1]:
-                continue
+            epsilon = (self.windowAxis[1] - self.windowAxis[0]) / 1000
+            x = i.x
+            if i.x == self.windowAxis[0]:
+                x += epsilon
+            if i.x == self.windowAxis[1]:
+                x -= epsilon                
 
-            self.render.add3DObject(Line3D(self.pixel(i.x, self.windowAxis[2], xyz[2]), self.pixel(i.x, self.windowAxis[3], xyz[2]), color=axisLineColor))
-            self.render.add3DObject(Line3D(self.pixel(i.x, xyz[1], self.windowAxis[4]), self.pixel(i.x, xyz[1], self.windowAxis[5]), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(x, self.windowAxis[2], xyz[2]), self.pixel(x, self.windowAxis[3], xyz[2]), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(x, xyz[1], self.windowAxis[4]), self.pixel(x, xyz[1], self.windowAxis[5]), color=axisLineColor))
             
         for i in axisy.markers:
-            if i.x == self.windowAxis[2] or i.x == self.windowAxis[3]:
-                continue
+            epsilon = (self.windowAxis[3] - self.windowAxis[2]) / 1000
+            x = i.x
+            if i.x == self.windowAxis[2]:
+                x += epsilon
+            if i.x == self.windowAxis[3]:
+                x -= epsilon
 
-            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], i.x, xyz[2]), self.pixel(self.windowAxis[1], i.x, xyz[2]), color=axisLineColor))
-            self.render.add3DObject(Line3D(self.pixel(xyz[0], i.x, self.windowAxis[4]), self.pixel(xyz[0], i.x, self.windowAxis[5]), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], x, xyz[2]), self.pixel(self.windowAxis[1], x, xyz[2]), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(xyz[0], x, self.windowAxis[4]), self.pixel(xyz[0], x, self.windowAxis[5]), color=axisLineColor))
             
         for i in axisz.markers:
-            if i.x == self.windowAxis[4] or i.x == self.windowAxis[5]:
-                continue
+            epsilon = (self.windowAxis[5] - self.windowAxis[4]) / 1000
+            x = i.x
+            if i.x == self.windowAxis[4]:
+                x += epsilon
+            if i.x == self.windowAxis[5]:
+                x -= epsilon
 
-            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], i.x), self.pixel(self.windowAxis[1], xyz[1], i.x), color=axisLineColor))
-            self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], i.x), self.pixel(xyz[0], self.windowAxis[3], i.x), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], x), self.pixel(self.windowAxis[1], xyz[1], x), color=axisLineColor))
+            self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], x), self.pixel(xyz[0], self.windowAxis[3], x), color=axisLineColor))
     
     
     def isPointInTriangle(self, p, p1, p2, p3, tol=-1):
@@ -519,8 +526,55 @@ class Plot3D(Window):
             c = self.isPointInTriangle(bottomPoint, self.render.pixel(*p1), self.render.pixel(*p2), self.render.pixel(*p3))
             d = self.isPointInTriangle(bottomPoint, self.render.pixel(*p4), self.render.pixel(*p2), self.render.pixel(*p3))
 
-            if (a or b) and (c or d): return True # eller b
+            if (a or b) and (c or d): return True
 
+        return False
+
+
+    def __distancePointToLine__(self, px, py, x1, y1, x2, y2):
+        """Calculate the perpendicular distance from a point (px, py) to a line segment (x1, y1) - (x2, y2)"""
+        line_mag = np.hypot(x2 - x1, y2 - y1)
+        if line_mag == 0:
+            return np.hypot(px - x1, py - y1)
+        
+        u = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / (line_mag ** 2)
+        u = np.clip(u, 0, 1)
+        
+        closest_x = x1 + u * (x2 - x1)
+        closest_y = y1 + u * (y2 - y1)
+        
+        return np.hypot(px - closest_x, py - closest_y)
+
+    def __thickAxisLinesOverlap__(self, l1, l2):
+        """
+        Check if two thick lines (treated as rectangles) overlap
+        Minus the end point overlap
+        """
+        
+        thickness = 5
+        
+        l1_p1 = self.render.pixel(*l1.p1)
+        l1_p2 = self.render.pixel(*l1.p2)
+        l2_p1 = self.render.pixel(*l2.p1)
+        l2_p2 = self.render.pixel(*l2.p2)
+        
+        v1 = l1_p2 - l1_p1
+        v1 = v1 / np.linalg.norm(v1)
+        l1_p1 += v1 * thickness * 2
+        l1_p2 -= v1 * thickness * 2
+
+        v2 = l2_p2 - l2_p1
+        v2 = v2 / np.linalg.norm(v2)
+        l2_p1 += v2 * thickness * 2
+        l2_p2 -= v2 * thickness * 2
+
+        # Check if any endpoint of one line is within thickness distance of the other line
+        if (self.__distancePointToLine__(*l1_p1, *l2_p1, *l2_p2) <= thickness or
+            self.__distancePointToLine__(*l1_p2, *l2_p1, *l2_p2) <= thickness or
+            self.__distancePointToLine__(*l2_p1, *l1_p1, *l1_p2) <= thickness or
+            self.__distancePointToLine__(*l2_p2, *l1_p1, *l1_p2) <= thickness):
+            return True
+        
         return False
 
 
@@ -547,32 +601,29 @@ class Plot3D(Window):
                 
                 # TODO: 
                 #   Understand why this works
-                # 180, 270
+                # [180; 270]
                 specialcase = (180 < self.rotation[1] < 270)
                 over90 = self.rotation[1] > 90
                 if (y < 0 and (over90 and not specialcase)): continue
                 if (y > 0 and (not over90 or specialcase)): continue
 
-                # [206, 221]
-                # [337, 226]
-                # [245, 240]
-                # [84, 195]
-                # [206, 239]
-                # [31, 253]
-
-                self.__drawBackground__(i, xyz)
+                if self.__isBackgroundDrawn__:
+                    self.__drawBackground__(i, xyz)
 
             
             #### Get positions for axis
             # Regler:
             #   Akse må ikke ligge inden i firkanten altså overlappe noget
             #   Aksen skal være tættest på kameraet som muligt.
+            #   Akser må ikke overlappe hindanden
             closestAxis = [
                 (math.inf, None), 
                 (math.inf, None), 
                 (math.inf, None)
             ]
 
+            drawnAxis = []
+            alternativeAxis = {}
             for i, lines in enumerate(self.lines):
                 
                 for possibleAxis in lines:
@@ -600,32 +651,64 @@ class Plot3D(Window):
                     # køres dobbelt så mange gange
                     
                     if self.is3DPointInsideAnyBoxFace(p1, p2):
+                        drawnAxis.append(possibleAxis)
                         continue    
                     
-                    closestAxis[i] = (0, possibleAxis)
-
-                    camera = np.array([0, 0, -2*self.h])
+                    camera = np.array([0, -4*self.h, 0])
                     p1 = self.render.camera.R @ p1 - camera
                     p2 = self.render.camera.R @ p2 - camera
                     p3 = self.render.camera.R @ p3 - camera
 
                     dist = min(np.linalg.norm(p1), np.linalg.norm(p2), np.linalg.norm(p3))
-                    dist = np.linalg.norm(p3)
                     
                     if dist < closestAxis[i][0]:
+
                         closestAxis[i] = (dist, possibleAxis)
+                    
+                    if closestAxis[i][1] != possibleAxis:
+                        alternativeAxis[i] = possibleAxis
+            
+            # front runners
+            axis:list[Line3D] = [
+                closestAxis[0][1],
+                closestAxis[1][1],
+                closestAxis[2][1],
+            ]
+
+            # tjek om linjerne overlapper
+            for i, l1 in enumerate(axis):
+                if i not in alternativeAxis.keys():
+                    continue
+
+                for j, l2 in enumerate(axis):
+
+                    if i == j: continue
+
+                    overlapping = self.__thickAxisLinesOverlap__(l1, l2)
+
+                    if overlapping:
+                        
+                        axis[i] = alternativeAxis[i]
+
+                        break
+                    
+
+            if self.__frame__:
+                for line in drawnAxis:
+                    line.hide()
 
             ## create axis
-            axisx = self.__createAxis__(closestAxis[0][1], 0)
-            axisy = self.__createAxis__(closestAxis[1][1], 1)
-            axisz = self.__createAxis__(closestAxis[2][1], 2)
+            axisx = self.__createAxis__(axis[0], 0)
+            axisy = self.__createAxis__(axis[1], 1)
+            axisz = self.__createAxis__(axis[2], 2)
 
             axisx.checkCrossOvers(self, axisy)
             axisx.checkCrossOvers(self, axisz)
             axisy.checkCrossOvers(self, axisz)
             
             #### Add grid lines
-            self.__drawGridLines__(axisx, axisy, axisz, xyz)
+            if self.__isBackgroundDrawn__:
+                self.__drawGridLines__(axisx, axisy, axisz, xyz)
 
         
         # AXIS IN THE MIDDLE
@@ -638,16 +721,16 @@ class Plot3D(Window):
             z = min(max(self.windowAxis[4], 0), self.windowAxis[5])
 
             line = Line3D(self.pixel(self.windowAxis[0], y, z), self.pixel(self.windowAxis[1], y, z))
-            axisx = self.__createAxis__(line, 1, 0, False)
+            axisx = self.__createAxis__(line, 0, False)
             self.render.add3DObject(line)
 
             line = Line3D(self.pixel(x, self.windowAxis[2], z), self.pixel(x, self.windowAxis[3], z))
-            axisy = self.__createAxis__(line, 1, 1, False)
+            axisy = self.__createAxis__(line, 1, False)
             axisy.markers = []
             self.render.add3DObject(line)
 
             line = Line3D(self.pixel(x, y, self.windowAxis[4]), self.pixel(x, y, self.windowAxis[5]))
-            axisz = self.__createAxis__(line, 1, 2, False)
+            axisz = self.__createAxis__(line, 2, False)
             axisz.markers = []
             self.render.add3DObject(line)
 
@@ -665,16 +748,13 @@ class Plot3D(Window):
         if self.thirdAxisTitle:
             axisz.addTitle(self.thirdAxisTitle, self)
 
-        # er det bare at tage fx x aksens og så tage den højeste x værdi og så den mindste z værdi?
-        # for line in [self.l1, self.l9, self.l10, self.l12]:
-        #     print(self.l1.p1)
-
         self.image.img = self.render.render()
         bbox = self.image.img.getbbox()
         oldpadding = [i for i in self.padding]
         self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
         x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
         self.pushAll(x,y)
+        self.addPaddingCondition(bottom=-y)
 
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
@@ -707,10 +787,7 @@ class Plot3D(Window):
 
         return self
 
-    # legacy name
-    # def translate(self, x:int, y:int, z:int) -> tuple:
-    #     return pixel(x,y,z)
-    
+
     def scaled3D(self, x:int, y:int, z:int) -> tuple:
         return np.array((
             (x - self.window[0]) / self.windowAxisLength[0],
@@ -749,8 +826,6 @@ class Plot3D(Window):
         return p
 
 
-
-
     def inversetranslate(self, x:int, y:int):
         return self.inversepixel(x, y)
 
@@ -764,10 +839,10 @@ class PlotCenter3D(Plot3D):
     window : list, optional
         The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
     rotation : list, optional
-        The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+        The rotation angles for the plot in degrees [alpha, beta] (default is [60, -70]).
     """
 
-    def __init__(self,  window:list=None, rotation=[0, -20]):
+    def __init__(self,  window:list=None, rotation=[60, -70]):
         super().__init__(window, rotation)
         self.__boxed__ = False
         self.__frame__ = False
@@ -786,8 +861,8 @@ class PlotFrame3D(Plot3D):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     """
 
-    def __init__(self,  window:list=None, rotation=[0, -20]):
-        super().__init__(window, rotation)
+    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=True):
+        super().__init__(window, rotation, drawBackground)
         self.__boxed__ = True
         self.__frame__ = True
         self.__normal__ = False
@@ -805,7 +880,7 @@ class PlotEmpty3D(Plot3D):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     """
 
-    def __init__(self,  window:list=None, rotation=[0, -20]):
+    def __init__(self,  window:list=None, rotation=[60, -70]):
         super().__init__(window, rotation)
         self.__boxed__ = False
         self.__frame__ = False

@@ -45,7 +45,10 @@ class Test:
     def run():
         for i in dir(Test):
             if 'test' in i:
-                eval('Test.{}()'.format(i))
+                try:
+                    eval('Test.{}()'.format(i))
+                except:
+                    print('\033[91m' + 'Error in test {}'.format(i) + '\033[0m')
 
     def testNormal():
         plot = kaxe.Plot()
@@ -762,29 +765,27 @@ class Test:
         #plt.show()
 
 
+    def __createPoint3DPlot__(rotation):
+        plt = kaxe.Plot3D(rotation=rotation, drawBackground=True)
+        plt.title('x aksen', 'y aksen', 'z aksen')
+        plt.style(width=500, height=500, outerPadding=(50,50,50,50))
+                    
+        plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 9)).legend('Kaxe nu i 3D')
+
+        plt.save('tests/images/3d/3d-cloud-{}-{}.png'.format(*rotation))
+
+
     def test3DAnimation():
-        for i in range(0,360, 30):
-            plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[i,-70])
-            plt.title('x aksen', 'y aksen', 'z aksen')
-            plt.style(width=1500, height=1500, outerPadding=(50,50,50,50))
-            
-            points = []
-            n = 50
-            for x in range(1,n):
-                x = x / n
-                for y in range(1,n):
-                    y = y / n
-                    points.append((x, y, 2*x*y/(1+x**2)))
+        
+        for i in range(20):
+            Test.__createPoint3DPlot__([randint(-360,360),randint(-360,360)])
 
-            cloud = kaxe.Points3D(
-                [x for x,y,z in points],
-                [y for x,y,z in points],
-                [z for x,y,z in points],
-            ).legend('Kaxe nu i 3D')
+        # for i in range(0, 360, 10):
+        #     Test.__createPoint3DPlot__([i, -70])
 
-            plt.add(cloud) # indsæt
-
-            plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
+        # for i in range(0, 360, 30):
+        #     for j in range(0,360, 30):
+        #         Test.__createPoint3DPlot__([i, j])
             # plt.show() # slet
             # ffmpeg -framerate 30 -i tests/images/3d/3d-cloud-%d.png -c:v libx264 -r 30 tests/3d.mp4
 
@@ -817,32 +818,39 @@ class Test:
 
     def test3D():
         
-        plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5])
         plt.style(width=1000, height=1000)
         plt.help()
         cmap = kaxe.Colormaps.standard
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap, numPoints=500))
         plt.save('tests/images/3d-box.png')
 
-        plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5])
+        plt.style(width=1000, height=1000)
+        plt.help()
+        cmap = kaxe.Colormaps.standard
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap, numPoints=500))
+        plt.save('tests/images/3d-frame-2.png')
+
+        plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5])
         plt.style(width=1000, height=1000, backgroundColor=(0,0,100,255), color=(255,255,255,255))
         cmap = kaxe.Colormaps.green
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-box-style.png')
 
-        plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5], rotation=[60+45, -20])
+        plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5])
         plt.style(width=1000, height=1000)
         cmap = kaxe.Colormaps.cream
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-frame.png')
 
-        plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
+        plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,0,1])
         plt.style(width=1000, height=1000)
         cmap = kaxe.Colormaps.brown
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap, fill=False))
         plt.save('tests/images/3d-center.png')
         
-        plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1], rotation=[60+45, -20])
+        plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1])
         plt.style(width=1000, height=1000, backgroundColor=(0,0,0,0))
         cmap = kaxe.Colormaps.red
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap, fill=False))
@@ -879,7 +887,7 @@ class Test:
             ])
 
         plt = kaxe.PlotFrame3D([-5, 5, 1, 10, -5, 5])
-        plt.title('x', 'b', 'z')
+        plt.title('x', 'y', 'z')
         plt.add(kaxe.Function(f))
         plt.save('tests/images/3d-function-pretty-2.png')
 
@@ -1320,9 +1328,10 @@ class Test:
         plt2d = kaxe.Plot()
         plt2d.add( kaxe.Contour(f) )
         
-        plt3d = kaxe.Plot3D(rotation=[0, 0])
+        plt3d = kaxe.Plot3D(window=[-10, 10, -10, 10, -20, 20], rotation=[45+90, -70])
+        plt3d.title('x', 'y')
         plt3d.style(fontSize=40)
-        plt3d.add( kaxe.Function3D(f, numPoints=1000).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+        plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
 
         grid = kaxe.Grid()
         grid.style(width=2000, height=2000)
@@ -1459,15 +1468,16 @@ class Test:
 
     def testPrettyContour2DIn3D():
         # contour flot
-        plt3d = kaxe.Plot3D([-10, 10, -10, 10, 0, 40], rotation=[0, -20])
-        
+        plt3d = kaxe.Plot3D([-10, 10, -10, 10, 0, 40], rotation=[-45, -60], drawBackground=True)
+
         def f(x,y):
             return 4 * math.sin(x) + 4 * math.cos(y) + x**2 - y + 20
 
         plt3d.add( kaxe.Contour(f, a=0, b=40, steps=20) )
         
         plt3d.style(fontSize=40)
-        plt3d.add( kaxe.Function3D(f, numPoints=100).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+        plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+
         plt3d.show()
         plt3d.save('tests/images/contour3d.png')
 
@@ -1479,4 +1489,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.test3DAnimation()
+    Test.testContour()
+    # Test.argument()
