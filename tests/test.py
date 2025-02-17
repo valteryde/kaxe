@@ -337,7 +337,7 @@ class Test:
         f.legend('N=1000')
         plt.add(f)
 
-        plt.save('tests/images/box.png')
+        plt.save('tests/images/boxed.png')
 
 
     def testStyles():
@@ -1489,5 +1489,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testContour()
     # Test.argument()

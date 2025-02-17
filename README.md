@@ -17,7 +17,7 @@ Kaxe was made to create pretty, simple and easy graphs to be used along side art
 ## Examples of plots
 
 2D Plots
-![BoxPlot](tests/images/box.png)
+![BoxPlot](tests/images/boxed.png)
 
 Polar plots
 ![Polar plot](tests/images/polar.png)
