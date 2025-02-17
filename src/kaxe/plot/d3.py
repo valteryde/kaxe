@@ -78,7 +78,9 @@ class Plot3D(Window):
         The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
     rotation : list, optional
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
-    
+    drawBackground: bool, optional
+        Draw background with gridlines
+        
     """
         
 
@@ -840,6 +842,8 @@ class PlotCenter3D(Plot3D):
         The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
     rotation : list, optional
         The rotation angles for the plot in degrees [alpha, beta] (default is [60, -70]).
+    drawBackground: bool, optional
+        Draw background with gridlines
     """
 
     def __init__(self,  window:list=None, rotation=[60, -70]):
