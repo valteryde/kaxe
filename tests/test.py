@@ -1298,7 +1298,7 @@ class Test:
         plt.show()
 
 
-    def testBoxedPlot():
+    def testBoxPlot():
         
         boxplot = kaxe.BoxPlot()
 
@@ -1490,3 +1490,4 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
+    Test.testBoxedPlot()
