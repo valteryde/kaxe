@@ -140,21 +140,21 @@ class Function3D(Base3DObject):
         xlen = parent.window[1] - parent.window[0]
         ylen = parent.window[3] - parent.window[2]
         
-        matrix = np.empty((self.numPoints, self.numPoints), dtype=tuple)
+        matrix = np.empty((self.numPoints+1, self.numPoints+1), dtype=tuple)
         matrix.fill(np.array((None, None, None)))
         
-        zmap = np.empty((self.numPoints, self.numPoints), dtype=float)
+        zmap = np.empty((self.numPoints+1, self.numPoints+1), dtype=float)
         zmap.fill(-math.inf)
 
-        realpoint = np.empty((self.numPoints, self.numPoints), dtype=bool)
+        realpoint = np.empty((self.numPoints+1, self.numPoints+1), dtype=bool)
         realpoint.fill(True)
         
 
         # get points
-        for xn in range(self.numPoints):
+        for xn in range(self.numPoints+1):
             x = xlen * (xn / self.numPoints) + parent.window[0]
 
-            for yn in range(self.numPoints):
+            for yn in range(self.numPoints+1):
                 y = ylen * (yn / self.numPoints) + parent.window[2]
 
                 try:
@@ -165,21 +165,21 @@ class Function3D(Base3DObject):
                 if type(z) not in [int, float]:
                     continue
 
-                if not parent.inside3D(x,y,z):
-                    if z > parent.window[5]:
-                        z = parent.window[5]
-                    if z < parent.window[4]:
-                        z = parent.window[4]
-                    
+                # if not parent.inside3D(x,y,z):
+                if z > parent.window[5]:
+                    z = parent.window[5]
                     realpoint[xn][yn] = False
-                    
+
+                if z < parent.window[4]:
+                    z = parent.window[4]
+                    realpoint[xn][yn] = False
 
                 matrix[xn][yn] = parent.pixel(x,y,z)
                 zmap[xn][yn] = z
 
         # draw
-        for xn in range(self.numPoints-1):
-            for yn in range(self.numPoints-1):
+        for xn in range(self.numPoints):
+            for yn in range(self.numPoints):
                 if matrix[xn][yn][0] is None:
                     continue
 

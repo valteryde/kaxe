@@ -1490,6 +1490,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.argument()
-    # Test.testBoxedPlot()
-    Test.testPrettyContour2DIn3D()
+    Test.argument()
