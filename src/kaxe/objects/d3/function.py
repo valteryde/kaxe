@@ -28,7 +28,10 @@ class Function3D(Base3DObject):
         The number of points to be used for plotting. If None, defaults to 150 if `fill` is True, otherwise 25.
     fill : bool
         Whether to fill the plot. default is True
-    
+    drawDiagonalLines: bool
+        Whether to draw diagonal lines in triangles when fill is False. default is False
+        
+        
     Methods
     -------
     __call__(x)
@@ -36,7 +39,7 @@ class Function3D(Base3DObject):
 
     """
     
-    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True, *args, **kwargs):
+    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True, drawDiagonalLines:bool=False, *args, **kwargs):
         
 
         super().__init__()
@@ -46,6 +49,7 @@ class Function3D(Base3DObject):
         self.otherKwargs = kwargs
 
         self.fill = fill
+        self.drawDiagonalLines = drawDiagonalLines
         
         self.supports = [identities.XYZPLOT]
         self.legendSymbol = symbols.RECTANGLE
@@ -111,25 +115,36 @@ class Function3D(Base3DObject):
             self.__addTriangle__(render, matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1], color, isRealpoint)
         
 
-    def __addTriangleOutline__(self, render, p1, p2, p3, color, isRealpoint):
+    def __addTriangleOutline__(self, render, p1, p2, p3, color, isRealpoint, xn, yn):
         
         # dont draw vertical vertices
         if self.__isHorizontalTriangle__(p1, p2, p3) and not isRealpoint:
             return
 
         render.add3DObject(Line3D(p1,p2,color=color))
-        render.add3DObject(Line3D(p1,p3,color=color))
-        render.add3DObject(Line3D(p2,p3,color=color))
+        
+        if self.drawDiagonalLines:
+            render.add3DObject(Line3D(p1,p3,color=color))
+            render.add3DObject(Line3D(p2,p3,color=color))
+            return
+        
+        # Correcting for not drawing diagonals
+        # Here the parrallel lines will have an perpendicalur lines at the end at x=len(self.numPoints) and so on
+        if xn == self.numPoints-1:
+            render.add3DObject(Line3D(p2,p3,color=color))
+        
+        if yn == 0:
+            render.add3DObject(Line3D(p1,p3,color=color))
 
 
     def __outline__(self, render, matrix, xn, yn, color, isRealpoint):
         if all(i[0] is not None for i in [matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1]]):
 
-            self.__addTriangleOutline__(render, matrix[xn][yn], matrix[xn][yn+1],matrix[xn+1][yn], color, isRealpoint)
+            self.__addTriangleOutline__(render, matrix[xn][yn], matrix[xn][yn+1],matrix[xn+1][yn], color, isRealpoint, -1, yn)
         
         if all(i[0] is not None for i in [matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1]]):
             
-            self.__addTriangleOutline__(render, matrix[xn][yn+1], matrix[xn+1][yn+1], matrix[xn+1][yn], color, isRealpoint)
+            self.__addTriangleOutline__(render, matrix[xn][yn+1], matrix[xn+1][yn+1], matrix[xn+1][yn], color, isRealpoint, xn, -1)
 
 
     def finalize(self, parent):
@@ -189,6 +204,7 @@ class Function3D(Base3DObject):
                     self.__fill__(render, matrix, xn, yn, color, realpoint[xn][yn])
                 else:
                     self.__outline__(render, matrix, xn, yn, color, realpoint[xn][yn])
+            
 
 
     def legend(self, text:str, color=None, symbol=None):
