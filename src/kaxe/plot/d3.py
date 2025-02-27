@@ -55,6 +55,7 @@ from ..core.d3.objects.triangle import Triangle
 import math
 import numpy as np
 from PIL import Image
+from typing import Union
 
 XYZPLOT = 'xyz'
 
@@ -80,11 +81,13 @@ class Plot3D(Window):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     drawBackground: bool, optional
         Draw background with gridlines
-        
+    size:  list | bool | None, optional
+        if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
+    
     """
 
 
-    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=False):
+    def __init__(self,  window:list=None, rotation:Union[list, tuple]=[60, -70], size:Union[bool, list, tuple]=None, drawBackground:bool=False):
         super().__init__()
 
         rotation[0] -= 90
@@ -127,13 +130,25 @@ class Plot3D(Window):
         self.secondAxisTitle = None
         self.thirdAxisTitle = None
 
+        if size is None:
+            self.size = np.array([1, 1, 1])
+        elif type(size) in [list, tuple]:
+            self.size = np.array(size) / max(size)
+        else: # accurate sizes
+            self.size = np.array([
+                window[1] - window[0],
+                window[3] - window[2],
+                window[5] - window[4],
+            ])
+            self.size = self.size / max(self.size)
+
         # styles
         self.attrmap.default('width', 1500)
         self.attrmap.default('height', 1500)
         self.attrmap.default('wireframeLinewidth', 3)
         self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255))
         self.attrmap.default('axisLineColorBackdrop', (200,200,200,255))
-        self.attrmap.default('fontSize', 32)
+        self.attrmap.default('fontSize', 48)
         self.attrmap.setAttr('axis.drawAxis', False)
         self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
         self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
@@ -153,7 +168,7 @@ class Plot3D(Window):
         self.attrmap.submit(Marker)
 
         self.h = 1/2
-        self.offset = np.array((-self.h,-self.h,-self.h))
+        self.offset = np.array((-self.h,-self.h,-self.h)) * self.size
         
         if rotation[0] < 0:
             rotation[0] = 360 + rotation[0]%360
@@ -161,6 +176,7 @@ class Plot3D(Window):
             rotation[1] = 360 + rotation[1]%360
 
         self.rotation = [rotation[0]%360, rotation[1]%360]
+
 
 
     def __createAxisBoxLine__(self, p1, p2, axisType, color=(0,0,0,255)):
@@ -174,14 +190,14 @@ class Plot3D(Window):
     def __createWireframe__(self):
         # bottom frame
         h = self.h
-        self.p1 = np.array((-h, -h, -h))
-        self.p2 = np.array((h, -h, -h))
-        self.p3 = np.array((-h, h, -h))
-        self.p4 = np.array((-h, -h, h))
-        self.p5 = np.array((h, h, -h))
-        self.p6 = np.array((h, -h, h))
-        self.p7 = np.array((h, h, h))
-        self.p8 = np.array((-h, h, h))
+        self.p1 = np.array((-h, -h, -h)) * self.size
+        self.p2 = np.array((h, -h, -h)) * self.size
+        self.p3 = np.array((-h, h, -h)) * self.size
+        self.p4 = np.array((-h, -h, h)) * self.size
+        self.p5 = np.array((h, h, -h)) * self.size
+        self.p6 = np.array((h, -h, h)) * self.size
+        self.p7 = np.array((h, h, h)) * self.size
+        self.p8 = np.array((-h, h, h)) * self.size
 
         # x : 1, 9, 10, 12
         # y : 2, 5, 6, 11
@@ -760,7 +776,7 @@ class Plot3D(Window):
         self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
         x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
         self.pushAll(x,y)
-        self.addPaddingCondition(bottom=-y)
+        # self.addPaddingCondition(bottom=-y) hvorfor tilføjede jeg det her?
 
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
@@ -796,9 +812,9 @@ class Plot3D(Window):
 
     def scaled3D(self, x:int, y:int, z:int) -> tuple:
         return np.array((
-            (x - self.window[0]) / self.windowAxisLength[0],
-            (y - self.window[2]) / self.windowAxisLength[1],
-            (z - self.window[4]) / self.windowAxisLength[2]
+            self.size[0] * (x - self.window[0]) / self.windowAxisLength[0],
+            self.size[1] * (y - self.window[2]) / self.windowAxisLength[1],
+            self.size[2] * (z - self.window[4]) / self.windowAxisLength[2]
         ))
 
     def pixel(self, x:int, y:int, z:int) -> tuple:
@@ -848,10 +864,12 @@ class PlotCenter3D(Plot3D):
         The rotation angles for the plot in degrees [alpha, beta] (default is [60, -70]).
     drawBackground: bool, optional
         Draw background with gridlines
+    size:  list | bool | None, optional
+        if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70]):
-        super().__init__(window, rotation)
+    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None):
+        super().__init__(window, rotation, size=size)
         self.__boxed__ = False
         self.__frame__ = False
         self.__normal__ = True
@@ -867,10 +885,12 @@ class PlotFrame3D(Plot3D):
         The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
     rotation : list, optional
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    size:  list | bool | None, optional
+        if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=True):
-        super().__init__(window, rotation, drawBackground)
+    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=True, size:Union[bool, list, tuple]=None):
+        super().__init__(window, rotation, size=size, drawBackground=drawBackground)
         self.__boxed__ = True
         self.__frame__ = True
         self.__normal__ = False

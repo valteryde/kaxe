@@ -104,7 +104,7 @@ class Axis(AttrObject):
 
         numberOnAxisGoal = self.getAttr(self.numberOnAxisGoalReference)
         if not numberOnAxisGoal: # default
-            numberOnAxisGoal = pixelLength // (5*self.getAttr('fontSize'))
+            numberOnAxisGoal = pixelLength // (3*self.getAttr('fontSize'))
 
         if numberOnAxisGoal - 1 == 0:
             numberOnAxisGoal = 2
@@ -214,7 +214,7 @@ class Axis(AttrObject):
 
             if (not drawMarkersAtEnd) and (closeToZero(proc, 0.01) or closeToZero(proc-1, 0.01)):
                 marker["style"].append(("tickWidth", 0))
-                marker["style"].append(("tickLength", 1))
+                marker["style"].append(("tickLength", self.getAttr('marker.tickLength')//2))
 
         accMarkers.sort(key=lambda x: x["pos"])
         return accMarkers

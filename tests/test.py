@@ -862,10 +862,12 @@ class Test:
         plt = kaxe.Plot3D()
         plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-10))
         plt.save('tests/images/3d-function-pretty.png')
+        plt.show()
 
         plt = kaxe.Plot3D()
         plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-5))
         plt.save('tests/images/3d-function-cutoff.png')
+        plt.show()
 
         def func(x, y):
             
@@ -876,6 +878,7 @@ class Test:
         plt = kaxe.Plot3D()
         plt.add(kaxe.Function(func))
         plt.save('tests/images/3d-function-ugly.png')
+        plt.show()
 
 
     def test3DPretty():
@@ -1492,6 +1495,39 @@ class Test:
         plt.show()
         
 
+    def test3DStretch():
+    
+        plt = kaxe.PlotFrame3D([-5, 5, -1, 1, -4, 4], rotation=[60+45, -70], size=[4, 1, 3])
+        plt.title('x', 'y', 'z')
+
+        def s(t):
+            
+            xt = (3 + math.cos(math.sqrt(32)*t))*math.cos(t)
+            yt = math.sin(math.sqrt(32) * t)
+            zt = (3 + math.cos(math.sqrt(32)*t))*math.sin(t)
+        
+            return xt, yt, zt
+
+        plt.add(kaxe.ParametricEquation(s, [0, 40*math.pi], color=kaxe.Colormaps.blue))
+
+        plt.show()
+
+        plt = kaxe.PlotFrame3D([-5, 5, -1, 1, -4, 4], rotation=[60+45, -70], size=True, drawBackground=False)
+        plt.title('x', 'y', 'z')
+
+        def s(t):
+            
+            xt = (3 + math.cos(math.sqrt(32)*t))*math.cos(t)
+            yt = math.sin(math.sqrt(32) * t)
+            zt = (3 + math.cos(math.sqrt(32)*t))*math.sin(t)
+        
+            return xt, yt, zt
+
+        plt.add(kaxe.ParametricEquation(s, [0, 40*math.pi], color=kaxe.Colormaps.blue))
+
+        plt.show()
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1499,5 +1535,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.test3DWidthHeightDiffrence()
-    Test.test3D()
+    # Test.testPrettyContour2DIn3D()
+    Test.test3DStretch()
