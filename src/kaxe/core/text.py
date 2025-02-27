@@ -4,14 +4,23 @@ from .styles import *
 import os
 from .shapes import *
 from fondi import MathText
-# https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.rotate.html
-from scipy.ndimage import rotate as rotate_image
 import numpy as np
 
 
 class Text(Shape):
     
-    def __init__(self, text:str, x:int, y:int, fontSize:int=16, color=(0,0,0,255), rotate:int=0, batch:Batch=None, anchor_x:str="center", anchor_y:str="center", *args, **kwargs):
+    def __init__(self, 
+                 text:str, 
+                 x:int, 
+                 y:int, 
+                 fontSize:int=16, 
+                 color=(0,0,0,255), 
+                 rotate:int=0, 
+                 batch:Batch=None, 
+                 anchor_x:str="center", 
+                 anchor_y:str="center", *args, **kwargs
+        ):
+        
         self.batch = batch
         self.color = color
         self.rotate = rotate
@@ -48,8 +57,7 @@ class Text(Shape):
         # width = pilImage.width 
         # height = pilImage.height 
 
-        iarr = np.array(pilImage)
-        self.img = Image.fromarray(rotate_image(iarr, self.rotate))
+        self.img = pilImage.rotate(self.rotate, expand=True)
 
         # newCenterFromTopLeft = np.array([[math.cos(self.rotate), -math.sin(self.rotate)], [math.sin(self.rotate), math.cos(self.rotate)]]) @ np.array((width/2, height/2))
 

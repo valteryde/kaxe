@@ -1525,7 +1525,7 @@ class Test:
 
         plt.add(kaxe.ParametricEquation(s, [0, 40*math.pi], color=kaxe.Colormaps.blue))
 
-        plt.show()
+        # plt.show()
 
 
 if __name__ == '__main__':
