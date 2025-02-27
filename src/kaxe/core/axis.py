@@ -214,6 +214,7 @@ class Axis(AttrObject):
 
             if (not drawMarkersAtEnd) and (closeToZero(proc, 0.01) or closeToZero(proc-1, 0.01)):
                 marker["style"].append(("tickWidth", 0))
+                marker["style"].append(("showTick", False))
 
         accMarkers.sort(key=lambda x: x["pos"])
         return accMarkers
@@ -331,21 +332,24 @@ class Axis(AttrObject):
         for markers in sortedMarkers:
 
             for i, marker in enumerate(markers):
-                
+
                 if (i + markerOffset) % maxOverlays != 0:
+
                     marker.textLabel.img = Image.new('RGBA', (0,0))
-                    marker.line.color = (
-                        marker.line.color[0],
-                        marker.line.color[1],
-                        marker.line.color[2],
-                        marker.line.color[3]//4,
-                    )
-                    marker.tickLine.color = (
-                        marker.tickLine.color[0],
-                        marker.tickLine.color[1],
-                        marker.tickLine.color[2],
-                        marker.tickLine.color[3]//4,
-                    )
+                    if hasattr(marker, 'line'):
+                        marker.line.color = (
+                            marker.line.color[0],
+                            marker.line.color[1],
+                            marker.line.color[2],
+                            marker.line.color[3]//4,
+                        )
+                    if hasattr(marker, 'tickLine'):
+                        marker.tickLine.color = (
+                            marker.tickLine.color[0],
+                            marker.tickLine.color[1],
+                            marker.tickLine.color[2],
+                            marker.tickLine.color[3]//4,
+                        )
 
 
     def autoAddMarkers(self, parent):
@@ -649,6 +653,9 @@ class Axis(AttrObject):
                 if not self.__topLeftBoxOverlays__(a.textLabel, b.textLabel):
                     continue
                 
+                if not hasattr(a, 'tickLine') or not hasattr(b, 'tickLine'):
+                    continue
+
                 posMarkerA = np.array((a.tickLine.x0/2 + a.tickLine.x1/2, a.tickLine.y0/2 + a.tickLine.y1/2))
                 posMarkerB = np.array((b.tickLine.x0/2 + b.tickLine.x1/2, b.tickLine.y0/2 + b.tickLine.y1/2))
 

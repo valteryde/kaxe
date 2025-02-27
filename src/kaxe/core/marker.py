@@ -5,6 +5,7 @@ from .text import Text, getTextDimension
 from .styles import AttrObject
 from types import MappingProxyType
 import numpy as np
+from .styles import ComputedAttribute
 
 # c = 0
 # def count():
@@ -26,7 +27,9 @@ class Marker(AttrObject):
         "tickWidth" : 4,
         "tickLength": 15,
         "gridlineColor" : (0,0,0,100),
-        "gridlineWidth": 2
+        "gridlineWidth": 2,
+        "offsetTick": False,
+        "tickGap": ComputedAttribute(lambda m: max(m.getAttr('fontSize')//10, 5)),
     })
 
     def __init__(self, 
@@ -80,7 +83,13 @@ class Marker(AttrObject):
             return
 
         if self.getAttr('showTick'):
-            self.tickLine = shapes.Line(*p1, *p2, color=color, width=markerWidth, batch=self.batch, center=True)
+            
+            if self.getAttr('offsetTick'):
+                p1 = p1[0]+n[0]*halfMarkerLength, p1[1]+n[1]*halfMarkerLength
+                p2 = p2[0]+n[0]*halfMarkerLength, p2[1]+n[1]*halfMarkerLength
+                self.tickLine = shapes.Line(*p1, *p2, color=color, width=markerWidth, batch=self.batch, center=True)
+            else:
+                self.tickLine = shapes.Line(*p1, *p2, color=color, width=markerWidth, batch=self.batch, center=True)
         
         if not self.getAttr('showNumber'):
             return
@@ -99,11 +108,12 @@ class Marker(AttrObject):
                                   fontSize=int(fontSize),
         )
 
-        # da den placeres på aksen til at starte med skal den vel bare 
+        # da den placeres på aksen til at starte med skal den bare 
         # flyttes tickLength ned med n.
 
-        # hvilken side rammer den mest (husk martkers ikke roteres)
+        # hvilken side rammer den mest (husk markers ikke roteres)
         # mest horisontalt
+        
         if abs(self.axis.titleNormal[0]) > abs(self.axis.titleNormal[1]):
             self.textLabel.push(sign(self.axis.titleNormal[0])*self.textLabel.width/2, 0) # kan godt være den skal rundes op til 1 eller -1
 
@@ -111,9 +121,8 @@ class Marker(AttrObject):
         else:
             self.textLabel.push(0, sign(self.axis.titleNormal[1])*self.textLabel.height/2)
 
-        # 5 fordi jeg synes det, burde nok kunne vælges men det også mange valg
-        nudge = vectorScalar(self.axis.titleNormal, self.getAttr('tickLength')/2 + 5)
-
+        nudge = vectorScalar(self.axis.titleNormal, self.getAttr('showTick') * (self.getAttr('offsetTick')*self.getAttr('tickLength')/2 + self.getAttr('tickLength')/2) + self.getAttr('tickGap')) # 5 kunne være et valg
+        
         self.textLabel.push(*nudge)
 
         if showLine: parent.addDrawingFunction(self.line)

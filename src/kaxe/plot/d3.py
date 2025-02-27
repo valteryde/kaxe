@@ -82,7 +82,7 @@ class Plot3D(Window):
         Draw background with gridlines
         
     """
-        
+
 
     def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=False):
         super().__init__()
@@ -139,7 +139,7 @@ class Plot3D(Window):
         self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
         self.attrmap.setAttr('marker.showLine', False)
         self.attrmap.setAttr('marker.tickWidth', 2)
-
+        self.attrmap.setAttr('marker.offsetTick', True)
 
         self.attrmap.default(attr='xNumbers', value=None)
         self.attrmap.default(attr='yNumbers', value=None)
@@ -326,6 +326,10 @@ class Plot3D(Window):
         # add frame
 
         # print('alpha={}, beta={}'.format(*self.rotation))
+
+        width = height = min(self.getAttr('width'), self.getAttr('height'))
+        self.setAttr('width', width)
+        self.setAttr('height', height)
 
         self.render = Render(
             width=self.getAttr('width'), 

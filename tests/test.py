@@ -1482,7 +1482,19 @@ class Test:
         plt3d.show()
         plt3d.save('tests/images/contour3d.png')
 
+    
+    def test3DWidthHeightDiffrence():
         
+        plt = kaxe.PlotFrame3D()
+
+        plt.theme(kaxe.Themes.A4Large)
+
+        plt.show()
+        
+
+
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1490,4 +1502,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.argument()
+    # Test.testFillV3()
+    Test.test3DWidthHeightDiffrence()

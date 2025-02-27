@@ -30,7 +30,7 @@ class Function3D(Base3DObject):
         Whether to fill the plot. default is True
     drawDiagonalLines: bool
         Whether to draw diagonal lines in triangles when fill is False. default is False
-        
+
         
     Methods
     -------
