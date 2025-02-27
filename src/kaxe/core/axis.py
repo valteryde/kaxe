@@ -214,7 +214,7 @@ class Axis(AttrObject):
 
             if (not drawMarkersAtEnd) and (closeToZero(proc, 0.01) or closeToZero(proc-1, 0.01)):
                 marker["style"].append(("tickWidth", 0))
-                marker["style"].append(("showTick", False))
+                marker["style"].append(("tickLength", 1))
 
         accMarkers.sort(key=lambda x: x["pos"])
         return accMarkers
@@ -671,8 +671,12 @@ class Axis(AttrObject):
                     a.textLabel.push(*va*10)
 
                     if not self.__topLeftBoxOverlays__(a.textLabel, b.textLabel):
+                        b.textLabel.push(*vb*10)
+                        a.textLabel.push(*va*10)
+                        
                         parent.includeElement(a.textLabel)
                         parent.includeElement(b.textLabel)
+                        
                         break
                     
                 else:

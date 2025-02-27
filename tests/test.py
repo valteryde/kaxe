@@ -1485,15 +1485,12 @@ class Test:
     
     def test3DWidthHeightDiffrence():
         
-        plt = kaxe.PlotFrame3D()
+        plt = kaxe.PlotFrame3D([0,1,0,1,0,1])
 
         plt.theme(kaxe.Themes.A4Large)
 
         plt.show()
         
-
-
-
 
 if __name__ == '__main__':
     import os
@@ -1502,5 +1499,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.testFillV3()
-    Test.test3DWidthHeightDiffrence()
+    # Test.test3DWidthHeightDiffrence()
+    Test.test3D()
