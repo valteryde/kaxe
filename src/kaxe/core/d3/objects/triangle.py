@@ -22,6 +22,10 @@ def barycentricWeights(a,b,c,p):
     return w1, w2, 1 - w1 - w2
 
 @njit
+def clamp(v, a, b):
+    return min(max(v, a), b)
+
+@njit
 def drawTriangle(zbuffer, 
                  abuffer, 
                  R, 
@@ -42,6 +46,8 @@ def drawTriangle(zbuffer,
     min_ = (math.floor(min(p1_proj[0], p2_proj[0], p3_proj[0])), math.floor(min(p1_proj[1], p2_proj[1], p3_proj[1])))
     max_ = (math.ceil(max(p1_proj[0], p2_proj[0], p3_proj[0])), math.ceil(max(p1_proj[1], p2_proj[1], p3_proj[1])))
 
+    min_ = (clamp(min_[0], 0, len(abuffer[0])), clamp(min_[1], 0, len(abuffer)))
+    max_ = (clamp(max_[0], 0, len(abuffer[0])), clamp(max_[1], 0, len(abuffer)))
 
     for x in range(min_[0], max_[0]):
 
@@ -71,8 +77,6 @@ class Triangle:
         self.p2 = array([float(i) for i in p2])
         self.p3 = array([float(i) for i in p3])
         self.color = color
-        
-
 
     def drawTozBuffer(self, render, index):
         self.p1_proj = render.pixel(*self.p1)
