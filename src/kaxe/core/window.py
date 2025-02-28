@@ -274,6 +274,10 @@ class Window(AttrObject):
         pass
 
 
+    def __includeAllAgain__(self):
+        for element in self.__included__:
+            self.include(*element.getIncludeArguments())
+
     # baking
     def __bake__(self):
         # finish making plot
@@ -300,8 +304,8 @@ class Window(AttrObject):
         self.__addOuterContent__()
 
         # include all elements
-        for element in self.__included__:
-            self.include(*element.getIncludeArguments())
+        self.__includeAllAgain__()
+        
 
         self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 

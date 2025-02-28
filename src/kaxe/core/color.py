@@ -20,6 +20,8 @@ class Colormap:
         for i, phex in enumerate(colorGradientSteps):
             if type(phex) is str:
                 self.colorGradientSteps[i] = np.array(ImageColor.getcolor(phex, "RGBA"))
+            else:
+                self.colorGradientSteps[i] = np.array(self.colorGradientSteps[i])
 
     
     def getColor(self, value:Union[int, float], start:Union[int, float], end:Union[int, float]):

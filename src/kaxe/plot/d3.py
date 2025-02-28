@@ -776,7 +776,9 @@ class Plot3D(Window):
         self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
         x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
         self.pushAll(x,y)
-        # self.addPaddingCondition(bottom=-y) hvorfor tilføjede jeg det her?
+        self.__includeAllAgain__()
+        
+        # self.addPaddingCondition(bottom=-y+10)
 
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):

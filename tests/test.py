@@ -9,6 +9,8 @@ from random import randint
 import numpy as np
 import random, string
 import scipy.interpolate
+import time
+
 
 def randomObject():
     
@@ -45,9 +47,12 @@ class Test:
     def run():
         for i in dir(Test):
             if 'test' in i:
+                print('\033[94m' + 'Running {}'.format(i) + '\033[0m')
                 try:
+                    now = time.time()
                     eval('Test.{}()'.format(i))
-                except:
+                    print('\033[92m'+ 'Ran {} successfull in {} ms'.format(i, 1000*(time.time() - now)))
+                except Exception:
                     print('\033[91m' + 'Error in test {}'.format(i) + '\033[0m')
 
     def testNormal():
@@ -768,53 +773,24 @@ class Test:
     def __createPoint3DPlot__(rotation):
         plt = kaxe.Plot3D(rotation=rotation, drawBackground=True)
         plt.title('x aksen', 'y aksen', 'z aksen')
-        plt.style(width=500, height=500, outerPadding=(50,50,50,50))
-                    
-        plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 9)).legend('Kaxe nu i 3D')
+        plt.style(width=500, height=500, outerPadding=(0,0,0,0))
+
+        f = plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 9))
+
+        if randint(0,1):
+            f.legend('Kaxe nu i 3D')
 
         plt.save('tests/images/3d/3d-cloud-{}-{}.png'.format(*rotation))
 
 
-    def test3DAnimation():
+    def test3DRandomFrames():
         
-        for i in range(20):
+        for _ in range(20):
             Test.__createPoint3DPlot__([randint(-360,360),randint(-360,360)])
-
-        # for i in range(0, 360, 10):
-        #     Test.__createPoint3DPlot__([i, -70])
-
-        # for i in range(0, 360, 30):
-        #     for j in range(0,360, 30):
-        #         Test.__createPoint3DPlot__([i, j])
-            # plt.show() # slet
-            # ffmpeg -framerate 30 -i tests/images/3d/3d-cloud-%d.png -c:v libx264 -r 30 tests/3d.mp4
 
     
     def test3DAnimationSingleFrame():
-        i = 120
-
-        plt = kaxe.Plot3D(window=[0,1,0,1,0,1], rotation=[-10,i])
-        plt.title('x aksen', 'y aksen', 'z aksen')
-        plt.style(width=1000, height=1000, outerPadding=(0,0,0,0))
-            
-        points = []
-        n = 50
-        for x in range(1,n):
-            x = x / n
-            for y in range(1,n):
-                y = y / n
-                points.append((x, y, 2*x*y/(1+x**2)))
-
-        cloud = kaxe.Points3D(
-            [x for x,y,z in points],
-            [y for x,y,z in points],
-            [z for x,y,z in points],
-        )#.legend('Kaxe nu i 3D')
-
-        plt.add(cloud)
-
-        plt.save('tests/images/3d/3d-cloud-{}.png'.format(i))
-
+        Test.__createPoint3DPlot__([randint(-360,360),randint(-360,360)])
 
     def test3D():
         
@@ -1508,7 +1484,7 @@ class Test:
         
             return xt, yt, zt
 
-        plt.add(kaxe.ParametricEquation(s, [0, 40*math.pi], color=kaxe.Colormaps.blue))
+        plt.add(kaxe.ParametricEquation(s, [0, 40*math.pi], color=kaxe.Colormaps.blue).legend('asd'))
 
         plt.show()
 
@@ -1525,7 +1501,7 @@ class Test:
 
         plt.add(kaxe.ParametricEquation(s, [0, 40*math.pi], color=kaxe.Colormaps.blue))
 
-        # plt.show()
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -1535,5 +1511,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.testPrettyContour2DIn3D()
-    Test.test3DStretch()
+    Test.argument()
+    # Test.test3DStretch()
+    # Test.test3DRandomFrames()
