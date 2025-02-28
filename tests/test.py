@@ -1546,4 +1546,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testAdjust()
+    Test.argument()
+    # Test.testAdjust()
