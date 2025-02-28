@@ -905,7 +905,7 @@ class Test:
         plt.add(kaxe.Equation(lambda x,y: x, lambda x,y: 2*y).legend('Equation'))
         plt.add(kaxe.Function2D(lambda x: x**2-4).legend('Funktion'))
         plt.add(kaxe.ParametricEquation(lambda t: (math.sin(t), (t/3)**2), (0, 2*math.pi)).legend('ParametricEquation'))
-        plt.add(kaxe.Pillars([0,1,2], [1,2,3], color=(0,0,0,100)).legend('Pillars'))
+        plt.add(kaxe.Pillars([0,1,2], [1,2,3], colors=(0,0,0,100)).legend('Pillars'))
         plt.add(kaxe.Points([0,1,2,3], [0,1,2,3]).legend('Points'))
         plt.save('tests/images/alllegeneds.png')
 
@@ -1509,12 +1509,31 @@ class Test:
         c = kaxe.GroupBar()
         c.add('hejsa', [1])
         c.title('aaaaa', 'bbbbb')
-        c.show()
+        c.save('tests/images/oscarbar1.png')
 
         c = kaxe.Bar()
         c.add('hejsa', [1])
         c.title('aaaaa', 'bbbbb')
+        c.save('tests/images/oscarbar2.png')
+
+        c = kaxe.Bar()
+        c.add('2022', [1, 5])
+        c.add('2023', [1, 2, 3])
+        c.add('2024', [4, 1])
+        c.title('aaaaa', 'bbbbb')
         c.show()
+
+
+    def testAdjust():
+        """
+        plt.theme(.5, 64) til .5 linewidth og 64 fontsize
+        """
+        
+        for i in [0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9, 0.99]:
+            plt = kaxe.Plot()
+            plt.adjust(i)
+            plt.save('tests/images/adjust/{}proc.png'.format(int(i*100)))
+
 
 if __name__ == '__main__':
     import os
@@ -1522,8 +1541,9 @@ if __name__ == '__main__':
         os.mkdir('tests/images/3d')
     except FileExistsError:
         pass
+    try:
+        os.mkdir('tests/images/adjust')
+    except FileExistsError:
+        pass
 
-    Test.testOscar28Feb()
-    # Test.argument()
-    # Test.test3DStretch()
-    # Test.test3DRandomFrames()
+    Test.testAdjust()

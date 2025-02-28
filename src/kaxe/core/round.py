@@ -30,7 +30,7 @@ def koundTeX(num:float) -> str:
         c = math.floor(math.log10(n))
         s = '{}*10^<{}>'.format(forceround(n/10**(c)), c)
 
-    elif n >= 1000:
+    elif n >= 10000:
         
         a = str(n).split('.')[0]
         l = []

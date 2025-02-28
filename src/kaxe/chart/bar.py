@@ -1,10 +1,12 @@
 
 from ..core.helper import *
-import logging
 from ..core.axis import *
 from ..core.styles import getRandomColor, isLightOrDark
 from ..core.symbol import symbol
 from ..core.window import Window
+from ..objects.d2.pillar import Pillars
+from ..plot.box import BoxedPlot
+
 
 class Bar(Window):
     """
@@ -71,6 +73,17 @@ class Bar(Window):
         return self.maxNumber
 
 
+    def __getColors__(self):
+        self.colors = self.getAttr('barColor')
+        if self.colors == None:
+            self.colors = [getRandomColor() for _ in range(self.maxNumberAmount)]
+        elif type(self.colors[0]) is int:
+            self.colors = [self.colors]
+        
+        self.setAttr('barColor', self.colors)
+        return self.colors
+
+
     def __prepare__(self):
 
         
@@ -91,11 +104,7 @@ class Bar(Window):
         self.axis.finalize(self)        
         self.axis.autoAddMarkers(self)
 
-        self.colors = self.getAttr('barColor')
-        if self.colors == None:
-            self.colors = [getRandomColor() for _ in range(self.maxNumberAmount)]
-        elif type(self.colors[0]) is int:
-            self.colors = [self.colors]
+        self.__getColors__()
 
         for i, label in enumerate(self.legendsLabels):
             if label: self.legendbox.add(label, color=self.colors[i])

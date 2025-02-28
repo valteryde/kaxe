@@ -126,6 +126,36 @@ class Window(AttrObject):
         
         self.style(**theme)
 
+    
+    def adjust(self, procentWidth, documentFontSize=0.25, documentMarginProcent=1.5, documentWidth=11.8, imageSlimRatio=1):
+        """
+        Adjust the following styles based on document size and document font size. i. e. match document font size with plot font size
+
+        Directly changed styles; fontSize, width, height, outerPadding
+
+        A lot of styles indirecitly relies on fontSize, width and height.
+        
+        Resources
+        ---------
+        https://paper-size.com/c/a-paper-sizes.html
+        https://www.overleaf.com/learn/latex/Page_size_and_margins#Paper_size,_orientation_and_margins
+        https://tex.stackexchange.com/questions/272607/what-is-the-name-of-latexs-default-style-and-why-was-it-chosen-for-latex
+        https://tex.stackexchange.com/questions/155896/what-is-the-default-font-size-of-a-latex-document
+        https://tex.stackexchange.com/questions/8260/what-are-the-various-units-ex-em-in-pt-bp-dd-pc-expressed-in-mm
+
+        """
+
+        # Same ratio
+        # documentFontSize/documentWidth = fontSize/width
+        # fontSize = documentFontSize/documentWidth*width
+
+        width = 4000 * procentWidth
+        height = width / (1 + procentWidth) * imageSlimRatio
+
+        fontSize = documentFontSize/(procentWidth*(documentWidth-2*documentMarginProcent))*width
+        
+        self.style(width=int(width), height=int(height), fontSize=int(fontSize), outerPadding=(5,5,5,5))
+
 
     # paddings
     def includeElement(self, element):
