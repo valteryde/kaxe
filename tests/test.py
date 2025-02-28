@@ -1511,6 +1511,11 @@ class Test:
         c.title('aaaaa', 'bbbbb')
         c.show()
 
+        c = kaxe.Bar()
+        c.add('hejsa', [1])
+        c.title('aaaaa', 'bbbbb')
+        c.show()
+
 if __name__ == '__main__':
     import os
     try:
