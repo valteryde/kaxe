@@ -102,7 +102,7 @@ There are some themes build into Kaxe. Theese can be found in the class :py:clas
    plt.theme( kaxe.Themes.A4Large )
 
 
-Kaxe can also give an estimate for some styles to match a acedemia page. This is done using the :py:method:`window.adjust` method.
+Kaxe can also give an estimate for some styles to match a acedemia page. This is done using the :py:func:`window.adjust` method.
 
 .. code-block:: python
 
