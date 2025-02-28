@@ -836,7 +836,7 @@ class Test:
     def test3Dfunction():
         # virkelig flot
         plt = kaxe.Plot3D()
-        plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-10))
+        plt.add(kaxe.Function(lambda x, y: (x**2+y**2)/10-10)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
         plt.save('tests/images/3d-function-pretty.png')
         plt.show()
 
@@ -1511,6 +1511,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.argument()
+    Test.test3Dfunction()
+    # Test.argument()
     # Test.test3DStretch()
     # Test.test3DRandomFrames()
