@@ -46,7 +46,6 @@ class Bar(Window):
         self.attrmap.default('barSmallGapProc', 0.2)
         self.attrmap.default('barGapProc', 0.8)
         self.attrmap.default('axisNumbers', None)
-        self.attrmap.default('firstAxisGap', 20)
 
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
@@ -124,7 +123,7 @@ class Bar(Window):
             self.firstTitle = Text(self.firstAxisTitle, 0, self.windowBox[1]+self.windowBox[3]/2, fontSize=self.getAttr('fontSize'), rotate=90)
         
         if self.firstAxisTitle:
-            self.addPaddingCondition(bottom=self.getAttr('firstAxisGap'))
+            self.addPaddingCondition(bottom=self.getAttr('axis.titleGap'))
             self.include(*self.firstTitle.getCenterPos(), self.firstTitle.width, self.firstTitle.height)
             self.addDrawingFunction(self.firstTitle)
 
