@@ -119,3 +119,10 @@ Smart objects adapts to which input is given at creates the corrosponding object
 
     .. image:: /_static/function3d.png
         :width: 400 px
+
+
+.. autoclass:: kaxe.Mesh
+    :members: 
+
+    .. image:: /_static/mesh.png
+        :width: 300 px

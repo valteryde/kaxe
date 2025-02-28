@@ -161,7 +161,7 @@ def createAllDocImages():
         theta = np.linspace(0.0, 2 * np.pi, N)
         radii = 10 * np.random.rand(N)
 
-        pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20), color=kaxe.Colormaps.standard.getColor(i, 0, 10))
+        pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20), colors=kaxe.Colormaps.standard.getColor(i, 0, 10))
             
         plt.add(pillar)
 
@@ -177,6 +177,11 @@ def createAllDocImages():
     boxplot.legends('dataset 1', 'dataset 2', 'dataset 3')
 
     boxplot.save(j('box'))
+
+    plt = kaxe.PlotFrame3D([-30, 30, -30, 30, 0, 120], size=True)
+    mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL', color=kaxe.Colormaps.cream)
+    plt.add(mesh)
+    plt.save(j('mesh'))
 
 
 try:

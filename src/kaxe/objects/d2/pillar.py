@@ -57,7 +57,7 @@ class Pillars:
             self.color = [getRandomColor() for i in range(maxColors)]
             self.randomColor = True
         else:
-            if not (type(colors[0]) in [list, tuple]):
+            if not (type(colors) in [list, tuple]):
                 colors = [colors]
             self.color = colors
 
