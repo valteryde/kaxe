@@ -1504,6 +1504,13 @@ class Test:
         plt.show()
 
 
+    def testOscar28Feb():        
+
+        c = kaxe.GroupBar()
+        c.add('hejsa', [1])
+        c.title('aaaaa', 'bbbbb')
+        c.show()
+
 if __name__ == '__main__':
     import os
     try:
@@ -1511,7 +1518,7 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.test3Dfunction()
+    Test.testOscar28Feb()
     # Test.argument()
     # Test.test3DStretch()
     # Test.test3DRandomFrames()

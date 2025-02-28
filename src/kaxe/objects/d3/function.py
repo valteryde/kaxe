@@ -173,7 +173,7 @@ class Function3D(Base3DObject):
                 y = ylen * (yn / self.numPoints) + parent.window[2]
 
                 try:
-                    z = self.f(x,y)
+                    z = self.f(x,y, *self.otherArgs, **self.otherKwargs)
                 except Exception:
                     continue
                 
