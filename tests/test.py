@@ -1543,6 +1543,16 @@ class Test:
         plt.add(mesh)
         plt.show()
 
+        mesh = kaxe.Mesh.open('tests/terrain.stl')
+        xs = [i[0] for i in mesh.mesh]
+        ys = [i[1] for i in mesh.mesh]
+        zs = [i[2] for i in mesh.mesh]
+
+        plt = kaxe.PlotEmpty3D([min(xs), max(xs), min(ys), max(ys), 3, max(zs)], rotation=[-60, -80], size=True)
+        
+        plt.add(mesh)
+        plt.show()
+
 
 if __name__ == '__main__':
     import os
@@ -1555,5 +1565,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testdumbError()
+    Test.testMesh()
     # Test.argument()

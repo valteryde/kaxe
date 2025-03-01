@@ -93,6 +93,9 @@ class Mesh(Base3DObject):
         for p1, p2, p3 in self.mesh.vectors:
             avgZ = (p1[2] + p2[2] + p3[2]) / 3
             
+            if not(parent.inside(*p1) and parent.inside(*p2) and parent.inside(*p3)):
+                continue
+
             color = self.cmap.getColor(avgZ, parent.windowAxis[4], parent.windowAxis[5])
             render.add3DObject(Triangle(parent.pixel(*p1), parent.pixel(*p2), parent.pixel(*p3), color=color))
 

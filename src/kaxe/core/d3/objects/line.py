@@ -1,6 +1,6 @@
 
 from numpy import array, dot, linalg
-from ..helper import magnitude
+from ..helper import magnitude, clamp
 import math
 from numba import jit, njit
 
@@ -45,6 +45,12 @@ def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, in
     mag_ = magnitude(array((nx, ny)))
     if mag_ == 0: return
     d = 1/mag_
+
+    x1 = clamp(x1, 0, len(abuffer[0]))
+    y1 = clamp(y1, 0, len(abuffer))
+    
+    x2 = clamp(x2, 0, len(abuffer[0]))
+    y2 = clamp(y2, 0, len(abuffer))
 
     for x in range(x1, x2):
 

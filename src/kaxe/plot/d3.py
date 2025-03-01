@@ -910,8 +910,8 @@ class PlotEmpty3D(Plot3D):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70]):
-        super().__init__(window, rotation)
+    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None):
+        super().__init__(window, rotation, size=size)
         self.__boxed__ = False
         self.__frame__ = False
         self.__normal__ = False

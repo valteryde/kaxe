@@ -1,6 +1,6 @@
 
 from random import randint
-from numba import jit
+from numba import jit, njit
 import numpy as np
 
 def rc() -> tuple:
@@ -11,6 +11,9 @@ def rc() -> tuple:
 def magnitude(x):
     return np.sqrt(np.dot(x, x))
 
+@njit
+def clamp(v, a, b):
+    return min(max(v, a), b)
 
 # @jit
 # def isPointInTriangle(v1, v2, v3, pt):

@@ -2,7 +2,7 @@
 import math
 from numpy import array, sqrt, dot
 from numba import njit
-
+from ..helper import clamp
 
 @njit
 def sign(p1, p2, p3):
@@ -21,9 +21,6 @@ def barycentricWeights(a,b,c,p):
 
     return w1, w2, 1 - w1 - w2
 
-@njit
-def clamp(v, a, b):
-    return min(max(v, a), b)
 
 @njit
 def drawTriangle(zbuffer, 
