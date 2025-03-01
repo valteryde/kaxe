@@ -33,6 +33,14 @@ class Mesh(Base3DObject):
     color: Colormap, optional
         Colormap to display based on average vertices z-value for each triangle.
 
+    Examples
+    --------
+    >>> mesh = kaxe.Mesh( meshlist )
+    >>> plt.add(mesh)
+    
+    >>> mesh = kaxe.Mesh.open( 'path/to/mesh.stl' )
+    >>> plt.add(mesh)
+
     """
     
     def __init__(self, mesh, color:Colormap=None):
@@ -64,6 +72,11 @@ class Mesh(Base3DObject):
         Returns
         -------
         kaxe.Mesh
+
+        Examples
+        --------
+        >>> mesh = kaxe.Mesh.open( 'path/to/mesh.stl' )
+        >>> plt.add(mesh)
 
         """
 
