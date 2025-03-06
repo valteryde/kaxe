@@ -133,8 +133,8 @@ class Bar(Window):
         
         if self.firstAxisTitle:
             self.addPaddingCondition(bottom=self.getAttr('axis.titleGap'))
-            self.include(*self.firstTitle.getCenterPos(), self.firstTitle.width, self.firstTitle.height)
             self.addDrawingFunction(self.firstTitle)
+            self.include(*self.firstTitle.getCenterPos(), self.firstTitle.width, self.firstTitle.height)
 
 
     # bars

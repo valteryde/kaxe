@@ -115,6 +115,7 @@ class Pie(Window):
         self.attrmap.default('gap', 10)
         self.attrmap.default('phaseshift', 0)
         self.attrmap.default('circleSizeProcent', 0.75)
+        self.attrmap.default('pieColor', None)
 
         self.linebatch = shapes.Batch()
         self.sum = 0

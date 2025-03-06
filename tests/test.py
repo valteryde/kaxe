@@ -1554,6 +1554,42 @@ class Test:
         plt.show()
 
 
+    def testErrorInGroupBarLegendAndTitle():
+        ORANGE = (196, 126, 71, 255) #c47e47
+        RED = (155, 5, 0, 255) #9b0500
+        BLUE = (62, 137, 174, 255) #3e89ae
+        DARKGREY = (50, 50, 50, 255) #323232
+        GREY = (100, 111, 111, 255) #6e6f6f
+
+        early_revision = [
+            ("Infection", 31.3),
+            ("Instability", 10.1),
+            ("Loosening", 27.4),
+            ("Other", 100 - 31.3 - 27.4 - 10.1)
+        ]
+
+        late_revision = [
+            ("Infection", 29.5),
+            ("Instability", 20.3),
+            ("Loosening", 22.2),
+            ("Other", 100 - 29.5 - 22.2 - 20.3)
+        ]
+
+        ##### BARGROUP
+        chart = kaxe.GroupBar()
+        chart.adjust(.6)
+        for i in range(len(late_revision)):
+            assert late_revision[i][0] == early_revision[i][0] # tjek om de har samme label
+            chart.add(late_revision[i][0], [late_revision[i][1], early_revision[i][1]])
+        chart.title('Reason for Revision', 'Procent')
+        chart.legends('Late Revision', 'Early Revision')
+        chart.style({'legendbox.topMargin': 0}, barColor=[ORANGE, GREY])
+        # chart.save('revision_reason.png')
+        chart.show()
+
+
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1565,5 +1601,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testMesh()
+    Test.testErrorInGroupBarLegendAndTitle()
+    # Test.testMesh()
     # Test.argument()
