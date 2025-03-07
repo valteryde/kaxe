@@ -55,13 +55,15 @@ class Render:
             for y in range(self.height):
 
                 i = self.abuffer[y][x]
-                if i >= 0:
-                    self.image[y][x] = self.objects3d[int(self.abuffer[y][x])].getColor(self, x,y)
+                if i >= 0: # altså ikke -1
+                    self.image[y][x] = self.objects3d[int(i)].getColor(self, x, y)
                 else:
                     self.image[y][x] = self.backgroundColor
 
             bar.update(self.height)
         bar.close()
+
+        # draw transparent values
 
 
     def render(self, objects=[]):
