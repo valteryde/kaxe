@@ -1537,9 +1537,8 @@ class Test:
 
     def testMesh():
         
-        a = 60
-        plt = kaxe.PlotFrame3D([-a, a, -a, a, 0, 2*a])
         mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL')
+        plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True)
         plt.add(mesh)
         plt.show()
 
@@ -1601,6 +1600,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testErrorInGroupBarLegendAndTitle()
-    # Test.testMesh()
-    # Test.argument()
+    Test.testMesh()
+    # Test.testErrorInGroupBarLegendAndTitle()
+    

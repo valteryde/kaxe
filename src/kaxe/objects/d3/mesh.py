@@ -134,7 +134,27 @@ class Mesh(Base3DObject):
         return self
 
 
-    def __call__(self, x, y):
-        return self.f(x, y, *self.otherArgs, **self.otherKwargs)
+    def getBoundingBox(self):
+        """
+        gets the bounding box of the mesh
 
+        Returns
+        -------
+        bbox: list
+            [x0, x1, y0, y1, z0, z1]
 
+        """
+
+        bbox = [math.inf, -math.inf, math.inf, -math.inf, math.inf, -math.inf]
+
+        for p1, p2, p3 in self.mesh.vectors:
+            bbox = [
+                min(bbox[0], p1[0], p2[0], p3[0]),
+                max(bbox[1], p1[0], p2[0], p3[0]),
+                min(bbox[2], p1[1], p2[1], p3[1]),
+                max(bbox[3], p1[1], p2[1], p3[1]),
+                min(bbox[4], p1[2], p2[2], p3[2]),
+                max(bbox[5], p1[2], p2[2], p3[2]),
+            ]
+        
+        return bbox
