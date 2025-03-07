@@ -39,12 +39,12 @@ class Function3D(Base3DObject):
 
     """
     
-    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True, drawDiagonalLines:bool=False, *args, **kwargs):
+    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True, drawDiagonalLines:bool=False, axis="xy", *args, **kwargs):
         
-
         super().__init__()
 
         self.f = f
+        self.axis = ''.join(sorted(axis)) #xy, xz, yz
         self.otherArgs = args
         self.otherKwargs = kwargs
 
@@ -154,7 +154,8 @@ class Function3D(Base3DObject):
         self.points = []
         xlen = parent.window[1] - parent.window[0]
         ylen = parent.window[3] - parent.window[2]
-        
+        zlen = parent.window[5] - parent.window[4]
+
         matrix = np.empty((self.numPoints+1, self.numPoints+1), dtype=tuple)
         matrix.fill(np.array((None, None, None)))
         
@@ -164,13 +165,20 @@ class Function3D(Base3DObject):
         realpoint = np.empty((self.numPoints+1, self.numPoints+1), dtype=bool)
         realpoint.fill(True)
         
+        dependantVariable = "xyz".replace(self.axis[0], '').replace(self.axis[1], '')
 
         # get points
         for xn in range(self.numPoints+1):
-            x = xlen * (xn / self.numPoints) + parent.window[0]
+            if self.axis[0] == "x":
+                x = xlen * (xn / self.numPoints) + parent.window[0]
+            elif self.axis[0] == "y": # burde bare være else
+                x = ylen * (xn / self.numPoints) + parent.window[2]
 
             for yn in range(self.numPoints+1):
-                y = ylen * (yn / self.numPoints) + parent.window[2]
+                if self.axis[1] == "y":
+                    y = ylen * (yn / self.numPoints) + parent.window[2]
+                elif self.axis[1] == "z":
+                    y = zlen * (yn / self.numPoints) + parent.window[4]
 
                 try:
                     z = self.f(x,y, *self.otherArgs, **self.otherKwargs)
@@ -180,32 +188,60 @@ class Function3D(Base3DObject):
                 if type(z) not in [int, float]:
                     continue
 
-                # if not parent.inside3D(x,y,z):
-                if z > parent.window[5]:
-                    z = parent.window[5]
-                    realpoint[xn][yn] = False
+                # Check if point is outside maximum z value
+                if dependantVariable == "z": #xy
+                    if z > parent.window[5]:
+                        z = parent.window[5]
+                        realpoint[xn][yn] = False
 
-                if z < parent.window[4]:
-                    z = parent.window[4]
-                    realpoint[xn][yn] = False
+                    if z < parent.window[4]:
+                        z = parent.window[4]
+                        realpoint[xn][yn] = False
+                    
+                    matrix[xn][yn] = parent.pixel(x,y,z)
+                    zmap[xn][yn] = z
+                
+                elif dependantVariable == "x": #yz
+                    if z > parent.window[1]:
+                        z = parent.window[1]
+                        realpoint[xn][yn] = False
 
-                matrix[xn][yn] = parent.pixel(x,y,z)
-                zmap[xn][yn] = z
+                    if z < parent.window[0]:
+                        z = parent.window[0]
+                        realpoint[xn][yn] = False
+                
+                    matrix[xn][yn] = parent.pixel(y,z,x)
+                    zmap[xn][yn] = x
+
+                elif dependantVariable == "y": #xz
+                    if z > parent.window[3]:
+                        z = parent.window[3]
+                        realpoint[xn][yn] = False
+
+                    if z < parent.window[2]:
+                        z = parent.window[2]
+                        realpoint[xn][yn] = False
+
+                    matrix[xn][yn] = parent.pixel(x,z,y)
+                    zmap[xn][yn] = y
 
         # draw
         for xn in range(self.numPoints):
             for yn in range(self.numPoints):
                 if matrix[xn][yn][0] is None:
                     continue
-
-                color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[4], parent.windowAxis[5])
                 
+                if dependantVariable == "z":
+                    color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[4], parent.windowAxis[5])
+                elif dependantVariable == "y":
+                    color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[2], parent.windowAxis[3])
+                else:
+                    color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[0], parent.windowAxis[1])
+
                 if self.fill:
                     self.__fill__(render, matrix, xn, yn, color, realpoint[xn][yn])
                 else:
                     self.__outline__(render, matrix, xn, yn, color, realpoint[xn][yn])
-            
-
 
     def legend(self, text:str, color=None, symbol=None):
         """

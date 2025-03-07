@@ -11,7 +11,6 @@ import random, string
 import scipy.interpolate
 import time
 
-
 def randomObject():
     
     pointLength = randint(50, 1000)
@@ -1586,7 +1585,18 @@ class Test:
         # chart.save('revision_reason.png')
         chart.show()
 
+    def test3DFunctionXYZ():
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function3D(lambda x, y: (x**2+y**2)/10-10, fill=True)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+        plt.show()
 
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function3D(lambda x, y: (x**2+y**2)/10-10, fill=True, axis="xz")).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+        plt.show()
+
+        plt = kaxe.Plot3D()
+        plt.add(kaxe.Function3D(lambda x, y: (x**2+y**2)/10-10, fill=True, axis="zy")).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -1600,6 +1610,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testMesh()
-    # Test.testErrorInGroupBarLegendAndTitle()
+    Test.argument()
+    # Test.test3DFunctionXYZ()
     
