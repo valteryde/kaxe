@@ -11,7 +11,7 @@ from ...core.color import Colormaps, Colormap
 # other
 import numpy as np
 import math
-import time
+import numbers
 
 
 class Function3D(Base3DObject):
@@ -45,6 +45,7 @@ class Function3D(Base3DObject):
 
         self.f = f
         self.axis = ''.join(sorted(axis)) #xy, xz, yz
+        self.dependantVariable = "xyz".replace(self.axis[0], '').replace(self.axis[1], '')
         self.otherArgs = args
         self.otherKwargs = kwargs
 
@@ -81,11 +82,24 @@ class Function3D(Base3DObject):
     def __isHorizontalTriangle__(self, p1, p2, p3):
         normal = self.__getTriangleNormal__(p1, p2, p3)
 
-        return (
-            np.isclose(normal[0], 0) and 
-            np.isclose(normal[1], 0) and 
-            (not np.isclose(normal[2], 0))
-        )
+        if self.dependantVariable == "z":
+            return (
+                np.isclose(normal[0], 0) and 
+                np.isclose(normal[1], 0) and 
+                (not np.isclose(normal[2], 0))
+            )
+        elif self.dependantVariable == "y":
+            return (
+                np.isclose(normal[0], 0) and 
+                (not np.isclose(normal[1], 0)) and 
+                np.isclose(normal[2], 0)
+            )
+        elif self.dependantVariable == "x":
+            return (
+                (not np.isclose(normal[0], 0)) and 
+                np.isclose(normal[1], 0) and 
+                np.isclose(normal[2], 0)
+            )
 
 
     def __addTriangle__(self, render, p1, p2, p3, color, isRealpoint):
@@ -165,31 +179,33 @@ class Function3D(Base3DObject):
         realpoint = np.empty((self.numPoints+1, self.numPoints+1), dtype=bool)
         realpoint.fill(True)
         
-        dependantVariable = "xyz".replace(self.axis[0], '').replace(self.axis[1], '')
-
         # get points in plane
+        if self.dependantVariable == "z":
+            gx = lambda xn: xlen * (xn / self.numPoints) + parent.window[0]
+            gy = lambda yn: ylen * (yn / self.numPoints) + parent.window[2]
+        elif self.dependantVariable == "y":
+            gx = lambda xn: xlen * (xn / self.numPoints) + parent.window[0]
+            gy = lambda yn: zlen * (yn / self.numPoints) + parent.window[4]
+        else:
+            gx = lambda yn: zlen * (yn / self.numPoints) + parent.window[4]
+            gy = lambda xn: ylen * (xn / self.numPoints) + parent.window[2]
+
         for xn in range(self.numPoints+1):
-            if self.axis[0] == "x":
-                x = xlen * (xn / self.numPoints) + parent.window[0]
-            elif self.axis[0] == "y": # burde bare være else
-                x = ylen * (xn / self.numPoints) + parent.window[2]
+            x = gx(xn)
 
             for yn in range(self.numPoints+1):
-                if self.axis[1] == "y":
-                    y = ylen * (yn / self.numPoints) + parent.window[2]
-                elif self.axis[1] == "z":
-                    y = zlen * (yn / self.numPoints) + parent.window[4]
+                y = gy(yn)
 
                 try:
                     z = self.f(x,y, *self.otherArgs, **self.otherKwargs)
                 except Exception:
                     continue
-                
-                if type(z) not in [int, float]:
+                                
+                if not isinstance(z, numbers.Number):
                     continue
 
                 # Check if point is outside maximum z value
-                if dependantVariable == "z": #xy
+                if self.dependantVariable == "z": #xy
                     if z > parent.window[5]:
                         z = parent.window[5]
                         realpoint[xn][yn] = False
@@ -201,19 +217,7 @@ class Function3D(Base3DObject):
                     matrix[xn][yn] = parent.pixel(x,y,z)
                     zmap[xn][yn] = z
                 
-                elif dependantVariable == "x": #yz
-                    if z > parent.window[1]:
-                        z = parent.window[1]
-                        realpoint[xn][yn] = False
-
-                    if z < parent.window[0]:
-                        z = parent.window[0]
-                        realpoint[xn][yn] = False
-                
-                    matrix[xn][yn] = parent.pixel(y,z,x)
-                    zmap[xn][yn] = x
-
-                elif dependantVariable == "y": #xz
+                elif self.dependantVariable == "y": #xz
                     if z > parent.window[3]:
                         z = parent.window[3]
                         realpoint[xn][yn] = False
@@ -224,6 +228,18 @@ class Function3D(Base3DObject):
 
                     matrix[xn][yn] = parent.pixel(x,z,y)
                     zmap[xn][yn] = y
+                
+                elif self.dependantVariable == "x": #yz
+                    if z > parent.window[1]:
+                        z = parent.window[1]
+                        realpoint[xn][yn] = False
+
+                    if z < parent.window[0]:
+                        z = parent.window[0]
+                        realpoint[xn][yn] = False
+                
+                    matrix[xn][yn] = parent.pixel(z, y, x)
+                    zmap[xn][yn] = x
 
         # draw
         for xn in range(self.numPoints):
@@ -231,12 +247,7 @@ class Function3D(Base3DObject):
                 if matrix[xn][yn][0] is None:
                     continue
                 
-                if dependantVariable == "z":
-                    color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[4], parent.windowAxis[5])
-                elif dependantVariable == "y":
-                    color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[2], parent.windowAxis[3])
-                else:
-                    color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[0], parent.windowAxis[1])
+                color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[4], parent.windowAxis[5])
 
                 if self.fill:
                     self.__fill__(render, matrix, xn, yn, color, realpoint[xn][yn])

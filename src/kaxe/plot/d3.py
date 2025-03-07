@@ -90,6 +90,7 @@ class Plot3D(Window):
     def __init__(self,  window:list=None, rotation:Union[list, tuple]=[60, -70], size:Union[bool, list, tuple]=None, drawBackground:bool=False):
         super().__init__()
 
+        rotation = rotation.copy()
         rotation[0] -= 90
 
         """
@@ -119,7 +120,7 @@ class Plot3D(Window):
             window = [-10, 10, -10, 10, -10, 10]
 
         self.identity = XYZPLOT
-        self.window = self.windowAxis = window
+        self.window = self.windowAxis = window.copy()
         self.axis = [None, None, None]
         self.__boxed__ = True
         self.__frame__ = False

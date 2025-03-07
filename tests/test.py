@@ -1586,17 +1586,22 @@ class Test:
         chart.show()
 
     def test3DFunctionXYZ():
-        plt = kaxe.Plot3D()
-        plt.add(kaxe.Function3D(lambda x, y: (x**2+y**2)/10-10, fill=True)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+        window = [-10, 50, -15, 1, -15, 20]
+
+        plt = kaxe.Plot3D(window)
+        plt.title('x', 'y', 'z')
+        plt.add(kaxe.Function3D(lambda x, y: 0, fill=True, color=kaxe.Colormaps.blue)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+        plt.add(kaxe.Function3D(lambda x, z: 0, fill=True, axis="xz", color=kaxe.Colormaps.red)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+        plt.add(kaxe.Function3D(lambda y, z: 0, fill=True, axis="yz", color=kaxe.Colormaps.green)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
         plt.show()
 
-        plt = kaxe.Plot3D()
-        plt.add(kaxe.Function3D(lambda x, y: (x**2+y**2)/10-10, fill=True, axis="xz")).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
-        plt.show()
 
-        plt = kaxe.Plot3D()
-        plt.add(kaxe.Function3D(lambda x, y: (x**2+y**2)/10-10, fill=True, axis="zy")).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
-        plt.show()
+        for axis in ["xy", "xz", "yz"]:
+            plt = kaxe.Plot3D()
+            plt.title('x', 'y', 'z')
+            plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 9, axis=axis)).legend('$f(x,y)=\\frac{x^2+y^2}{10}-10$')
+            plt.show()
+
 
 
 if __name__ == '__main__':
@@ -1610,6 +1615,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.argument()
-    # Test.test3DFunctionXYZ()
+    # Test.argument()
+    Test.test3DFunctionXYZ()
     
