@@ -167,7 +167,7 @@ class Function3D(Base3DObject):
         
         dependantVariable = "xyz".replace(self.axis[0], '').replace(self.axis[1], '')
 
-        # get points
+        # get points in plane
         for xn in range(self.numPoints+1):
             if self.axis[0] == "x":
                 x = xlen * (xn / self.numPoints) + parent.window[0]
