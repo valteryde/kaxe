@@ -1,10 +1,17 @@
 
+"""
+Alpha compsite is created partly following this guide
+https://learnwebgl.brown37.net/11_advanced_rendering/alpha_blending.html
+"""
+
 from .camera import Camera
 from PIL import Image
 import math
 from numpy import array, empty
 from typing import Union
 import tqdm
+import numpy as np
+
 
 class Render:
     def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None):
@@ -17,7 +24,7 @@ class Render:
         self.image = array(self.image)
         self.camera.satelite(*cameraAngle)
 
-        self.backgroundColor = (255,255,255,0)
+        self.backgroundColor = 255,255,255,0
 
         self.objects3d = []
 
@@ -35,36 +42,18 @@ class Render:
         return obj
 
     
-    def drawv2(self):
+    def draw(self):
         self.zbuffer = empty((self.width, self.height))
         self.zbuffer.fill(math.inf)
 
-        # stores index for material
-        self.abuffer = empty((self.width, self.height))
-        self.abuffer.fill(-1)
+        # sort based on if contains alpha
+        self.objects3d.sort(key=lambda obj: obj.color[3] != 255)
 
         bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
-        for index, obj in enumerate(self.objects3d):
-            obj.drawTozBuffer(self, index)
+        for obj in self.objects3d:
+            obj.draw(self)
             bar.update()
         bar.close()
-        
-        # draw to image
-        bar = tqdm.tqdm(total=self.width*self.height, desc="3D Draw")
-        for x in range(self.width):
-            for y in range(self.height):
-
-                i = self.abuffer[y][x]
-                if i >= 0: # altså ikke -1
-                    self.image[y][x] = self.objects3d[int(i)].getColor(self, x, y)
-                else:
-                    self.image[y][x] = self.backgroundColor
-
-            bar.update(self.height)
-        bar.close()
-
-        # draw transparent values
-
 
     def render(self, objects=[]):
 
@@ -72,8 +61,7 @@ class Render:
         for obj in objects:
             obj.render(self)
 
-        # sort and draw?
-        self.drawv2()
+        self.draw()
 
         self.image = Image.fromarray(self.image)
         self.image = self.image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)

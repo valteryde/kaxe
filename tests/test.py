@@ -1605,9 +1605,49 @@ class Test:
     def testTransparent3D():
         
         plt = kaxe.PlotFrame3D()
-        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0))))
-        # plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
+        # plt.show()
+
+        ORANGE = (196, 126, 71, 255) #c47e47
+        RED = (155, 5, 0, 255) #9b0500
+        BLUE = (62, 137, 174, 255) #3e89ae
+        DARKGREY = (50, 50, 50, 255) #323232
+        GREY = (100, 111, 111, 255) #6e6f6f
+
+        mesh = kaxe.Mesh.open(os.path.join('tests', 'Male Base Mesh.stl'), color=kaxe.SingleColormap((180,180,180,255)))
+
+        mesh.mesh.rotate([1, 0.0, 0.0], math.radians(-90))
+
+        window = mesh.getBoundingBox()
+
+        window = [
+            window[0]-2,
+            window[1]+2,
+            window[2]-4,
+            window[3]+4,
+            window[4]-2,
+            window[5]+2,
+        ]
+
+        plt = kaxe.PlotEmpty3D(window, size=True)
+        plt.style( zNumbers=10 )
+        plt.add( mesh )
+
+        axial = kaxe.SingleColormap((255,0,0,100))
+        axial = kaxe.SingleColormap((*ORANGE[:3], 254))
+        plt.add( kaxe.Function3D(lambda x,y: (window[5]+window[4])/2, color=axial) ).legend('Axial', color=axial.getColor(0, -1, 1))
+
+        coronal = kaxe.SingleColormap((0,255,0,100))
+        coronal = kaxe.SingleColormap((*BLUE[:3], 150))
+        plt.add( kaxe.Function3D(lambda x,z: (window[3]+window[2])/2, axis="xz", color=coronal) ).legend('Coronal', color=coronal.getColor(0, -1, 1))
+
+        sagital = kaxe.SingleColormap((0,0,255,100))
+        sagital = kaxe.SingleColormap((*RED[:3], 150))
+        plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
+
         plt.show()
+
 
 
 if __name__ == '__main__':
@@ -1622,4 +1662,5 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
+    # Test.testPrettyContour2DIn3D()
     Test.testTransparent3D()

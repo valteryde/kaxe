@@ -59,7 +59,7 @@ def colorBlend(ar, ag, ab, aa, br, bg, bb, ba):
     green = (bg * (255 - aa) + ag * aa) / 255
     blue  = (bb  * (255 - aa) + ab  * aa) / 255
 
-    return (int(red), int(green), int(blue), int(alpha))
+    return int(red), int(green), int(blue), int(alpha)
 
 
 def drawLineOnPillowImage(

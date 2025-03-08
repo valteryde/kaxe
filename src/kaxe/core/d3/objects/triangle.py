@@ -2,7 +2,8 @@
 import math
 from numpy import array, sqrt, dot
 from numba import njit
-from ..helper import clamp
+from ..helper import clamp, alphaComposite
+
 
 @njit
 def sign(p1, p2, p3):
@@ -24,7 +25,7 @@ def barycentricWeights(a,b,c,p):
 
 @njit
 def drawTriangle(zbuffer, 
-                 abuffer, 
+                 colorbuffer, 
                  R, 
                  w, 
                  p1, 
@@ -33,7 +34,7 @@ def drawTriangle(zbuffer,
                  p1_proj,
                  p2_proj,
                  p3_proj,
-                 index
+                 color
                  ):
 
     rp1 = R @ p1
@@ -43,8 +44,8 @@ def drawTriangle(zbuffer,
     min_ = (math.floor(min(p1_proj[0], p2_proj[0], p3_proj[0])), math.floor(min(p1_proj[1], p2_proj[1], p3_proj[1])))
     max_ = (math.ceil(max(p1_proj[0], p2_proj[0], p3_proj[0])), math.ceil(max(p1_proj[1], p2_proj[1], p3_proj[1])))
 
-    min_ = (clamp(min_[0], 0, len(abuffer[0])), clamp(min_[1], 0, len(abuffer)))
-    max_ = (clamp(max_[0], 0, len(abuffer[0])), clamp(max_[1], 0, len(abuffer)))
+    min_ = (clamp(min_[0], 0, len(colorbuffer[0])), clamp(min_[1], 0, len(colorbuffer)))
+    max_ = (clamp(max_[0], 0, len(colorbuffer[0])), clamp(max_[1], 0, len(colorbuffer)))
 
     for x in range(min_[0], max_[0]):
 
@@ -64,8 +65,14 @@ def drawTriangle(zbuffer,
             z = w - z
 
             if zbuffer[y][x] > z:
-                abuffer[y][x] = index
+                if color[3] == 255:
+                    colorbuffer[y][x] = color
+                else:
+                    colorbuffer[y][x] = alphaComposite(colorbuffer[y][x], color)
+
                 zbuffer[y][x] = z
+            if colorbuffer[y][x][3] < 255:
+                colorbuffer[y][x] = alphaComposite(colorbuffer[y][x], color)
 
 
 class Triangle:
@@ -75,23 +82,21 @@ class Triangle:
         self.p3 = array([float(i) for i in p3])
         self.color = color
 
-    def drawTozBuffer(self, render, index):
+    def draw(self, render):
         self.p1_proj = render.pixel(*self.p1)
         self.p2_proj = render.pixel(*self.p2)
         self.p3_proj = render.pixel(*self.p3)
         drawTriangle(
-            zbuffer=render.zbuffer,
-            abuffer=render.abuffer,
-            R=render.camera.R,
-            w=render.camera.w,
-            p1=self.p1,
-            p2=self.p2,
-            p3=self.p3,
-            p1_proj=self.p1_proj,
-            p2_proj=self.p2_proj,
-            p3_proj=self.p3_proj,
-            index=index
+            zbuffer     = render.zbuffer,
+            colorbuffer = render.image,
+            R           = render.camera.R,
+            w           = render.camera.w,
+            p1          = self.p1,
+            p2          = self.p2,
+            p3          = self.p3,
+            p1_proj     = self.p1_proj,
+            p2_proj     = self.p2_proj,
+            p3_proj     = self.p3_proj,
+            color       = self.color
         )
     
-    def getColor(self, render, x, y):
-        return self.color

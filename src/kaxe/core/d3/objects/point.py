@@ -5,7 +5,7 @@ import math
 from numba import jit, njit
 
 @njit
-def drawCircle(zbuffer, abuffer, radius, p_proj, p, R, w, index):
+def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
 
     rp = R @ p
     
@@ -25,7 +25,7 @@ def drawCircle(zbuffer, abuffer, radius, p_proj, p, R, w, index):
             z = w - rp[2]
 
             if zbuffer[y][x] > z:
-                abuffer[y][x] = index
+                colorbuffer[y][x] = color
                 zbuffer[y][x] = z
 
 
@@ -38,18 +38,16 @@ class Point3D:
         self.looks = 0
         self.color = color
 
-    def drawTozBuffer(self, render, index):
+    def draw(self, render):
         
         drawCircle(
-            zbuffer = render.zbuffer, 
-            abuffer = render.abuffer, 
-            radius  = self.radius, 
-            p_proj  = render.pixel(*self.pos), 
-            p       = array([float(i) for i in self.pos]), 
-            R       = render.camera.R, 
-            w       = render.camera.w, 
-            index   = index
+            zbuffer     = render.zbuffer, 
+            colorbuffer = render.image, 
+            radius      = self.radius, 
+            p_proj      = render.pixel(*self.pos), 
+            p           = array([float(i) for i in self.pos]), 
+            R           = render.camera.R, 
+            w           = render.camera.w, 
+            color       = self.color
         )
     
-    def getColor(self, render, x, y):
-        return self.color

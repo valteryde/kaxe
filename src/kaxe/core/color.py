@@ -77,31 +77,49 @@ class SingleColormap(Colormap):
     color : str or list or tuple
         The base color for the colormap. If a string is provided, it should be a hex color code.
         If a list or tuple is provided, it should contain RGB or RGBA values.
-    diff : list, optional
-        A list containing two float values that define the range of color differences.
+    spread : float, optional
+        A float larger than 1 describing the spread of the colors
         Default is [0.3, 0.7].
-    
+    total : int, optional
+        The total colors in the colormap
+
     See also
     --------
     kaxe.Colormap
     """
     
+    def __clamp__(self, v):
+        return max(min(v, 255), 0)
 
-    def __init__(self, color, diff=[0.3, 0.7]):
+
+    def __init__(self, color, spread=0.3, total=10):
 
         if type(color) is str:
             color = np.array(ImageColor.getcolor(hex, "RGBA"))
 
         if len(color) == 3:
-            color = np.array((*color, 255))
+            color = (*color, 255)
         
+        color = np.array(color)
+
         self.color = color
-        self.diff = diff
-        len_ = self.diff[1] - self.diff[0]
+        self.spread = spread
+        self.total = total
 
-        n = 10
+        v = color * spread
+        arr = []
+        for i in range(self.total):
+            newcolor = color + i*v/self.total - v/2
 
-        arr = [np.array((*(color*(self.diff[0]+len_*(i/n)))[:3], 255)) for i in range(n+1)]
+            newcolor = (
+                self.__clamp__(newcolor[0]),
+                self.__clamp__(newcolor[1]),
+                self.__clamp__(newcolor[2]),
+                color[3] # keep alpha as is
+            )
+
+            arr.append( newcolor )
+
         arr.reverse()
 
         super().__init__(arr)
