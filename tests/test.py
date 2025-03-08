@@ -1606,8 +1606,10 @@ class Test:
         
         plt = kaxe.PlotFrame3D()
         plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
-        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
-        # plt.show()
+        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,250))))
+        plt.add(kaxe.Function3D(lambda x,y: -5, numPoints=10, color=kaxe.SingleColormap((0,0,255,100))))
+        plt.add(kaxe.Function3D(lambda x,y: y, numPoints=100, color=kaxe.SingleColormap((0,255,0,50))))
+        plt.show()
 
         ORANGE = (196, 126, 71, 255) #c47e47
         RED = (155, 5, 0, 255) #9b0500
@@ -1646,7 +1648,7 @@ class Test:
         sagital = kaxe.SingleColormap((*RED[:3], 150))
         plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
 
-        plt.show()
+        # plt.show()
 
 
 

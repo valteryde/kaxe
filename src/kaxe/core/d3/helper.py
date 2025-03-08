@@ -2,7 +2,7 @@
 from random import randint
 from numba import jit, njit
 import numpy as np
-from ..line import colorBlend
+
 
 def rc() -> tuple:
     """random color"""
@@ -16,10 +16,6 @@ def magnitude(x):
 def clamp(v, a, b):
     return min(max(v, a), b)
 
-
-@njit
-def alphaComposite(c1, c2):
-    return colorBlend(c1[0], c1[1], c1[2], 255-c2[3], c2[0], c2[1], c2[2], c2[3])
 
 # @jit
 # def isPointInTriangle(v1, v2, v3, pt):

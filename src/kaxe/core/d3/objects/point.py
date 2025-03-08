@@ -2,7 +2,8 @@
 from numpy import array
 from ..helper import magnitude
 import math
-from numba import jit, njit
+from numba import njit
+from .color import addColorToBuffers
 
 @njit
 def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
@@ -24,9 +25,7 @@ def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
 
             z = w - rp[2]
 
-            if zbuffer[y][x] > z:
-                colorbuffer[y][x] = color
-                zbuffer[y][x] = z
+            addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
 
 

@@ -2,7 +2,8 @@
 import math
 from numpy import array, sqrt, dot
 from numba import njit
-from ..helper import clamp, alphaComposite
+from ..helper import clamp
+from .color import addColorToBuffers
 
 
 @njit
@@ -64,15 +65,7 @@ def drawTriangle(zbuffer,
 
             z = w - z
 
-            if zbuffer[y][x] > z:
-                if color[3] == 255:
-                    colorbuffer[y][x] = color
-                else:
-                    colorbuffer[y][x] = alphaComposite(colorbuffer[y][x], color)
-
-                zbuffer[y][x] = z
-            if colorbuffer[y][x][3] < 255:
-                colorbuffer[y][x] = alphaComposite(colorbuffer[y][x], color)
+            addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
 
 class Triangle:

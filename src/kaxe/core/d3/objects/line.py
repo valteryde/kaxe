@@ -3,6 +3,7 @@ from numpy import array, dot, linalg
 from ..helper import magnitude, clamp
 import math
 from numba import jit, njit
+from .color import addColorToBuffers
 
 @njit
 def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, color):
@@ -77,9 +78,7 @@ def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int
 
                 z = w - p[2]
 
-                if zbuffer[y][x] > z:
-                    colorbuffer[y][x] = color
-                    zbuffer[y][x] = z
+                addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
             else:
 
