@@ -11,6 +11,8 @@ from numpy import array, empty
 from typing import Union
 import tqdm
 import numpy as np
+from numba import njit
+from .helper import renderImage
 
 
 class Render:
@@ -20,11 +22,14 @@ class Render:
 
         self.camera = Camera()
         if w: self.camera.w = w
-        self.image = Image.new('RGBA', (self.width, self.height), (255, 255, 255, 0))
-        self.image = array(self.image)
-        self.camera.satelite(*cameraAngle)
 
-        self.backgroundColor = 255,255,255,0
+        self.colorbuffer = np.empty((self.width, self.height), dtype=list)
+        self.colorbuffer.fill([(255,255,255,0)])
+
+        self.image = Image.new('RGBA', (self.width, self.height), (255,255,255,255))
+        self.image = np.array(self.image)
+
+        self.camera.satelite(*cameraAngle)
 
         self.objects3d = []
 
@@ -43,17 +48,20 @@ class Render:
 
     
     def draw(self):
-        self.zbuffer = empty((self.width, self.height))
-        self.zbuffer.fill(math.inf)
+        self.zbuffer = empty((self.width, self.height), dtype=list)
+        self.zbuffer.fill([math.inf])
 
         # sort based on if contains alpha
-        self.objects3d.sort(key=lambda obj: obj.color[3] != 255)
+        # self.objects3d.sort(key=lambda obj: obj.color[3] != 255)
 
         bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
         for obj in self.objects3d:
             obj.draw(self)
             bar.update()
         bar.close()
+
+        renderImage(self.width, self.height, self.colorbuffer, self.zbuffer, self.image)
+
 
     def render(self, objects=[]):
 
@@ -66,7 +74,7 @@ class Render:
         self.image = Image.fromarray(self.image)
         self.image = self.image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         
-        self.abuffer = []
         self.zbuffer = []
+        self.colorbuffer = []
 
         return self.image

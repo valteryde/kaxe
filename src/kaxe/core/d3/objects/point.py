@@ -1,10 +1,11 @@
 
 from numpy import array
-from ..helper import magnitude
+from ..helper import magnitude, addColorToBuffer
 import math
 from numba import jit, njit
 
-@njit
+
+# @njit
 def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
 
     rp = R @ p
@@ -24,10 +25,7 @@ def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
 
             z = w - rp[2]
 
-            if zbuffer[y][x] > z:
-                colorbuffer[y][x] = color
-                zbuffer[y][x] = z
-
+            addColorToBuffer(zbuffer, colorbuffer, color, x, y,z)
 
 
 class Point3D:
@@ -42,7 +40,7 @@ class Point3D:
         
         drawCircle(
             zbuffer     = render.zbuffer, 
-            colorbuffer = render.image, 
+            colorbuffer = render.colorbuffer, 
             radius      = self.radius, 
             p_proj      = render.pixel(*self.pos), 
             p           = array([float(i) for i in self.pos]), 

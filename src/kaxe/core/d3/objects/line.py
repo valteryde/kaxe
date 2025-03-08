@@ -1,10 +1,11 @@
 
 from numpy import array, dot, linalg
-from ..helper import magnitude, clamp
+from ..helper import magnitude, clamp, addColorToBuffer
 import math
-from numba import jit, njit
+from numba import njit
 
-@njit
+
+# @njit
 def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, color):
 
     # calculate normal vector
@@ -77,9 +78,7 @@ def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int
 
                 z = w - p[2]
 
-                if zbuffer[y][x] > z:
-                    colorbuffer[y][x] = color
-                    zbuffer[y][x] = z
+                addColorToBuffer(zbuffer, colorbuffer, color, x, y,z)
 
             else:
 
@@ -101,7 +100,7 @@ class Line3D:
         
         drawLine(
             zbuffer     = render.zbuffer,
-            colorbuffer = render.image,
+            colorbuffer = render.colorbuffer,
             p1_proj     = render.pixel(*self.p1), 
             p2_proj     = render.pixel(*self.p2), 
             p1          = self.p1, 

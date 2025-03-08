@@ -1605,9 +1605,14 @@ class Test:
     def testTransparent3D():
         
         plt = kaxe.PlotFrame3D()
-        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
-        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
-        # plt.show()
+        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=10, color=kaxe.SingleColormap((255,0,0,100), spread=0.05)))
+        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((0,0,255,20))))
+        plt.add(kaxe.Function3D(lambda x,y: -5, numPoints=10, color=kaxe.SingleColormap((0,255,0,50))))
+        plt.add( kaxe.ParametricEquation(lambda t: (5*math.cos(4*t), 5*math.sin(4*t), t), [-4*math.pi, 4*math.pi], width=10, color=kaxe.Colormaps.standard) )
+
+        plt.show()
+        
+        return
 
         ORANGE = (196, 126, 71, 255) #c47e47
         RED = (155, 5, 0, 255) #9b0500

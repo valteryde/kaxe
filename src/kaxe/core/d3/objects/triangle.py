@@ -2,7 +2,7 @@
 import math
 from numpy import array, sqrt, dot
 from numba import njit
-from ..helper import clamp, alphaComposite
+from ..helper import clamp, addColorToBuffer
 
 
 @njit
@@ -23,7 +23,7 @@ def barycentricWeights(a,b,c,p):
     return w1, w2, 1 - w1 - w2
 
 
-@njit
+# @njit
 def drawTriangle(zbuffer, 
                  colorbuffer, 
                  R, 
@@ -64,15 +64,7 @@ def drawTriangle(zbuffer,
 
             z = w - z
 
-            if zbuffer[y][x] > z:
-                if color[3] == 255:
-                    colorbuffer[y][x] = color
-                else:
-                    colorbuffer[y][x] = alphaComposite(colorbuffer[y][x], color)
-
-                zbuffer[y][x] = z
-            if colorbuffer[y][x][3] < 255:
-                colorbuffer[y][x] = alphaComposite(colorbuffer[y][x], color)
+            addColorToBuffer(zbuffer, colorbuffer, color, x, y,z)
 
 
 class Triangle:
@@ -88,7 +80,7 @@ class Triangle:
         self.p3_proj = render.pixel(*self.p3)
         drawTriangle(
             zbuffer     = render.zbuffer,
-            colorbuffer = render.image,
+            colorbuffer = render.colorbuffer,
             R           = render.camera.R,
             w           = render.camera.w,
             p1          = self.p1,
