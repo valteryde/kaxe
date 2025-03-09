@@ -16,6 +16,7 @@ try:
 except ImportError:
     pass
 
+
 """
 Alle translationer fra pixel til inverse pixel skal ske i Plot og ikke i vinduet
 Vinduet er bare til at lægge ting til og ved ikke hvor og hvodan den skal lægge ting til
@@ -34,6 +35,13 @@ try:
         terminaltype = 'ipython'
 except:
     pass
+
+
+settings = {"removeInfo":False}
+
+def setSetting(**kwargs):
+    for key in kwargs:
+        settings[key] = kwargs[key]
 
 class Window(AttrObject):
     """
@@ -85,6 +93,11 @@ class Window(AttrObject):
         self.offset = [0,0]
         self.showProgressBar = terminaltype == "terminal" 
         self.printDebugInfo = True
+
+        if settings["removeInfo"]:
+            self.showProgressBar = False
+            self.printDebugInfo = False
+
         #self.scale = [1,1], if not set axis will help set it
 
 

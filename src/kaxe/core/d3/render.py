@@ -11,7 +11,7 @@ from numpy import array, empty
 from typing import Union
 import tqdm
 import numpy as np
-
+from ..window import settings
 
 class Render:
     def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0]):
@@ -56,11 +56,13 @@ class Render:
         
         self.objects3d = nontransparent + transparent
 
-        bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
+        
+        showProgressBar = not settings["removeInfo"]
+        if showProgressBar: bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
         for obj in self.objects3d:
             obj.draw(self)
-            bar.update()
-        bar.close()
+            if showProgressBar: bar.update()
+        if showProgressBar: bar.close()
 
     def render(self, objects=[]):
 

@@ -40,7 +40,7 @@
 from random import randint
 import sys
 from ..core.helper import insideBox
-from ..core.window import Window
+from ..core.window import Window, settings
 from ..core.shapes import ImageShape
 from ..core.axis import Axis
 from ..core.marker import Marker
@@ -116,13 +116,6 @@ class Plot3D(Window):
         *--------------*
 
         """
-
-        # rotation = [-272, 103]
-        # rotation = [60, 60] # den vender forkert lige pt
-        # rotation = [randint(-360, 360), randint(-360, 360)]
-        # rotation = [200, 240] # den vender forkert lige pt
-        # rotation = [180, -70]
-        # rotation = [270, -70]
 
         if window is None:
             window = [-10, 10, -10, 10, -10, 10]
@@ -350,8 +343,6 @@ class Plot3D(Window):
 
         # create render
         # add frame
-
-        # print('alpha={}, beta={}'.format(*self.rotation))
 
         width = height = min(self.getAttr('width'), self.getAttr('height'))
         self.setAttr('width', width)

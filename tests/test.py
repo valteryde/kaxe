@@ -11,6 +11,17 @@ import random, string
 import scipy.interpolate
 import time
 
+import os, sys
+
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
+
 def randomObject():
     
     pointLength = randint(50, 1000)
@@ -44,15 +55,17 @@ class Test:
             eval('Test.test{}()'.format(sys.argv[1]))
 
     def run():
+        kaxe.setSetting(removeInfo=True)
         for i in dir(Test):
             if 'test' in i:
                 print('\033[94m' + 'Running {}'.format(i) + '\033[0m')
                 try:
                     now = time.time()
-                    eval('Test.{}()'.format(i))
-                    print('\033[92m'+ 'Ran {} successfull in {} ms'.format(i, 1000*(time.time() - now)))
-                except Exception:
-                    print('\033[91m' + 'Error in test {}'.format(i) + '\033[0m')
+                    with HiddenPrints():
+                        eval('Test.{}()'.format(i))
+                    print('\033[92m'+ 'Ran {} successfull in {} s'.format(i, round(time.time() - now, 3)))
+                except Exception as e:
+                    print('\033[91m' + 'Error in test {}: {}'.format(i, e) + '\033[0m')
 
     def testNormal():
         plot = kaxe.Plot()
@@ -1537,7 +1550,17 @@ class Test:
     def testMesh():
         
         mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL')
-        plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True)
+        plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True, light=[0,0,1])
+        plt.add(mesh)
+        plt.show()
+
+        mesh = kaxe.Mesh.open('tests/terrain.stl')
+        xs = [i[0] for i in mesh.mesh]
+        ys = [i[1] for i in mesh.mesh]
+        zs = [i[2] for i in mesh.mesh]
+
+        plt = kaxe.PlotEmpty3D([min(xs), max(xs), min(ys), max(ys), 3, max(zs)], rotation=[-60, -80], size=True, light=[0,1,0.1])
+        
         plt.add(mesh)
         plt.show()
 
@@ -1658,7 +1681,6 @@ class Test:
 
     def testLightning():
         
-        
         mesh = kaxe.Mesh.open(os.path.join('tests', 'Base Mannequin 3,074.stl'), color=kaxe.SingleColormap((180,180,180,255)))
         # mesh = kaxe.Mesh.open(os.path.join('tests', 'Male Base Mesh.stl'), color=kaxe.SingleColormap((180,180,180,255)))
         # mesh.mesh.rotate([1, 0.0, 0.0], math.radians(-90))
@@ -1701,6 +1723,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testLightning()
-    # Test.testPrettyContour2DIn3D()
-    # Test.testTransparent3D()
+    Test.argument()
