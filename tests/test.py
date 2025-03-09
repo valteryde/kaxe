@@ -1669,6 +1669,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.argument()
+    Test.argument()
     # Test.testPrettyContour2DIn3D()
-    Test.testTransparent3D()
+    # Test.testTransparent3D()
