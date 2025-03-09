@@ -3,6 +3,7 @@ from random import randint
 from numba import jit, njit
 import numpy as np
 
+
 def rc() -> tuple:
     """random color"""
     return (randint(0,255), randint(0,255), randint(0,255), 255)
@@ -14,6 +15,7 @@ def magnitude(x):
 @njit
 def clamp(v, a, b):
     return min(max(v, a), b)
+
 
 # @jit
 # def isPointInTriangle(v1, v2, v3, pt):

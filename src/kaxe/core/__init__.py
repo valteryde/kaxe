@@ -6,3 +6,4 @@ from .styles import resetColor, setDefaultColors, getRandomColor
 from .axis import Axis
 from .round import koundTeX
 from .color import Colormaps, SingleColormap, Colormap
+from .window import setSetting

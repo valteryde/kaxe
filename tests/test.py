@@ -11,6 +11,17 @@ import random, string
 import scipy.interpolate
 import time
 
+import os, sys
+
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
+
 def randomObject():
     
     pointLength = randint(50, 1000)
@@ -44,15 +55,17 @@ class Test:
             eval('Test.test{}()'.format(sys.argv[1]))
 
     def run():
+        kaxe.setSetting(removeInfo=True)
         for i in dir(Test):
             if 'test' in i:
                 print('\033[94m' + 'Running {}'.format(i) + '\033[0m')
                 try:
                     now = time.time()
-                    eval('Test.{}()'.format(i))
-                    print('\033[92m'+ 'Ran {} successfull in {} ms'.format(i, 1000*(time.time() - now)))
-                except Exception:
-                    print('\033[91m' + 'Error in test {}'.format(i) + '\033[0m')
+                    with HiddenPrints():
+                        eval('Test.{}()'.format(i))
+                    print('\033[92m'+ 'Ran {} successfull in {} s'.format(i, round(time.time() - now, 3)))
+                except Exception as e:
+                    print('\033[91m' + 'Error in test {}: {}'.format(i, e) + '\033[0m')
 
     def testNormal():
         plot = kaxe.Plot()
@@ -904,7 +917,7 @@ class Test:
         plt.add(kaxe.Equation(lambda x,y: x, lambda x,y: 2*y).legend('Equation'))
         plt.add(kaxe.Function2D(lambda x: x**2-4).legend('Funktion'))
         plt.add(kaxe.ParametricEquation(lambda t: (math.sin(t), (t/3)**2), (0, 2*math.pi)).legend('ParametricEquation'))
-        plt.add(kaxe.Pillars([0,1,2], [1,2,3], colors=(0,0,0,100)).legend('Pillars'))
+        plt.add(kaxe.Pillars([0,1,2], [1,2,3], colors=[(0,0,0,100)]).legend('Pillars'))
         plt.add(kaxe.Points([0,1,2,3], [0,1,2,3]).legend('Points'))
         plt.save('tests/images/alllegeneds.png')
 
@@ -1537,7 +1550,17 @@ class Test:
     def testMesh():
         
         mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL')
-        plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True)
+        plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True, light=[0,0,1])
+        plt.add(mesh)
+        plt.show()
+
+        mesh = kaxe.Mesh.open('tests/terrain.stl')
+        xs = [i[0] for i in mesh.mesh]
+        ys = [i[1] for i in mesh.mesh]
+        zs = [i[2] for i in mesh.mesh]
+
+        plt = kaxe.PlotEmpty3D([min(xs), max(xs), min(ys), max(ys), 3, max(zs)], rotation=[-60, -80], size=True, light=[0,1,0.1])
+        
         plt.add(mesh)
         plt.show()
 
@@ -1605,9 +1628,98 @@ class Test:
     def testTransparent3D():
         
         plt = kaxe.PlotFrame3D()
-        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0))))
-        # plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=100, color=kaxe.SingleColormap((255,0,0,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=100, color=kaxe.SingleColormap((255,0,0,250))))
+        plt.add(kaxe.Function3D(lambda x,y: -5, numPoints=100, color=kaxe.SingleColormap((0,0,255,100))))
+        plt.add(kaxe.Function3D(lambda x,y: y, numPoints=100, color=kaxe.SingleColormap((0,255,0,50))))
+        # plt.show()
+
+        plt = kaxe.PlotFrame3D()
+        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,250))))
+        plt.add(kaxe.Function3D(lambda x,y: -5, numPoints=10, color=kaxe.SingleColormap((0,0,255,100))))
         plt.show()
+
+        ORANGE = (196, 126, 71, 255) #c47e47
+        RED = (155, 5, 0, 255) #9b0500
+        BLUE = (62, 137, 174, 255) #3e89ae
+        DARKGREY = (50, 50, 50, 255) #323232
+        GREY = (100, 111, 111, 255) #6e6f6f
+
+        mesh = kaxe.Mesh.open(os.path.join('tests', 'Male Base Mesh.stl'), color=kaxe.SingleColormap((180,180,180,255)))
+
+        mesh.mesh.rotate([1, 0.0, 0.0], math.radians(-90))
+
+        window = mesh.getBoundingBox()
+
+        window = [
+            window[0]-2,
+            window[1]+2,
+            window[2]-4,
+            window[3]+4,
+            window[4]-2,
+            window[5]+2,
+        ]
+
+        plt = kaxe.PlotEmpty3D(window, size=True)
+        plt.style( zNumbers=10 )
+        plt.add( mesh )
+
+        axial = kaxe.SingleColormap((255,0,0,200))
+        # axial = kaxe.SingleColormap((*ORANGE[:3], 150))
+        plt.add( kaxe.Function3D(lambda x,y: (window[5]+window[4])/2, color=axial) ).legend('Axial', color=axial.getColor(0, -1, 1))
+
+        coronal = kaxe.SingleColormap((0,255,0,200))
+        # coronal = kaxe.SingleColormap((*BLUE[:3], 150))
+        plt.add( kaxe.Function3D(lambda x,z: (window[3]+window[2])/2, axis="xz", color=coronal) ).legend('Coronal', color=coronal.getColor(0, -1, 1))
+
+        sagital = kaxe.SingleColormap((0,0,255,200))
+        # sagital = kaxe.SingleColormap((*RED[:3], 150))
+        plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
+
+        plt.show()
+
+    def testLightning():
+        
+        mesh = kaxe.Mesh.open(os.path.join('tests', 'Base Mannequin 3,074.stl'), color=kaxe.SingleColormap((180,180,180,255)))
+        # mesh = kaxe.Mesh.open(os.path.join('tests', 'Male Base Mesh.stl'), color=kaxe.SingleColormap((180,180,180,255)))
+        # mesh.mesh.rotate([1, 0.0, 0.0], math.radians(-90))
+
+        window = mesh.getBoundingBox()
+
+        window = [
+            window[0]-2,
+            window[1]+2,
+            window[2]-4,
+            window[3]+4,
+            window[4]-2,
+            window[5]+2,
+        ]
+
+        plt = kaxe.PlotEmpty3D(window, size=True, light=[0, 0.5, 1])
+        plt.style( zNumbers=10 )
+        plt.add( mesh )
+
+        axial = kaxe.SingleColormap((255,0,0,200))
+        plt.add( kaxe.Function3D(lambda x,y: (window[5]+window[4])/2, color=axial) ).legend('Axial', color=axial.getColor(0, -1, 1))
+
+        coronal = kaxe.SingleColormap((0,255,0,200))
+        plt.add( kaxe.Function3D(lambda x,z: (window[3]+window[2])/2, axis="xz", color=coronal) ).legend('Coronal', color=coronal.getColor(0, -1, 1))
+
+        sagital = kaxe.SingleColormap((0,0,255,200))
+        plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
+
+        plt.show()
+
+    def testLightFunction():
+        
+        plt = kaxe.PlotFrame3D([-10,10,-10,10,-3,3], light=[0,0.5,1])
+        # plt = kaxe.PlotFrame3D([-10,10,-10,10,-3,3], light=[0,1,2])
+
+        plt.add(kaxe.Function3D( lambda x,y: math.sin(x) + math.cos(y*x/20) ))
+
+        plt.show()
+        plt.save('tests/images/lightfunction3d.png')
 
 
 if __name__ == '__main__':
@@ -1621,5 +1733,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    Test.testLightFunction()
     # Test.argument()
-    Test.testTransparent3D()

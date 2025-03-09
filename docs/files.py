@@ -178,8 +178,8 @@ def createAllDocImages():
 
     boxplot.save(j('box'))
 
-    plt = kaxe.PlotFrame3D([-30, 30, -30, 30, 0, 120], size=True)
     mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL', color=kaxe.Colormaps.cream)
+    plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True, light=[0,0,1])
     plt.add(mesh)
     plt.save(j('mesh'))
 

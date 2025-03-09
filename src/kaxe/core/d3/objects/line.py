@@ -3,9 +3,10 @@ from numpy import array, dot, linalg
 from ..helper import magnitude, clamp
 import math
 from numba import jit, njit
+from .color import addColorToBuffers
 
 @njit
-def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, index):
+def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, color):
 
     # calculate normal vector
     v = p2_proj - p1_proj
@@ -46,11 +47,11 @@ def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, in
     if mag_ == 0: return
     d = 1/mag_
 
-    x1 = clamp(x1, 0, len(abuffer[0]))
-    y1 = clamp(y1, 0, len(abuffer))
+    x1 = clamp(x1, 0, len(colorbuffer[0]))
+    y1 = clamp(y1, 0, len(colorbuffer))
     
-    x2 = clamp(x2, 0, len(abuffer[0]))
-    y2 = clamp(y2, 0, len(abuffer))
+    x2 = clamp(x2, 0, len(colorbuffer[0]))
+    y2 = clamp(y2, 0, len(colorbuffer))
 
     for x in range(x1, x2):
 
@@ -77,10 +78,7 @@ def drawLine(zbuffer, abuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, in
 
                 z = w - p[2]
 
-                if zbuffer[y][x] > z:
-                    abuffer[y][x] = index
-                    zbuffer[y][x] = z
-
+                addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
             else:
 
@@ -96,26 +94,25 @@ class Line3D:
         self.color = color
         self.hidden = False
 
+    def getZ(self, R):
+        return ((R @ self.p1)[2] + (R @ self.p2)[2]) / 2
 
-    def drawTozBuffer(self, render, index):
+
+    def draw(self, render):
         if self.hidden: return
         
         drawLine(
-            zbuffer=render.zbuffer,
-            abuffer=render.abuffer,
-            p1_proj=render.pixel(*self.p1), 
-            p2_proj=render.pixel(*self.p2), 
-            p1=self.p1, 
-            p2=self.p2, 
-            R=render.camera.R, 
-            w=render.camera.w,
-            halfwidth=round(self.width/2),
-            index=index
+            zbuffer     = render.zbuffer,
+            colorbuffer = render.image,
+            p1_proj     = render.pixel(*self.p1), 
+            p2_proj     = render.pixel(*self.p2), 
+            p1          = self.p1, 
+            p2          = self.p2, 
+            R           = render.camera.R, 
+            w           = render.camera.w,
+            halfwidth   = round(self.width/2),
+            color       = self.color
         )
     
-    def getColor(self, render, x, y):
-        return self.color
-
-
     def hide(self):
         self.hidden = True
