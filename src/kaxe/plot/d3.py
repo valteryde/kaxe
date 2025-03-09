@@ -81,13 +81,21 @@ class Plot3D(Window):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     drawBackground: bool, optional
         Draw background with gridlines
-    size:  list | bool | None, optional
+    size : list | bool | None, optional
         if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
-    
+    light : list
+        light direction. If null vector is given light will not be added.
     """
 
 
-    def __init__(self,  window:list=None, rotation:Union[list, tuple]=[60, -70], size:Union[bool, list, tuple]=None, drawBackground:bool=False):
+    def __init__(self,  
+                 window:list=None, 
+                 rotation:Union[list, tuple]=[60, -70], 
+                 size:Union[bool, list, tuple]=None, 
+                 drawBackground:bool=False,
+                 light:list=[0,0,0]
+        ):
+        
         super().__init__()
 
         rotation = rotation.copy()
@@ -120,6 +128,7 @@ class Plot3D(Window):
             window = [-10, 10, -10, 10, -10, 10]
 
         self.identity = XYZPLOT
+        self.light = light
         self.window = self.windowAxis = window.copy()
         self.axis = [None, None, None]
         self.__boxed__ = True
@@ -352,7 +361,8 @@ class Plot3D(Window):
             width=self.getAttr('width'), 
             height=self.getAttr('height'),
             cameraAngle=[math.radians(self.rotation[0]), 
-                         math.radians(self.rotation[1])]
+                         math.radians(self.rotation[1])],
+            light=self.light
         )
         
         self.__createWireframe__()
@@ -462,8 +472,8 @@ class Plot3D(Window):
         smallzOffset = (n/np.linalg.norm(n))/5000
         smallzOffset *= 1
 
-        self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor))
-        self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor))
+        self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor, ableToUseLight=False))
+        self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor, ableToUseLight=False))
                 
         # find den koordinat som de alle sammen har altså holdes konstant igennem fladen
         for i in range(3): # 3 koordinater
@@ -869,10 +879,12 @@ class PlotCenter3D(Plot3D):
         Draw background with gridlines
     size:  list | bool | None, optional
         if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
+    light : list, optional
+        light direction. If null vector is given light will not be added.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None):
-        super().__init__(window, rotation, size=size)
+    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None, light:list=[0,0,0]):
+        super().__init__(window, rotation, size=size, light=light)
         self.__boxed__ = False
         self.__frame__ = False
         self.__normal__ = True
@@ -890,10 +902,12 @@ class PlotFrame3D(Plot3D):
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
     size:  list | bool | None, optional
         if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
+    light : list, optional
+        light direction. If null vector is given light will not be added.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=True, size:Union[bool, list, tuple]=None):
-        super().__init__(window, rotation, size=size, drawBackground=drawBackground)
+    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=True, size:Union[bool, list, tuple]=None, light:list=[0,0,0]):
+        super().__init__(window, rotation, size=size, drawBackground=drawBackground, light=light)
         self.__boxed__ = True
         self.__frame__ = True
         self.__normal__ = False
@@ -909,10 +923,14 @@ class PlotEmpty3D(Plot3D):
         The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
     rotation : list, optional
         The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
+    size:  list | bool | None, optional
+        if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
+    light : list, optional
+        light direction. If null vector is given light will not be added.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None):
-        super().__init__(window, rotation, size=size)
+    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None, light:list=[0,0,0]):
+        super().__init__(window, rotation, size=size, light=light)
         self.__boxed__ = False
         self.__frame__ = False
         self.__normal__ = False

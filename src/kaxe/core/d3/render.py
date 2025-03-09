@@ -14,9 +14,11 @@ import numpy as np
 
 
 class Render:
-    def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None):
+    def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0]):
         self.width = width
         self.height = height
+        self.lightDirection = np.array([float(i) for i in light])
+        self.useLight = any(light)
 
         self.camera = Camera()
         if w: self.camera.w = w

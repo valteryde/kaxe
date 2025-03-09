@@ -126,7 +126,7 @@ class Function3D(Base3DObject):
 
         if all(i[0] is not None for i in [matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1]]):
                     
-            self.__addTriangle__(render, matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1], color, isRealpoint)
+            self.__addTriangle__(render, matrix[xn+1][yn], matrix[xn+1][yn+1], matrix[xn][yn+1], color, isRealpoint)
         
 
     def __addTriangleOutline__(self, render, p1, p2, p3, color, isRealpoint, xn, yn):
