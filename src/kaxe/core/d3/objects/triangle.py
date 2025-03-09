@@ -75,6 +75,9 @@ class Triangle:
         self.p3 = array([float(i) for i in p3])
         self.color = color
 
+    def getZ(self, R):
+        return ((R @ self.p1)[2] + (R @ self.p2)[2] + (R @ self.p3)[2]) / 3
+
     def draw(self, render):
         self.p1_proj = render.pixel(*self.p1)
         self.p2_proj = render.pixel(*self.p2)

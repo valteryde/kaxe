@@ -47,6 +47,7 @@ class Render:
         self.zbuffer.fill(math.inf)
 
         # sort based on if contains alpha
+        self.objects3d.sort(key=lambda obj: obj.getZ(self.camera.R))
         self.objects3d.sort(key=lambda obj: obj.color[3] != 255)
 
         bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")

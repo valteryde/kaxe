@@ -1605,9 +1605,9 @@ class Test:
     def testTransparent3D():
         
         plt = kaxe.PlotFrame3D()
-        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=10, color=kaxe.SingleColormap((255,0,0,100))))
-        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=10, color=kaxe.SingleColormap((255,0,0,250))))
-        plt.add(kaxe.Function3D(lambda x,y: -5, numPoints=10, color=kaxe.SingleColormap((0,0,255,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, axis="xz", numPoints=100, color=kaxe.SingleColormap((255,0,0,100))))
+        plt.add(kaxe.Function3D(lambda x,y: 0, numPoints=100, color=kaxe.SingleColormap((255,0,0,250))))
+        plt.add(kaxe.Function3D(lambda x,y: -5, numPoints=100, color=kaxe.SingleColormap((0,0,255,100))))
         plt.add(kaxe.Function3D(lambda x,y: y, numPoints=100, color=kaxe.SingleColormap((0,255,0,50))))
         plt.show()
 
@@ -1637,18 +1637,18 @@ class Test:
         plt.add( mesh )
 
         axial = kaxe.SingleColormap((255,0,0,100))
-        axial = kaxe.SingleColormap((*ORANGE[:3], 254))
+        # axial = kaxe.SingleColormap((*ORANGE[:3], 150))
         plt.add( kaxe.Function3D(lambda x,y: (window[5]+window[4])/2, color=axial) ).legend('Axial', color=axial.getColor(0, -1, 1))
 
         coronal = kaxe.SingleColormap((0,255,0,100))
-        coronal = kaxe.SingleColormap((*BLUE[:3], 150))
+        # coronal = kaxe.SingleColormap((*BLUE[:3], 150))
         plt.add( kaxe.Function3D(lambda x,z: (window[3]+window[2])/2, axis="xz", color=coronal) ).legend('Coronal', color=coronal.getColor(0, -1, 1))
 
         sagital = kaxe.SingleColormap((0,0,255,100))
-        sagital = kaxe.SingleColormap((*RED[:3], 150))
+        # sagital = kaxe.SingleColormap((*RED[:3], 150))
         plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
 
-        # plt.show()
+        plt.show()
 
 
 

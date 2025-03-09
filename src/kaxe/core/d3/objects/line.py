@@ -94,6 +94,9 @@ class Line3D:
         self.color = color
         self.hidden = False
 
+    def getZ(self, R):
+        return ((R @ self.p1)[2] + (R @ self.p2)[2]) / 2
+
 
     def draw(self, render):
         if self.hidden: return

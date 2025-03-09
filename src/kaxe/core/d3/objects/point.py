@@ -37,6 +37,9 @@ class Point3D:
         self.looks = 0
         self.color = color
 
+    def getZ(self, R):
+        return (self.pos @ R)[2]
+
     def draw(self, render):
         
         drawCircle(
