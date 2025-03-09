@@ -47,8 +47,12 @@ class Render:
         self.zbuffer.fill(math.inf)
 
         # sort based on if contains alpha
-        self.objects3d.sort(key=lambda obj: obj.getZ(self.camera.R))
-        self.objects3d.sort(key=lambda obj: obj.color[3] != 255)
+        transparent = list(filter(lambda obj: obj.color[3] != 255, self.objects3d))
+        nontransparent = list(filter(lambda obj: obj.color[3] == 255, self.objects3d))
+        
+        transparent.sort(key=lambda obj: obj.getZ(self.camera.R))
+        
+        self.objects3d = nontransparent + transparent
 
         bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
         for obj in self.objects3d:
