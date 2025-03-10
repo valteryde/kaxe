@@ -30,8 +30,9 @@ class Function3D(Base3DObject):
         Whether to fill the plot. default is True
     drawDiagonalLines: bool
         Whether to draw diagonal lines in triangles when fill is False. default is False
-
-        
+    excludeLight : bool, optional
+        Whether to exclude lighting effects. Default is True.
+    
     Methods
     -------
     __call__(x)
@@ -39,7 +40,17 @@ class Function3D(Base3DObject):
 
     """
     
-    def __init__(self, f, color:Colormap=None, numPoints:int=None, fill:bool=True, drawDiagonalLines:bool=False, axis="xy", *args, **kwargs):
+    def __init__(self, 
+                 f, 
+                 color:Colormap=None, 
+                 numPoints:int=None, 
+                 fill:bool=True, 
+                 drawDiagonalLines:bool=False, 
+                 axis="xy", 
+                 excludeLight=True,
+                 *args, 
+                 **kwargs
+        ):
         
         super().__init__()
 
@@ -48,6 +59,7 @@ class Function3D(Base3DObject):
         self.dependantVariable = "xyz".replace(self.axis[0], '').replace(self.axis[1], '')
         self.otherArgs = args
         self.otherKwargs = kwargs
+        self.excludeLight = excludeLight
 
         self.fill = fill
         self.drawDiagonalLines = drawDiagonalLines
@@ -113,7 +125,8 @@ class Function3D(Base3DObject):
                 p1,
                 p2,
                 p3,
-                color=color
+                color=color,
+                ableToUseLight=not self.excludeLight
             )
         )
 

@@ -1696,18 +1696,18 @@ class Test:
             window[5]+2,
         ]
 
-        plt = kaxe.PlotEmpty3D(window, size=True, light=[0, 0.5, 1])
+        plt = kaxe.PlotEmpty3D(window, size=True, light=[0, 0, 1])
         plt.style( zNumbers=10 )
         plt.add( mesh )
 
-        axial = kaxe.SingleColormap((255,0,0,200))
-        plt.add( kaxe.Function3D(lambda x,y: (window[5]+window[4])/2, color=axial) ).legend('Axial', color=axial.getColor(0, -1, 1))
+        axial = kaxe.SingleColormap((255,0,0,100))
+        plt.add( kaxe.Function3D(lambda x,y: (window[5]+window[4])/2, color=axial, excludeLight=True) ).legend('Axial', color=axial.getColor(0, -1, 1))
 
-        coronal = kaxe.SingleColormap((0,255,0,200))
-        plt.add( kaxe.Function3D(lambda x,z: (window[3]+window[2])/2, axis="xz", color=coronal) ).legend('Coronal', color=coronal.getColor(0, -1, 1))
+        coronal = kaxe.SingleColormap((0,255,0,100))
+        plt.add( kaxe.Function3D(lambda x,z: (window[3]+window[2])/2, axis="xz", color=coronal, excludeLight=True) ).legend('Coronal', color=coronal.getColor(0, -1, 1))
 
-        sagital = kaxe.SingleColormap((0,0,255,200))
-        plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
+        sagital = kaxe.SingleColormap((0,0,255,100))
+        plt.add( kaxe.Function3D(lambda y,z: (window[0]+window[1])/2, axis="yz", color=sagital, excludeLight=True) ).legend('Sagital', kaxe.Colormaps.blue.getColor(0, -1, 1))
 
         plt.show()
 
@@ -1733,5 +1733,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testLightFunction()
+    Test.testLightning()
     # Test.argument()
