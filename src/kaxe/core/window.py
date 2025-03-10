@@ -312,6 +312,8 @@ class Window(AttrObject):
             self.height+self.padding[1]
         ]
 
+        self.attrmap.setAttr('width', self.width)
+        self.attrmap.setAttr('height', self.height)
     
     def __pre__(self):
         pass

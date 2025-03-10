@@ -1697,6 +1697,7 @@ class Test:
         ]
 
         plt = kaxe.PlotEmpty3D(window, size=True, light=[0, 0, 1])
+        plt.adjust(0.6)
         plt.style( zNumbers=10 )
         plt.add( mesh )
 

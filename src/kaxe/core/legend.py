@@ -15,13 +15,17 @@ class LegendObject:
         self.legendColor = color
 
 
+def getMaxwidth(map):
+    print(map.getAttr('width'))
+    return map.getAttr('width')*0.85
+
 class LegendBox(AttrObject):
 
     name = "LegendBox"
 
     defaults = MappingProxyType({
         "topMargin": 50,
-        "maxWidth": ComputedAttribute(lambda map: map.getAttr('width')*0.85),
+        "maxWidth": ComputedAttribute(getMaxwidth),
         "gaps": ComputedAttribute(lambda map: (map.getAttr('fontSize')/2, map.getAttr('fontSize')/2)),
         "symbolTextSpacing": ComputedAttribute(lambda map: int(map.getAttr('fontSize')/4))
     })
