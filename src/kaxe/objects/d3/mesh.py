@@ -46,7 +46,7 @@ class Mesh(Base3DObject):
     def __init__(self, mesh, color:Colormap=None):
         super().__init__()
 
-        self.mesh = mesh
+        self.mesh:stlmesh.Mesh = mesh
         self.color = color
 
         self.supports = [identities.XYZPLOT]
