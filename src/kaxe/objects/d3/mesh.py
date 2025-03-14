@@ -86,6 +86,30 @@ class Mesh(Base3DObject):
         return Mesh(stlmesh.Mesh.from_file(fpath), color=color)
 
 
+    def fromVectors(vectors, color:Colormap=None):
+        """
+        Creates a mesh objects from vectors
+        
+        Parameters
+        ----------
+        vectors: list
+            Vectors describing the three points in the triangle
+        color: Colormap, optional
+            Colormap to display based on average vertices z-value for each triangle.
+        
+        Returns
+        -------
+        kaxe.Mesh
+        """
+
+        
+        data = np.zeros(len(vectors), dtype=stlmesh.Mesh.dtype)
+        mesh = stlmesh.Mesh(data, remove_empty_areas=False)
+        mesh.vectors = vectors
+        return Mesh(mesh, color=color)
+
+
+
     def finalize(self, parent):
 
         render:Render = parent.render
