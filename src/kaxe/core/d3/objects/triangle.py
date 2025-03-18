@@ -60,8 +60,8 @@ def drawTriangle(zbuffer,
         if dot(normal, view_dir) < 0:
             normal = -normal
         
-
         intensity = dot(normal, lightDirection)
+        intensity = 2.559523810*intensity**3 - 5.232142857*intensity**2 + 3.672619048*intensity
         intensity = clamp(intensity, 0, 1)
 
         color = array([

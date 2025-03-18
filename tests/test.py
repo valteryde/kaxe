@@ -1720,7 +1720,7 @@ class Test:
         plt = kaxe.PlotFrame3D([-10,10,-10,10,-3,3], light=[0,0.5,1])
         # plt = kaxe.PlotFrame3D([-10,10,-10,10,-3,3], light=[0,1,2])
 
-        plt.add(kaxe.Function3D( lambda x,y: math.sin(x) + math.cos(y*x/20) ))
+        plt.add(kaxe.Function3D( lambda x,y: math.sin(x) + math.cos(y*x/20), excludeLight=False ))
 
         plt.show()
         plt.save('tests/images/lightfunction3d.png')
@@ -1737,6 +1737,8 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testLollipop()
+    # Test.testLightning()
+    Test.testLightFunction()
+    # Test.testLollipop()
     # Test.testLightning()
     # Test.argument()
