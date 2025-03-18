@@ -1745,3 +1745,4 @@ if __name__ == '__main__':
     # Test.testLightning()
     # Test.argument()
     # Test.testProjectionFill()
+    Test.testMesh()

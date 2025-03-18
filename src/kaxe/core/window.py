@@ -248,13 +248,14 @@ class Window(AttrObject):
             z = []
             for i in self.objects:
                 if hasattr(i, 'bounds'):
-                    x.append(i.bounds[0])
-                    x.append(i.bounds[1])
-                    y.append(i.bounds[2])
-                    y.append(i.bounds[3])
+                    bounds = i.bounds()
+                    x.append(bounds[0])
+                    x.append(bounds[1])
+                    y.append(bounds[2])
+                    y.append(bounds[3])
                     try:
-                        z.append(i.bounds[4])
-                        z.append(i.bounds[5])
+                        z.append(bounds[4])
+                        z.append(bounds[5])
                     except IndexError as e:
                         pass
                     continue
