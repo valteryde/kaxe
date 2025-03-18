@@ -927,8 +927,6 @@ class Test:
         start = -2*math.pi
         end = 2*math.pi
         
-        plt = kaxe.Plot([start, end, -1.5, 1.5])
-        
         func = lambda x: math.sin(x)
 
         x = []
@@ -939,9 +937,14 @@ class Test:
             x.append(j)
             y.append(func(j))
 
+        plt = kaxe.Plot([start, end, -1.5, 1.5])
         plt.add(kaxe.Function(func))
         plt.add(kaxe.Points2D(x, y, lollipop=True).legend('Sampling'))
+        plt.show()
 
+        plt = kaxe.Plot([start, end, 0.5, 1.5])
+        plt.add(kaxe.Function(func))
+        plt.add(kaxe.Points2D(x, y, lollipop=True).legend('Sampling'))
         plt.show()
 
 
@@ -1734,5 +1737,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testLightning()
+    Test.testLollipop()
+    # Test.testLightning()
     # Test.argument()

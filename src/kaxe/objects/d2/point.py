@@ -99,7 +99,7 @@ class Points2D:
 
             # lollipop (lagt til lines)
             if self.lollipop:
-                _, y0 = parent.pixel(x, 0)
+                _, y0 = parent.pixel(x, min(max(0, parent.windowAxis[2]), parent.windowAxis[3]))
                 line = shapes.Line(x, y, x, y0, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
                 self.lines.append(line)
 
