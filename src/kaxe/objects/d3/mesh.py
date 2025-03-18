@@ -49,6 +49,8 @@ class Mesh(Base3DObject):
         self.mesh:stlmesh.Mesh = mesh
         self.color = color
 
+        self.bounds = self.getBoundingBox()
+
         self.supports = [identities.XYZPLOT]
         self.legendSymbol = symbols.RECTANGLE
         self.legendColor = rc()

@@ -1552,8 +1552,8 @@ class Test:
 
     def testMesh():
         
+        plt = kaxe.PlotFrame3D(size=True, light=[0,0,1])
         mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL')
-        plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True, light=[0,0,1])
         plt.add(mesh)
         plt.show()
 
@@ -1737,8 +1737,11 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    # Test.argument()
+    # Test.testMesh()
     # Test.testLightning()
-    Test.testLightFunction()
+    # Test.testLightFunction()
     # Test.testLollipop()
     # Test.testLightning()
     # Test.argument()
+    # Test.testProjectionFill()

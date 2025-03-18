@@ -238,48 +238,76 @@ class Window(AttrObject):
         if not hasattr(self, 'windowAxis'):
             return
 
-        if len(self.windowAxis) != 4:
-            [self.windowAxis.append(None) for _ in range(4 - len(self.windowAxis))]
+        if len(self.windowAxis) != 6:
+            [self.windowAxis.append(None) for _ in range(6 - len(self.windowAxis))]
 
         # har ingen effekt på 3D
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
-            horizontal = []
-            vertical = []
+            x = []
+            y = []
+            z = []
             for i in self.objects:
+                if hasattr(i, 'bounds'):
+                    x.append(i.bounds[0])
+                    x.append(i.bounds[1])
+                    y.append(i.bounds[2])
+                    y.append(i.bounds[3])
+                    try:
+                        z.append(i.bounds[4])
+                        z.append(i.bounds[5])
+                    except IndexError as e:
+                        pass
+                    continue
+
                 try:
-                    horizontal.append(i.farLeft)
-                    horizontal.append(i.farRight)
-                    vertical.append(i.farTop)
-                    vertical.append(i.farBottom)
+                    x.append(i.farLeft)
+                    x.append(i.farRight)
+                    y.append(i.farTop)
+                    y.append(i.farBottom)
                 except AttributeError:
                     continue
             
             try:
                 if self.windowAxis[0] is None: 
-                    self.windowAxis[0] = min(horizontal)
+                    self.windowAxis[0] = min(x)
             
             except Exception as e:
                 self.windowAxis[0] = -10
             
             try:
                 if self.windowAxis[1] is None: 
-                    self.windowAxis[1] = max(horizontal)
+                    self.windowAxis[1] = max(x)
             except Exception as e:
                 self.windowAxis[1] = 10
             
             try:
                 if self.windowAxis[2] is None: 
-                    self.windowAxis[2] = min(vertical)
+                    self.windowAxis[2] = min(y)
             except Exception as e:
                 self.windowAxis[2] = -10
             
             try:
                 if self.windowAxis[3] is None: 
-                    self.windowAxis[3] = max(vertical)
+                    self.windowAxis[3] = max(y)
             except Exception as e:
                 self.windowAxis[3] = 10
+            
+            # If there is an z values
+            # Should give an error
+            try:
+                if self.windowAxis[4] is None: 
+                    self.windowAxis[4] = min(z)
+            except Exception as e:
+                self.windowAxis[4] = -10
+            
+            try:
+                if self.windowAxis[5] is None: 
+                    self.windowAxis[5] = max(z)
+            except Exception as e:
+                self.windowAxis[5] = 10
         
-        # if optimal is one dimensionel
+        
+        # if found is one dimensionel
         if self.windowAxis[0] == self.windowAxis[1]:
             self.windowAxis[0] -= 1
             self.windowAxis[1] += 1
@@ -288,7 +316,14 @@ class Window(AttrObject):
             self.windowAxis[2] -= 1
             self.windowAxis[3] += 1
         
-
+        try:
+            if self.windowAxis[4] == self.windowAxis[5]:
+                self.windowAxis[4] -= 1
+                self.windowAxis[5] += 1
+        except IndexError:
+            pass
+            
+    
     # before objects added to window
     def __before__(self):
         return self.__prepare__()

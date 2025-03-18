@@ -117,12 +117,8 @@ class Plot3D(Window):
 
         """
 
-        if window is None:
-            window = [-10, 10, -10, 10, -10, 10]
-
         self.identity = XYZPLOT
         self.light = light
-        self.window = self.windowAxis = window.copy()
         self.axis = [None, None, None]
         self.__boxed__ = True
         self.__frame__ = False
@@ -133,17 +129,7 @@ class Plot3D(Window):
         self.secondAxisTitle = None
         self.thirdAxisTitle = None
 
-        if size is None:
-            self.size = np.array([1, 1, 1])
-        elif type(size) in [list, tuple]:
-            self.size = np.array(size) / max(size)
-        else: # accurate sizes
-            self.size = np.array([
-                window[1] - window[0],
-                window[3] - window[2],
-                window[5] - window[4],
-            ])
-            self.size = self.size / max(self.size)
+        self.size = size
 
         # styles
         self.attrmap.default('width', 1500)
@@ -171,7 +157,6 @@ class Plot3D(Window):
         self.attrmap.submit(Marker)
 
         self.h = 1/2
-        self.offset = np.array((-self.h,-self.h,-self.h)) * self.size
         
         if rotation[0] < 0:
             rotation[0] = 360 + rotation[0]%360
@@ -179,6 +164,10 @@ class Plot3D(Window):
             rotation[1] = 360 + rotation[1]%360
 
         self.rotation = [rotation[0]%360, rotation[1]%360]
+
+        self.windowAxis = window
+        if window is None:
+            self.windowAxis = []
 
 
 
@@ -343,6 +332,22 @@ class Plot3D(Window):
 
         # create render
         # add frame
+        self.window = self.windowAxis
+
+        # create sizes
+        if self.size is None:
+            self.size = np.array([1, 1, 1])
+        elif type(self.size) in [list, tuple]:
+            self.size = np.array(self.size) / max(self.size)
+        else: # accurate sizes
+            self.size = np.array([
+                self.window[1] - self.window[0],
+                self.window[3] - self.window[2],
+                self.window[5] - self.window[4],
+            ])
+            self.size = self.size / max(self.size)
+
+        self.offset = np.array((-self.h,-self.h,-self.h)) * self.size
 
         width = height = min(self.getAttr('width'), self.getAttr('height'))
         self.setAttr('width', width)
