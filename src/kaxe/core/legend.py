@@ -5,6 +5,7 @@ from .shapes import shapes
 from .styles import AttrObject, ComputedAttribute
 import math
 from types import MappingProxyType
+from PIL import Image
 
 debug = False
 
@@ -16,7 +17,6 @@ class LegendObject:
 
 
 def getMaxwidth(map):
-    print(map.getAttr('width'))
     return map.getAttr('width')*0.85
 
 class LegendBox(AttrObject):
@@ -46,15 +46,22 @@ class LegendBox(AttrObject):
         self.objects = objects
 
 
-    def finalize(self, parent): # maybe add as a seperate object
+    def finalize(self, parent, sneaky=False): # maybe add as a seperate object
         """
         stadigvæk lidt skrøbelig
+
+        if sneaky is True the method will not do anything to parent
+        The function will also just return an image of the legendbox
+
         """
         self.setAttrMap(parent.attrmap)
         fontSize = self.getAttr('fontSize')
 
         self.legendShapes = []
         objects = []
+
+        __shapes = []
+
         
         for obj in [*self.objects, *self.others]:
             if hasattr(obj, "legendText"): # has legend ready
@@ -159,13 +166,22 @@ class LegendBox(AttrObject):
             # self.batch.push(parent.getSize()[0]/2 - width/2, 0)
 
             # combine
-            self.batch.push(
-                -minPos[0] + parent.getSize()[0]/2 - width/2, 
-                -minPos[1] - height - legendGap
-            )
+            if not sneaky:
+                self.batch.push(
+                    -minPos[0] + parent.getSize()[0]/2 - width/2, 
+                    -minPos[1] - height - legendGap
+                )
 
-            parent.addDrawingFunction(self.boxshape)
-            parent.addDrawingFunction(self.batch)
-            
-            # tilføj plads til legenden
-            parent.addPaddingCondition(bottom=height+legendGap)
+            if not sneaky:
+                parent.addDrawingFunction(self.boxshape)
+                parent.addDrawingFunction(self.batch)
+                
+                # tilføj plads til legenden
+                parent.addPaddingCondition(bottom=height+legendGap)
+
+            else: # Only works with PILLOW
+                surface = Image.new('RGBA', (int(width), int(height)), (0,0,0,0))
+
+                self.boxshape.draw(surface)
+                self.batch.draw(surface)
+                return surface

@@ -1,10 +1,13 @@
 
 from io import BytesIO
-from ..core.window import Window
+from ..core.styles import AttrObject, AttrMap
+from ..core.window import *
+from ..core.legend import LegendBox
 from typing import Union
 from PIL import Image
 
-class Grid(Window):
+
+class Grid(AttrObject):
     """
     Assemble multiple plots in one image.
     
@@ -19,65 +22,59 @@ class Grid(Window):
 
     """
 
+    name = "Grid"
+
     def __init__(self):
+        super().__init__()
 
         self.grid = []
         self.gridGap = [20, 20]
 
         # styles
-        self.width = 2000
-        self.height = 1500
-        self.backgroundColor = (255,255,255,255)
-        self.outerPadding = [10, 10, 10, 10]
+        self.attrmap = AttrMap()
+        self.attrmap.default(attr='width', value=2500)
+        self.attrmap.default(attr='height', value=2000)
+        self.attrmap.default(attr='backgroundColor', value=(255,255,255,255))
+        self.attrmap.default(attr='outerPadding', value=[10,10,10,10])
+        self.attrmap.default(attr='fontSize', value=50)
+        self.attrmap.default(attr='color', value=(0,0,0,255))
+        self.setAttrMap(self.attrmap)
+        self.attrmap.submit(LegendBox)
+
+        self.style = self.attrmap.style # for backwards compatibility
+
+        self.__legends = []
+        self.padding = [0,0,0,0]
 
         self.__bakedImage__ = False
+        self.laterDraws = []
 
 
     def help(self):
-        print('Please see style docstring or style for each plotting window:')
+        print('Please also see the style docstring or style for each plotting window')
         print(self.style.__doc__)
-    
 
-    def style(self, 
-              width:Union[int, float, None]=None, 
-              height:Union[int, float, None]=None,
-              outerPadding:Union[tuple, list]=None,
-              gridGap:Union[list, tuple]=None,
-              backgroundColor:Union[tuple, list]=None,
-        ):
+
+    def legends(self, *legends):
         """
-        Adds style to grid
+        Set the legends for the grid. All information must be provided for a legend.
         
-        Paramters
-        ---------
-        width : int, float, optional
-            The width of each plot in the grid.
-        height : int, float, optional
-            The height of each plot in the grid.
-        outerPadding : tuple, list, optional
-            The outer padding of the grid in the format (left, top, right, bottom).
-        gridGap : list, tuple, optional
-            The gap between grid elements. This is currently not in use
-        backgroundColor : tuple, list, optional
-            The background color of the grid in RGBA format.
-
+        Parameters
+        ----------
+        *legends : list[tuple]
+            Diffrent legends consisting of a label, color and symboltype
+        
+        Examples
+        --------
+        >>> grid.legends(
+            ("A legend", kaxe.Symbol.CROSS, color1),
+            ...
+            ("N legend", kaxe.Symbol.CIRCLE, colorn),
+        )
         """
+        
+        self.__legends = legends
 
-        if width:
-            self.width = width
-
-        if height:
-            self.height = height
-
-        # currently does nothing
-        # if gridGap:
-        #     self.gridGap = gridGap
-
-        if backgroundColor:
-            self.backgroundColor = backgroundColor
-
-        if outerPadding:
-            self.outerPadding = outerPadding
 
 
     def __bake__(self):
@@ -88,6 +85,12 @@ class Grid(Window):
         """
 
         grid = self.grid
+        gridSize = ((max([len(i) for i in grid])), len(grid))
+        self.width, self.height = self.getAttr('width'), self.getAttr('height')
+        self.outerPadding = self.getAttr('outerPadding')
+
+        # styles values
+        cellWidth, cellHeight = self.width//gridSize[0], self.height//gridSize[1]
 
         # calculated values        
         height = 0
@@ -105,8 +108,8 @@ class Grid(Window):
             
             for colNum, plot in enumerate(row):
                 
-                plot.style(width=self.width, height=self.height)
-                plot.style(outerPadding=[10,10,10,10])
+                plot.style(width=cellWidth, height=cellHeight)
+                plot.style(outerPadding=self.outerPadding)
 
                 memfile = BytesIO()
                 plot.showProgressBar = False
@@ -135,14 +138,30 @@ class Grid(Window):
 
             height += maxHeight
         
-        width = gapcol * (len(row) - 1) + len(row) * self.width + leftpadding + rightpadding
+        width = gapcol * (len(row) - 1) + len(row) * cellWidth + leftpadding + rightpadding
         
         size = (
             width + self.outerPadding[0] + self.outerPadding[2],
             height + self.outerPadding[1] + self.outerPadding[3] + toppadding
         )
         
-        image = Image.new('RGBA', size, self.backgroundColor)
+        # Add legend
+        if self.__legends:
+            self.legendbox = LegendBox()
+            for d in self.__legends:
+                self.legendbox.add(*d)
+
+            legendBoxImage = self.legendbox.finalize(self, sneaky=True)
+
+            size = (
+                size[0],
+                size[1] + legendBoxImage.height + self.legendbox.getAttr('topMargin'),
+            )
+
+        image = Image.new('RGBA', size, self.getAttr('backgroundColor'))
+
+        if self.__legends:
+            image.alpha_composite(legendBoxImage, (image.width//2 - legendBoxImage.width//2, image.height - legendBoxImage.height - self.outerPadding[3]))
 
         # TEGNER!
         # add plots to grid image
@@ -164,7 +183,7 @@ class Grid(Window):
                 img = Image.open(plot.__ioBytes)
                 image.paste(img, (x - plot.padding[0], y - plot.padding[3]))
             
-                x += self.width + gapcol
+                x += cellWidth + gapcol
                 maxHeight = max(maxHeight, h)
 
             y += maxHeight
@@ -215,6 +234,38 @@ class Grid(Window):
         img.save(fpath)
 
 
+    def show(self):
+        """
+        Show the current image using `Pillow.Image.Show`
+        
+        If a cached image is available, it will be used to save the file.
+        Otherwise, the image will be generated and then saved.
+
+        Examples
+        --------
+        >>> plt.show( )
+        """
+
+        fname = 'plot{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
+
+        if terminaltype != "terminal":
+            self.save(fname)
+            i = display.Image(filename=fname, width=800, unconfined=True)
+            display.display(i)
+            os.remove(fname)
+
+        else:
+            
+            self.save(fname)
+            pilImage = Image.open(fname)
+            pilImage.show()
+            os.remove(fname)
+
+        return fname
+
+
+    def getSize(self):
+        return self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
     
     # def show(self):
     #     if self.__bakedImage__:

@@ -22,7 +22,7 @@ class HiddenPrints:
         sys.stdout.close()
         sys.stdout = self._original_stdout
 
-def randomObject():
+def randomObject(legend=True):
     
     pointLength = randint(50, 1000)
 
@@ -37,7 +37,8 @@ def randomObject():
 
     point = kaxe.Points2D(x, y)
     
-    point.legend(str(a))
+    if legend:
+        point.legend(str(a))
     
     return point
     
@@ -1126,7 +1127,7 @@ class Test:
         
         grid = kaxe.Grid()
         
-        grid.style(width=500, height=500)
+        grid.style(width=2000, height=2000)
 
         for i in range(5):
             
@@ -1145,6 +1146,37 @@ class Test:
 
         grid.show()
         grid.save('tests/images/gridlayoutlarge.png')
+
+
+    def testGridLegend():
+        
+        grid = kaxe.Grid()
+        
+        grid.style(width=2000, height=2000)
+
+        for i in range(5):
+            
+            row = []
+
+            for j in range(4):
+                
+                # magnitude
+                plt = kaxe.Plot()
+                # plt.style(backgroundColor=(255,200,255,255))
+                for i in range(randint(0, 4)):
+                    plt.add(randomObject(legend=False))
+                row.append(plt)
+
+            grid.addRow(*row)
+
+        grid.legends(
+            ('A', kaxe.Symbol.CROSS, (255,0,0,255)),
+            ('B', kaxe.Symbol.CIRCLE, (0,255,0,255)),
+            ('C', kaxe.Symbol.TRIANGLE, (0,0,255,255)),
+        )
+        grid.show()
+        grid.save('tests/images/gridlayoutlargelegend.png')
+
 
 
     def testBubbles():
@@ -1328,7 +1360,7 @@ class Test:
         plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
 
         grid = kaxe.Grid()
-        grid.style(width=2000, height=2000)
+        grid.style(width=4000, height=2000)
 
         grid.addRow(plt2d, plt3d)
 
@@ -1738,6 +1770,8 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
+    # Test.testGridLayout()
+    # Test.argument()
     # Test.testMesh()
     # Test.testLightning()
     # Test.testLightFunction()
@@ -1745,4 +1779,4 @@ if __name__ == '__main__':
     # Test.testLightning()
     # Test.argument()
     # Test.testProjectionFill()
-    Test.testMesh()
+    # Test.testGridLegend()
