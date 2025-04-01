@@ -33,7 +33,7 @@ class ColorScale:
         """
         lower and upper can both be a number or a tuple of length 2 with value and title as values
         """
-        self.digits = 2
+        self.digits = 200
 
         if type(lower) in [list, tuple]:
             self.lower = lower[0]
@@ -172,9 +172,22 @@ class HeatMap:
 
             for cellNum, cell in enumerate(row):
                 
+                p = parent.pixel(cellNum, rowNum)
+                if not parent.inside(*p): continue
+
+                w, h = width, height
+                p1 = parent.inversepixel(p[0]+w, p[1]+h)
+                p1 = parent.pixel(*p1)
+                if not parent.inside(*p1):
+                    p1 = parent.clamp(*p1)
+                    w = p1[0] - p[0]
+                    h = p1[1] - p[1]
+
+                    if w == 0 or h == 0:
+                        continue
+
                 shapes.Rectangle(
-                    *parent.pixel(cellNum, rowNum), 
-                    width, height,
+                    *p, w, h,
                     color=self.cmap.getColor(cell, self.minValue, self.maxValue), 
                     batch=self.batch
                 )

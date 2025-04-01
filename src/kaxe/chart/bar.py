@@ -34,10 +34,11 @@ class Bar(Window):
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
     # akserne i nederste hjørne
 
-    def __init__(self, rotate:bool=False): # |
+    def __init__(self, rotate:bool=False, maxHeight:bool=None): # |
         super().__init__()
         self.identity = 'barchart'
         self.rotate = rotate
+        self.maxHeight = maxHeight
 
         self.attrmap.default('titleFontSize', 100)
         self.attrmap.default('width', 3000)
@@ -70,6 +71,7 @@ class Bar(Window):
 
    
     def __getMaxNumber__(self):
+        if self.maxHeight: return self.maxHeight
         return self.maxNumber
 
 
@@ -291,12 +293,13 @@ class GroupBar(Bar):
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
     # akserne i nederste hjørne
 
-    def __init__(self, rotate=False):
-        super().__init__(rotate)
+    def __init__(self, rotate=False, maxHeight=0):
+        super().__init__(rotate, maxHeight)
         self.identity = 'groupbarchart'
 
 
     def __getMaxNumber__(self):
+        if self.maxHeight: return self.maxHeight
         return max([max([j for j in i if j is not None]) for _, i in self.bars])
 
     def __renderBars__(self):

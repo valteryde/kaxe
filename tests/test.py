@@ -108,25 +108,6 @@ class Test:
         plot.save('tests/images/labels.png')
 
 
-    def testCustomAxis():
-        return
-        
-        plot = kaxe.AxisPlot()
-        plot.title('hej', 'en lang titel der strækker sig langt')
-
-        # p = kaxe.objects.Points(range(0,100), [0.25*i**2 for i in range(0,100)])
-        p = kaxe.objects.Points(range(0,100), range(0,200,2))
-        plot.add(p)
-
-        first = kaxe.VectorAxis((2,1))
-        second = kaxe.VectorAxis((1,0))
-
-        plot.setAxis(first, second)
-
-        plot.save('tests/images/customaxis.png')
-    
-
-
     def testFunction():
         plot = kaxe.Plot()
         
@@ -1582,12 +1563,14 @@ class Test:
             plt.save('tests/images/adjust/{}proc.png'.format(int(i*100)))
 
 
-    def testMesh():
-        
+    def testSingleMesh():
         plt = kaxe.PlotFrame3D(size=True, light=[0,0,1])
         mesh = kaxe.Mesh.open('tests/Eiffel_tower_sample.STL')
         plt.add(mesh)
         plt.show()
+
+
+    def testMesh():
 
         mesh = kaxe.Mesh.open('tests/terrain.stl')
         xs = [i[0] for i in mesh.mesh]
@@ -1598,7 +1581,7 @@ class Test:
         
         plt.add(mesh)
         plt.show()
-
+        
         mesh = kaxe.Mesh.open('tests/terrain.stl')
         xs = [i[0] for i in mesh.mesh]
         ys = [i[1] for i in mesh.mesh]
@@ -1770,13 +1753,4 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
-    # Test.testGridLayout()
-    # Test.argument()
-    # Test.testMesh()
-    # Test.testLightning()
-    # Test.testLightFunction()
-    # Test.testLollipop()
-    # Test.testLightning()
-    # Test.argument()
-    # Test.testProjectionFill()
-    # Test.testGridLegend()
+    Test.testSingleMesh()
