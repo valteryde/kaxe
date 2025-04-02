@@ -9,34 +9,35 @@ from ..core.symbol import symbol
 
 
 class QQPlot(BoxedPlot):
+    """
+    Initialize a QQPlot instance.
+    
+    Parameters
+    ----------
+    data : list
+        The data points to be plotted on the QQ plot.
+    quantiles : list, optional
+        The theoretical quantiles to compare against. If not provided, 
+        standard normal quantiles are calculated based on the length of `data`.
+    color : list, optional
+        A list containing two color values for the plot. Defaults to [None, None].
+        If None, a random color is generated.
+    size : int, optional
+        The size of the points in the plot. Default is 50.
+        
+    Attributes
+    ----------
+    points : Points2D
+        The 2D points object representing the data and quantiles.
+    line : Function2D
+        The 2D function represeting an line
+            
+    Notes
+    -----
+    A linear fit is applied to the data and quantiles, and the resulting line is added to the plot.
+    """
 
     def __init__(self, data, quantiles:list=None, color:list=[None, None], size=50):
-        """
-        Initialize a QQPlot instance.
-        Parameters
-        ----------
-        data : list
-            The data points to be plotted on the QQ plot.
-        quantiles : list, optional
-            The theoretical quantiles to compare against. If not provided, 
-            standard normal quantiles are calculated based on the length of `data`.
-        color : list, optional
-            A list containing two color values for the plot. Defaults to [None, None].
-            If None, a random color is generated.
-        size : int, optional
-            The size of the points in the plot. Default is 50.
-        
-        Attributes
-        ----------
-        points : Points2D
-            The 2D points object representing the data and quantiles.
-        line : Function2D
-            The 2D function represeting an line
-            
-        Notes
-        -----
-        A linear fit is applied to the data and quantiles, and the resulting line is added to the plot.
-        """
         
         self.size = size
 
