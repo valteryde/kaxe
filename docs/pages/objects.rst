@@ -86,16 +86,6 @@ Smart objects adapts to which input is given at creates the corrosponding object
         :width: 400 px
 
 
-
-.. .. autoclass:: kaxe.RootLocus
-..     :members:
-
-..     .. image:: /_static/rootlocus.png
-..         :width: 400 px
-
-..     .. warning:: This feature is experimential and is therby still in devolplement
-
-
 .. autoclass:: kaxe.Bubble
     :members:
 

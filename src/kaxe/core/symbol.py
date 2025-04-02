@@ -8,6 +8,8 @@ from .fileloader import loadFile
 triangle = Image.open(loadFile('symboltriangle.png'))
 lollipop = Image.open(loadFile('symbollollipop.png'))
 cross = Image.open(loadFile('symbolcross.png'))
+donut = Image.open(loadFile('symboldonut.png'))
+
 
 class CustomSymbol(ImageShape):
     def __init__(self, symbimg:Image, width:int, height:int, color:tuple=BLACK, batch:Batch=None):
@@ -36,6 +38,7 @@ class symbol:
     LOLLIPOP = 'LOLLIPOP'
     THICKLINE = 'THICKLINE'
     CROSS = "CROSS"
+    DONUT = "DONUT"
 
 
 def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
@@ -53,3 +56,5 @@ def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
         return CustomSymbol(lollipop, height, height, color=color, batch=batch)
     if symb == symbol.CROSS:
         return CustomSymbol(cross, height, height, color=color, batch=batch)
+    if symb == symbol.DONUT:
+        return CustomSymbol(donut, height, height, color=color, batch=batch)

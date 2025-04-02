@@ -6,6 +6,7 @@ from ...core.symbol import makeSymbolShapes
 from ...core.symbol import symbol as symbols
 from ...core.helper import *
 from ...plot import identities
+import numpy as np
 
 class Pillars:
     """
@@ -63,8 +64,8 @@ class Pillars:
 
         self.legendColor = self.color[0]
         
-        self.farLeft = min(self.x) - 1
-        self.farRight = max(self.x) + 1
+        self.farLeft = min(self.x)
+        self.farRight = max(self.x)
         
         self.farTop = 0
         for height in self.heights:
@@ -104,9 +105,8 @@ class Pillars:
 
     def finalizeXYPLOT(self, parent):
         
-        x0, _ = parent.pixel(0, 0)
-        x1, _ = parent.pixel(len(self.x) / (self.farRight - self.farLeft), 0)
-        width = (x1 - x0) * 0.75
+        scl, _ = parent.scaled(1, 1)
+        altwidth = scl * (self.farRight - self.farLeft) / len(self.x)
 
         for i in range(len(self.x)):
 
@@ -127,7 +127,8 @@ class Pillars:
                 if self.width:
                     self.rects.append(shapes.Rectangle(x - self.width/2, y0, self.width, height, batch=self.batch, color=self.color[j]))
                 else:
-                    self.rects.append(shapes.Rectangle(x - width/2, y0, width, height, batch=self.batch, color=self.color[j]))
+                    self.rects.append(shapes.Rectangle(x - altwidth/2, y0, altwidth, height, batch=self.batch, color=self.color[j]))
+
 
     
     def draw(self, *args, **kwargs):
@@ -164,3 +165,34 @@ class Pillars:
             self.legendColor = color
         return self
 
+
+
+class Histogram:
+
+    def __new__(self, data:list, bins:int=5, color:list=None, width:int=None):
+        """
+        Create a new instance of the Pillars object with histogram data.
+        
+        Parameters
+        ----------
+        data : list
+            A list of numerical data to generate the histogram from.
+        bins : int, optional
+            The number of bins to use for the histogram (default is 5).
+        color : list, optional
+            A list specifying the color for each pillar (default is None).
+        
+        Returns
+        -------
+        Pillars
+            A new instance of the Pillars object containing the histogram data.
+        
+        Notes
+        -----
+        The method calculates the histogram of the input data using `numpy.histogram`.
+        The bin centers are computed as the average of the bin edges.
+        """
+        
+        hist, bin = np.histogram(data, bins=bins, density=True)
+        bin = [(bin[i]+bin[i+1])/2 for i in range(len(bin)-1)]
+        return Pillars(bin, list(hist), colors=color, width=width)

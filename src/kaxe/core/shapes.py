@@ -465,6 +465,14 @@ class LineSegment(Shape):
             self.__drawDashedLines__(draw, newpos)
         else:
             draw.line(newpos, fill=self.color, width=self.thickness, joint="curve")
+            try:
+                draw.circle((newpos[-2], newpos[-1]), self.thickness//2, fill=self.color)
+            except IndexError:
+                pass
+            try:
+                draw.circle((newpos[0], newpos[1]), self.thickness//2, fill=self.color)
+            except IndexError:
+                pass
 
 
 

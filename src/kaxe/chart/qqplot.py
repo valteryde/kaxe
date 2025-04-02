@@ -1,0 +1,103 @@
+
+from ..plot.box import BoxedPlot
+import numpy as np
+import statistics
+from ..objects.point import Points2D
+from ..objects.function import Function2D
+from ..core.styles import getRandomColor
+from ..core.symbol import symbol
+
+
+class QQPlot(BoxedPlot):
+
+    def __init__(self, data, quantiles:list=None, color:list=[None, None], size=50):
+        """
+        Initialize a QQPlot instance.
+        Parameters
+        ----------
+        data : list
+            The data points to be plotted on the QQ plot.
+        quantiles : list, optional
+            The theoretical quantiles to compare against. If not provided, 
+            standard normal quantiles are calculated based on the length of `data`.
+        color : list, optional
+            A list containing two color values for the plot. Defaults to [None, None].
+            If None, a random color is generated.
+        size : int, optional
+            The size of the points in the plot. Default is 50.
+        Attributes
+        ----------
+        points : Points2D
+            The 2D points object representing the data and quantiles.
+        
+        Notes
+        -----
+        A linear fit is applied to the data and quantiles, and the resulting line is added to the plot.
+        """
+        
+        self.size = size
+
+        self.color = color
+        if color[0] is None:
+            self.color[0] = getRandomColor()
+        if color[1] is None:
+            self.color[1] = getRandomColor()
+
+        data = sorted(data)
+
+        self.quantiles = quantiles
+        if not quantiles:
+            self.quantiles = statistics.NormalDist(0, 1).quantiles(len(data)+1)
+
+        self.data = data
+
+        super().__init__()
+
+        points = self.points = self.add(Points2D(
+            self.quantiles, 
+            self.data, 
+            color=self.color[0],
+            size=self.size,
+            symbol=symbol.DONUT
+        ))
+
+        yspread = max(-points.farBottom, points.farTop)
+        xspread = max(-points.farLeft, points.farRight)
+        self.windowAxis = [-xspread*1.05, xspread*1.05, -yspread*1.05, yspread*1.05]
+
+        b,a, _ = np.polyfit(self.quantiles, self.data, deg=2)
+
+        def f(x):
+            if not (-xspread < x < xspread):
+                return
+
+            return a*x+b
+
+        self.add(Function2D(f, width=self.size//2, color=self.color[1]))
+
+
+    def __prepare__(self):
+        # finish making plot
+        # fit "plot" into window
+
+        numberOnAxisGoal = self.getAttr('xNumbers')
+        if not numberOnAxisGoal:
+            self.attrmap.style(xNumbers = self.getAttr('fontSize')//10)
+
+
+        xLength = self.windowAxis[1] - self.windowAxis[0]
+        yLength = self.windowAxis[3] - self.windowAxis[2]
+        self.scale = [self.width/xLength,self.height/yLength]
+
+        self.__setAxisPos__()
+
+        self.firstAxis.autoAddMarkers(self)
+        self.secondAxis.autoAddMarkers(self)
+
+        self.firstAxis.checkCrossOvers(self,self.secondAxis)
+        self.secondAxis.checkCrossOvers(self, self.firstAxis)
+
+        if self.firstTitle: self.firstAxis.addTitle(self.firstTitle, self)
+        if self.secondTitle: self.secondAxis.addTitle(self.secondTitle, self)
+
+

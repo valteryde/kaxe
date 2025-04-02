@@ -1,5 +1,7 @@
 
 import sys
+
+import scipy.stats
 sys.path.append('./src')
 
 # test
@@ -10,6 +12,9 @@ import numpy as np
 import random, string
 import scipy.interpolate
 import time
+import pylab
+import scipy.stats as stats
+import statistics
 
 import os, sys
 
@@ -1761,6 +1766,33 @@ class Test:
         plt.save('tests/images/lightfunction3d.png')
 
 
+
+    def testQQPlot():
+
+        measurements = np.random.normal(loc = 0, scale=50, size=200)
+        
+        plt = kaxe.QQPlot(measurements)
+        plt.show()
+
+        plt = kaxe.QQPlot(measurements/np.max(measurements))
+        plt.show()
+
+        # stats.probplot(measurements, dist="norm", plot=pylab)
+        # pylab.show()
+
+
+    def testHistogram():
+        
+        data = np.random.normal(100, 1, 50000)
+        
+        model = statistics.NormalDist(np.mean(data), np.std(data))
+
+        plt = kaxe.Plot()
+        plt.add(kaxe.Histogram(data, bins=50))
+        plt.add(kaxe.Function2D(model.pdf))
+        plt.show()
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1774,4 +1806,6 @@ if __name__ == '__main__':
 
     # Test.argument()
     # Test.testSingleMesh()
-    Test.testColorMap()
+    # Test.testColorMap()
+    # Test.testQQPlot()
+    Test.testHistogram()
