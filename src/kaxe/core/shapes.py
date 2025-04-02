@@ -105,7 +105,7 @@ class Shape:
 # Man kan også bare tegne direkte på istedet for at paste?
 class Rectangle(Shape):
     
-    def __init__(self, x, y, width, height, color:tuple=BLACK, batch:Batch=None, *args, **kwargs):
+    def __init__(self, x, y, width, height, color:tuple=BLACK, batch:Batch=None, outlineWidth=0, outlineColor:tuple=BLACK, *args, **kwargs):
         self.x = int(x)
         self.y = int(y)
         self.width = int(width)
@@ -115,7 +115,10 @@ class Rectangle(Shape):
         super().__init__()
         if batch: batch.add(self)
 
-    
+        self.outlineWidth = outlineWidth
+        self.outlineColor = outlineColor
+
+
     def centerAlign(self):
         self.x -= self.width/2
         self.y -= self.height/2
@@ -123,7 +126,13 @@ class Rectangle(Shape):
 
     def drawPillow(self, surface:Image):
         [y] = flipHorizontal(surface, self.y)
-        img = newImage(self.width, self.height, self.color)
+        if self.outlineWidth:
+            img = newImage(self.width, self.height, self.outlineColor)
+            if 2*self.outlineWidth < self.width and 2*self.outlineWidth < self.height:
+                innerimg = newImage(self.width-self.outlineWidth*2, self.height-self.outlineWidth*2, self.color)
+                blitImageToSurface(img, innerimg, (self.outlineWidth, self.outlineWidth))
+        else:
+            img = newImage(self.width, self.height, self.color)
         blitImageToSurface(surface, img, (self.x, y - self.height))
 
     

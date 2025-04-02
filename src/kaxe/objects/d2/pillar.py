@@ -27,7 +27,10 @@ class Pillars:
         The RGB color of the pillar. If None, a random color is assigned. Default is None.
     width : int, optional
         The width of the pillar. Default is None.
-    
+    outlineWidth :
+
+    outlineColor
+        
     See also
     --------
     Bar
@@ -35,8 +38,11 @@ class Pillars:
 
     """
 
-    def __init__(self, x, heights, colors:Union[tuple, list[tuple]]=None, width:int=None) -> None:
+    def __init__(self, x, heights, colors:Union[tuple, list[tuple]]=None, width:int=None, outlineWidth=5, outlineColor:tuple=(0,0,0,255)) -> None:
     
+        self.outlineWidth = outlineWidth
+        self.outlineColor = outlineColor
+
         self.x = x
         
         for i in range(len(heights)):
@@ -105,8 +111,8 @@ class Pillars:
 
     def finalizeXYPLOT(self, parent):
         
-        scl, _ = parent.scaled(1, 1)
-        altwidth = scl * (self.farRight - self.farLeft) / len(self.x)
+        altwidth, _ = parent.scaled(self.x[1] - self.x[0], 0)
+        altwidth += 1
 
         for i in range(len(self.x)):
 
@@ -124,10 +130,12 @@ class Pillars:
                 if not parent.inside(x, y1):
                     continue
 
+                options = {'height':height, 'batch':self.batch, 'color':self.color[j], 'outlineWidth':self.outlineWidth, 'outlineColor':self.outlineColor}
+
                 if self.width:
-                    self.rects.append(shapes.Rectangle(x - self.width/2, y0, self.width, height, batch=self.batch, color=self.color[j]))
+                    self.rects.append(shapes.Rectangle(x - self.width/2, y0, self.width, **options))
                 else:
-                    self.rects.append(shapes.Rectangle(x - altwidth/2, y0, altwidth, height, batch=self.batch, color=self.color[j]))
+                    self.rects.append(shapes.Rectangle(x - altwidth/2, y0, altwidth, **options))
 
 
     

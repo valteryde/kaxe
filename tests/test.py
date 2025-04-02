@@ -1787,8 +1787,8 @@ class Test:
         
         model = statistics.NormalDist(np.mean(data), np.std(data))
 
-        plt = kaxe.Plot()
-        plt.add(kaxe.Histogram(data, bins=50))
+        plt = kaxe.Plot([None, None, 0, 0.4])
+        plt.add(kaxe.Histogram(data, bins=20))
         plt.add(kaxe.Function2D(model.pdf))
         plt.show()
 
@@ -1807,5 +1807,8 @@ if __name__ == '__main__':
     # Test.argument()
     # Test.testSingleMesh()
     # Test.testColorMap()
-    Test.testQQPlot()
-    # Test.testHistogram()
+    # Test.testQQPlot()
+    Test.testHistogram()
+
+
+    # INGEN HULLER IMELLEM HISTOGRAM
