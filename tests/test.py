@@ -1804,11 +1804,10 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.argument()
+    Test.argument()
     # Test.testSingleMesh()
     # Test.testColorMap()
     # Test.testQQPlot()
-    Test.testHistogram()
+    # Test.testHistogram()
 
 
-    # INGEN HULLER IMELLEM HISTOGRAM

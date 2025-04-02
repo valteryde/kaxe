@@ -38,7 +38,7 @@ Charts
     :show-inheritance:
     :members:
 
-    .. image:: /_static/box.png
+    .. image:: /_static/qqplot.png
         :width: 600 px
 
 
