@@ -35,6 +35,7 @@ class Pillars:
     --------
     Bar
     GroupBar
+    Histogram
 
     """
 
@@ -70,8 +71,10 @@ class Pillars:
 
         self.legendColor = self.color[0]
         
-        self.farLeft = min(self.x)
-        self.farRight = max(self.x)
+        xcopy = list(self.x).copy()
+        xcopy.sort()
+        self.farLeft = xcopy[0] - (xcopy[1] - xcopy[0])/2
+        self.farRight = xcopy[-1] + (xcopy[-1] - xcopy[-2])/2
         
         self.farTop = 0
         for height in self.heights:
