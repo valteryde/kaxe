@@ -128,6 +128,9 @@ def createAllDocImages():
     chart.add("c", [4])
     chart.save(j('groupbar'))
 
+    chart = kaxe.QQPlot(np.random.normal(100, 50, 500))
+    chart.save(j('qqplot'))
+
     create2DWithObject(kaxe.Points2D([0,1,2,3,4], [0,1,2,3,4], size=20), 'points2d')
     create2DWithObject(kaxe.Function2D(lambda x: x/2-0.5), 'function2d')
     create2DWithObject(kaxe.Arrow((0,1), (3,-5)), 'arrow')
@@ -135,8 +138,8 @@ def createAllDocImages():
     create2DWithObject(kaxe.ColorScale(0, 5), 'colorscale')
     create2DWithObject(kaxe.HeatMap([[j*math.sin(i/20) for j in range(10)] for i in range(10)]), 'heatmap')
     create2DWithObject(kaxe.ParametricEquation(lambda t: (t**2-9, math.sin(t)), [0, 10]), 'parametricequation')
-    create2DWithObject(kaxe.Pillars([0, 1, 2], [1, 2, 1]), 'pillars')
-    create2DWithObject(kaxe.RootLocus([1, 0, 0, 0, 0, -1], [0, 0, 0, 1, 0, 1]), 'rootlocus', [-1, 1, -2, 2])
+    create2DWithObject(kaxe.Pillars([0, 1, 2], [1, 2, 1]), 'pillars', [-1, 3])
+    create2DWithObject(kaxe.Histogram(np.random.normal(100, 1, 5000), 20), 'histogram')
     create2DWithObject(kaxe.Bubble("Text inside bubble", (3,2), (-1, 0)), 'bubble')
     create2DWithObject(kaxe.Contour(lambda x, y: 4 * math.sin(x) + 4 * math.cos(y) + x**2 - y), 'contour')
     create2DWithObject(kaxe.Fill(lambda x: math.sin(x), lambda x: 2*math.sin(x*3/4)), 'fill', [-10, 10, -3, 3])

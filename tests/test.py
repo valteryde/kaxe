@@ -1807,5 +1807,5 @@ if __name__ == '__main__':
     # Test.argument()
     # Test.testSingleMesh()
     # Test.testColorMap()
-    # Test.testQQPlot()
-    Test.testHistogram()
+    Test.testQQPlot()
+    # Test.testHistogram()

@@ -32,3 +32,13 @@ Charts
 
     .. image:: /_static/box.png
         :width: 600 px
+
+
+.. autoclass:: kaxe.QQPlot
+    :show-inheritance:
+    :members:
+
+    .. image:: /_static/box.png
+        :width: 600 px
+
+

@@ -49,7 +49,7 @@ class QQPlot(BoxedPlot):
         if not quantiles:
             self.quantiles = statistics.NormalDist(0, 1).quantiles(len(data)+1)
 
-        self.data = data
+        self.data = data.copy()
 
         super().__init__()
 
@@ -61,14 +61,22 @@ class QQPlot(BoxedPlot):
             symbol=symbol.DONUT
         ))
 
-        yspread = max(-points.farBottom, points.farTop)
-        xspread = max(-points.farLeft, points.farRight)
-        self.windowAxis = [-xspread*1.05, xspread*1.05, -yspread*1.05, yspread*1.05]
+        oldx = points.farLeft, points.farRight
 
-        b,a, _ = np.polyfit(self.quantiles, self.data, deg=2)
+        spreadval = -.1
+
+        diff = (points.farTop - points.farBottom)
+        points.farBottom = points.farBottom + diff*spreadval
+        points.farTop = points.farTop - diff*spreadval
+        
+        diff = (points.farRight - points.farLeft)
+        points.farLeft = points.farLeft + diff*spreadval
+        points.farRight = points.farRight - diff*spreadval
+
+        a, b = np.polyfit(self.quantiles, self.data, deg=1)
 
         def f(x):
-            if not (-xspread < x < xspread):
+            if not (oldx[0] < x < oldx[1]):
                 return
 
             return a*x+b
