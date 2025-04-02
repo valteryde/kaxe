@@ -25,11 +25,14 @@ class QQPlot(BoxedPlot):
             If None, a random color is generated.
         size : int, optional
             The size of the points in the plot. Default is 50.
+        
         Attributes
         ----------
         points : Points2D
             The 2D points object representing the data and quantiles.
-        
+        line : Function2D
+            The 2D function represeting an line
+            
         Notes
         -----
         A linear fit is applied to the data and quantiles, and the resulting line is added to the plot.
@@ -81,7 +84,7 @@ class QQPlot(BoxedPlot):
 
             return a*x+b
 
-        self.add(Function2D(f, width=self.size//2, color=self.color[1]))
+        self.line = self.add(Function2D(f, width=self.size//2, color=self.color[1]))
 
 
     def __prepare__(self):
