@@ -213,8 +213,6 @@ class Test:
 
         plot = kaxe.Plot()
 
-        size = (1000, 1000)
-        size = (10, 10)
         size = (500, 100)
 
         sigma = size[0]/2
@@ -230,6 +228,28 @@ class Test:
         plot.add(cmap1)
 
         plot.save('tests/images/colormap.png')
+        # plot.show()
+
+        # number two
+        plot = kaxe.Plot()
+        plot.title('[mm]', '[mm]')
+
+        # 1meter/1000pixel
+        size = (100, 100)
+
+        f = lambda x,y: math.sin(x*10)*math.cos(y*5)/100
+
+        unitPerPixel = [0.01, 0.01]
+
+        data = [[f(x*unitPerPixel[0],y*unitPerPixel[1]) for x in range(size[0])] for y in range(size[1])]
+
+        cmap1 = kaxe.objects.HeatMap(data, unitPerPixel=unitPerPixel, cmap=kaxe.Colormaps.rainbow)
+        cmap1.addColorScale(plot, digits=4)
+        plot.add(cmap1)
+
+        plot.add(kaxe.Contour(f, cmap1.minValue, cmap1.maxValue, colorMap=kaxe.SingleColormap((0,0,0,255))))
+
+        plot.save('tests/images/colormap-2.png')
         plot.show()
 
     
@@ -1753,4 +1773,5 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
-    Test.testSingleMesh()
+    # Test.testSingleMesh()
+    Test.testColorMap()

@@ -146,19 +146,20 @@ class HeatMap:
         A colormap instance to map data values to colors (default is Colormaps.standard).
     """
 
-    def __init__(self, data, cmap=Colormaps.standard):
+    def __init__(self, data, cmap=Colormaps.standard, unitPerPixel:list[float]=[1,1]):
         self.batch = shapes.Batch()
         self.cmap = cmap
         
         self.data = data
+        self.unitPerPixel = unitPerPixel
 
         # max, min
         self.minValue = min([min(row) for row in self.data])
         self.maxValue = max([max(row) for row in self.data])
 
-        self.farLeft = len(data[0])
+        self.farLeft = len(data[0]) * self.unitPerPixel[0]
         self.farRight = 0
-        self.farTop = len(data)
+        self.farTop = len(data) * self.unitPerPixel[1]
         self.farBottom = 0
         
         self.supports = [identities.XYPLOT]
@@ -166,13 +167,15 @@ class HeatMap:
     
     def finalize(self, parent):
 
-        width, height = parent.scaled(1, 1)
+        # get size of one box
+        width, height = parent.scaled(*self.unitPerPixel)
         width, height = math.ceil(width), math.ceil(height)
+
         for rowNum, row in enumerate(self.data):
 
             for cellNum, cell in enumerate(row):
                 
-                p = parent.pixel(cellNum, rowNum)
+                p = parent.pixel(cellNum*self.unitPerPixel[0], rowNum*self.unitPerPixel[1])
                 if not parent.inside(*p): continue
 
                 w, h = width, height
@@ -185,20 +188,37 @@ class HeatMap:
 
                     if w == 0 or h == 0:
                         continue
-
+            
                 shapes.Rectangle(
-                    *p, w, h,
+                    *p, math.ceil(w), math.ceil(h),
                     color=self.cmap.getColor(cell, self.minValue, self.maxValue), 
                     batch=self.batch
                 )
         
     
-    def addColorScale(self, parent):
+    def addColorScale(self, parent, digits=64):
         """
-        Add a color scale to the parent
-        """
+        Adds a color scale to the specified parent object.
 
-        parent.add(ColorScale(self.minValue, self.maxValue, cmap=self.cmap))
+        This method creates a `ColorScale` object using the instance's minimum 
+        and maximum values (`self.minValue` and `self.maxValue`) and colormap 
+        (`self.cmap`), then adds it to the provided parent object.
+
+        Parameters
+        ----------
+        parent : object
+            The object to which the color scale will be added. It must 
+            have an `add` method that accepts a `ColorScale` object.
+        digits : int
+            Number of digits to display
+
+        Returns
+        -------
+        HeatMap
+            The instance of the class, allowing for method chaining.
+        """
+        
+        parent.add(ColorScale(round(self.minValue, digits), round(self.maxValue, digits), cmap=self.cmap))
         
         return self
 

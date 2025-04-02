@@ -529,9 +529,12 @@ class Axis(AttrObject):
 
             for y in range(y_left+1, y_right):
 
-                if A[len(A) - y + ay][x - ax][3] > alphacutoff and B[len(B) - y + by][x - bx][3] > alphacutoff:
+                try:
+                    if A[len(A) - y + ay][x - ax][3] > alphacutoff and B[len(B) - y + by][x - bx][3] > alphacutoff:
+                        return True
+                except IndexError:
                     return True
-                
+
                 # A[len(A) - y + ay][x - ax] = (255,0,0,255)
                 # B[len(B) - y + by][x - bx] = (0,0,255,255)
 
