@@ -838,12 +838,6 @@ class Test:
         cmap = kaxe.Colormaps.cream
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-frame.png')
-
-        plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,0,1])
-        plt.style(width=1000, height=1000)
-        cmap = kaxe.Colormaps.brown
-        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap, fill=False))
-        plt.save('tests/images/3d-center.png')
         
         plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1])
         plt.style(width=1000, height=1000, backgroundColor=(0,0,0,0))
@@ -1792,6 +1786,16 @@ class Test:
         plt.add(kaxe.Function2D(model.pdf))
         plt.show()
 
+    def test3DCoordinateSystem():
+        
+        plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,-0.4,0.6], size=[1, 1.25, 0.75])
+        plt.style(width=1000, height=1000)
+        cmap = kaxe.Colormaps.rainbow
+        cmap.setAlpha(150)
+        plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.1, color=cmap))
+        plt.save('tests/images/3d-center.png')
+        plt.show()
+
 
 if __name__ == '__main__':
     import os
@@ -1804,10 +1808,11 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.argument()
+    # Test.argument()
     # Test.testSingleMesh()
     # Test.testColorMap()
     # Test.testQQPlot()
     # Test.testHistogram()
+    Test.test3DCoordinateSystem()
 
 

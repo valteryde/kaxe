@@ -68,6 +68,26 @@ class Colormap:
         x -= x0
         return tuple(round(i) for i in (1 - x) * self.colorGradientSteps[x0] + (x) * self.colorGradientSteps[x1])
 
+    def setAlpha(self, alpha255):
+        """
+        Update the alpha (transparency) value for each color in the color gradient steps.
+        
+        Parameters
+        ----------
+        alpha255 : int
+            The alpha value to set, ranging from 0 to 255, where 0 is fully transparent
+            and 255 is fully opaque.
+        
+        Notes
+        -----
+        This method modifies the `colorGradientSteps` attribute by updating the alpha
+        channel of each color in the gradient.
+        """
+        
+        self.colorGradientSteps = [
+            np.array([*color[:3],alpha255]) for color in self.colorGradientSteps
+        ]
+
 
 class SingleColormap(Colormap):
     """

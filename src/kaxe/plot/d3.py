@@ -144,6 +144,8 @@ class Plot3D(Window):
         self.attrmap.setAttr('marker.showLine', False)
         self.attrmap.setAttr('marker.tickWidth', 2)
         self.attrmap.setAttr('marker.offsetTick', True)
+        self.attrmap.setAttr('arrowWidth',  0.02)
+        self.attrmap.setAttr('arrowHeight',   0.075)
 
         self.attrmap.default(attr='xNumbers', value=None)
         self.attrmap.default(attr='yNumbers', value=None)
@@ -252,7 +254,10 @@ class Plot3D(Window):
             (self.l12, self.l7, self.l10, self.l4), # lilla, blå, lyseblå
         ]
 
-    def __createAxis__(self, line:Line3D, i, addMarkers=True):
+    def __createAxis__(self, line:Line3D, i, addMarkers=True, arrowRotationVector=None):
+        """
+        if no arrowRotationVector(=None) is given an arrow will not be added.
+        """
         
         # justere for at marker skubbes fra den forrige axis (ved include)
         offset = np.array((self.image.x, self.image.y))
@@ -280,6 +285,32 @@ class Plot3D(Window):
         self.axisLines[i] = line
         self.axis[i] = axis
         
+        if arrowRotationVector is not None:
+            
+            #######
+            # skal flyttes
+            self.arrowWidth = self.getAttr('arrowWidth')
+            self.arrowHeight = self.getAttr('arrowHeight')
+            #######
+
+            connect = line.p2 - line.p1
+            connect = connect / np.linalg.norm(connect)
+            
+            normal = arrowRotationVector
+            normal = normal/np.linalg.norm(normal)
+            
+            dw = normal * self.arrowWidth
+            dh = connect * self.arrowHeight
+
+            self.render.add3DObject(Triangle(line.p1, line.p1 + dw + dh, line.p1 + dh * 2/3))
+            self.render.add3DObject(Triangle(line.p1, line.p1 - dw + dh, line.p1 + dh * 2/3))
+
+            self.render.add3DObject(Triangle(line.p2, line.p2 + dw - dh, line.p2 - dh * 2/3))
+            self.render.add3DObject(Triangle(line.p2, line.p2 - dw - dh, line.p2 - dh * 2/3))
+
+            line.p1 += 1/3*dh
+            line.p2 -= 1/3*dh
+            
         # adjust to perspective distance
         # ved stor nok w er det ikke nødvendigt        
         # markers centeres omkring 0! Ikke starten (altså mindste tal)!
@@ -743,23 +774,23 @@ class Plot3D(Window):
         # AXIS IN THE MIDDLE
         if self.__normal__:
             # normal has no markers
-            # kan måske få nogle arrows på et tidspunkt
 
             x = min(max(self.windowAxis[0], 0), self.windowAxis[1])
             y = min(max(self.windowAxis[2], 0), self.windowAxis[3])
             z = min(max(self.windowAxis[4], 0), self.windowAxis[5])
 
             line = Line3D(self.pixel(self.windowAxis[0], y, z), self.pixel(self.windowAxis[1], y, z))
-            axisx = self.__createAxis__(line, 0, False)
+            R = self.render.camera.R
+            axisx = self.__createAxis__(line, 0, False, [0,1,0])
             self.render.add3DObject(line)
 
             line = Line3D(self.pixel(x, self.windowAxis[2], z), self.pixel(x, self.windowAxis[3], z))
-            axisy = self.__createAxis__(line, 1, False)
+            axisy = self.__createAxis__(line, 1, False, [1,0,0])
             axisy.markers = []
             self.render.add3DObject(line)
 
             line = Line3D(self.pixel(x, y, self.windowAxis[4]), self.pixel(x, y, self.windowAxis[5]))
-            axisz = self.__createAxis__(line, 2, False)
+            axisz = self.__createAxis__(line, 2, False, [1,0,0])
             axisz.markers = []
             self.render.add3DObject(line)
 
