@@ -1851,9 +1851,9 @@ class Test:
                     plt.add(kaxe.Arrow(
                         p1, 
                         p2, 
-                        color=(255*i/nx, 255*j/ny, 255*k/nz, 200), 
+                        color=(min(205*i/nx + 50, 255), min(205*j/ny + 50, 255), min(205*k/nz + 50, 255), 200), 
                         headSize=20, 
-                        lineThickness=10
+                        lineThickness=8
                     ))
 
         plt.show()
