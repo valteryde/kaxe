@@ -16,6 +16,11 @@ def magnitude(x):
 def clamp(v, a, b):
     return min(max(v, a), b)
 
+def formatColor(color):
+    if len(color) == 3:
+        color = [*color, 255]
+
+    return np.array([np.uint8(i) for i in color])
 
 # @jit
 # def isPointInTriangle(v1, v2, v3, pt):

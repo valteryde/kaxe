@@ -1,6 +1,6 @@
 
 from numpy import array, dot, linalg
-from ..helper import magnitude, clamp
+from ..helper import magnitude, clamp, formatColor
 import math
 from numba import jit, njit
 from .color import addColorToBuffers
@@ -91,7 +91,7 @@ class Line3D:
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.width = width
-        self.color = color
+        self.color = formatColor(color)
         self.hidden = False
 
     def getZ(self, R):

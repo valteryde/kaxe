@@ -2,7 +2,7 @@
 import math
 from numpy import array, sqrt, dot, uint8, cross
 from numba import njit
-from ..helper import clamp
+from ..helper import clamp, formatColor
 from .color import addColorToBuffers
 
 
@@ -102,7 +102,7 @@ class Triangle:
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.p3 = array([float(i) for i in p3])
-        self.color = array([uint8(i) for i in color])
+        self.color = formatColor(color)
         self.ableToUseLight = ableToUseLight
 
     def getZ(self, R):

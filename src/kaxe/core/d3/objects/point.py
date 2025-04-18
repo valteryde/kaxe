@@ -1,6 +1,6 @@
 
 from numpy import array
-from ..helper import magnitude
+from ..helper import magnitude, formatColor
 import math
 from numba import njit
 from .color import addColorToBuffers
@@ -35,7 +35,7 @@ class Point3D:
         self.radius = radius
         self.pos = array((x, y, z))
         self.looks = 0
-        self.color = color
+        self.color = formatColor(color)
 
     def getZ(self, R):
         return (self.pos @ R)[2]

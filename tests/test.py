@@ -7,9 +7,9 @@ sys.path.append('./src')
 # test
 import math
 import kaxe
-from random import randint
+from random import randint, random, choice
 import numpy as np
-import random, string
+import string
 import scipy.interpolate
 import time
 import pylab
@@ -50,7 +50,7 @@ def randomObject(legend=True):
 
 def randomword(length):
    letters = string.ascii_lowercase
-   return ''.join(random.choice(letters) for i in range(length))
+   return ''.join(choice(letters) for i in range(length))
 
 
 class Test:
@@ -1291,7 +1291,7 @@ class Test:
             theta = np.linspace(0.0, 2 * np.pi, N)
             radii = 10 * np.random.rand(N)
 
-            pillar = kaxe.Pillars(list(theta), list(radii), width=random.randint(10, 20))
+            pillar = kaxe.Pillars(list(theta), list(radii), width=randint(10, 20))
 
             # pillar = kaxe.Pillars([math.pi], [5], width=random.randint(1, 10))
             
@@ -1797,6 +1797,19 @@ class Test:
         plt.show()
 
 
+    def test3DVector():
+        
+        plt = kaxe.PlotCenter3D([-1, 1, -1, 1, -1, 1])
+
+        r = lambda: random()*2 - 1
+
+        for i in range(10):
+            plt.add(kaxe.Arrow((r(),r(),r()), (r(),r(),r())))
+
+        plt.show()
+
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -1813,6 +1826,8 @@ if __name__ == '__main__':
     # Test.testColorMap()
     # Test.testQQPlot()
     # Test.testHistogram()
-    Test.test3DCoordinateSystem()
+    Test.test3DVector()
+    # Test.test3Dfunction()
+    # Test.test3DCoordinateSystem()
 
 
