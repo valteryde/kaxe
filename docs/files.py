@@ -145,6 +145,7 @@ def createAllDocImages():
     create2DWithObject(kaxe.Fill(lambda x: math.sin(x), lambda x: 2*math.sin(x*3/4)), 'fill', [-10, 10, -3, 3])
 
     create3DWithObject(kaxe.ParametricEquation(lambda t: (math.cos(4*t), math.sin(4*t), t), [0, 4*math.pi], width=10, color=kaxe.Colormaps.standard), 'parametricequation3d', [-2, 2, -2, 2, 0, 4*math.pi])
+    create3DWithObject(kaxe.Arrow((0,0,0), (1,0,1)), 'arrow3d.png', [0,1,0,1,0,1])
 
     nums = 50
     points = [

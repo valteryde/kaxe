@@ -43,6 +43,9 @@ Smart objects adapts to which input is given at creates the corrosponding object
 
     .. image:: /_static/arrow.png
         :width: 400 px
+    
+    .. image:: /_static/arrow3d.png
+        :width: 400 px
 
 .. autoclass:: kaxe.Equation
     :members:
