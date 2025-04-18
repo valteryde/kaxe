@@ -23,7 +23,7 @@ To get started visit [the getting started section](https://kaxe.readthedocs.io/e
 ![PrettyPlot3D2](tests/images/3d-function-pretty-2.png)
 ![Contour grid](tests/images/contourgrid.png)
 ![Contour same](tests/images/contour3d.png)
-![AllLegends](tests/images/alllegeneds.png)
+![AllLegends](tests/images/vectorimagearrow3d.png)
 ![Functions](tests/images/function.png)
 ![Points](tests/images/labels.png)
 ![Equations](tests/images/equation.png)
