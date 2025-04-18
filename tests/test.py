@@ -1808,6 +1808,56 @@ class Test:
 
         plt.show()
 
+        plt = kaxe.PlotCenter3D([0, 1, 0, 1, 0, 1])
+
+        r = lambda: random()
+
+        for i in range(10):
+            plt.add(kaxe.Arrow((r(),r(),r()), (r(),r(),r())))
+
+        plt.show()
+
+    def testPrettyMathPlots():
+        
+        plt = kaxe.PlotCenter3D([-1,1,0,1,0,1])
+        plt.show()
+
+        plt = kaxe.EmptyPlot([-1,1,0,1])
+        plt.show()
+
+
+    def testVectorField3D():
+        
+        w = np.array([0, 100, 0, 100, 0, 100])
+        plt = kaxe.PlotCenter3D(w + np.array([-20, 20, -20, 20, -20, 20]), addMarkers=False)
+
+        F = lambda x,y,z: np.array([math.exp(x/20)+0.1,y,z])
+
+        nx, ny, nz = 10, 10, 10
+
+        mindist = min(w[1]-w[0], w[3]-w[2], w[5]-w[4])/min(nx, ny, nz)
+
+        for i in range(nx):
+            x = (w[1]-w[0])*i/nx+w[0]
+            for j in range(ny):
+                y = (w[3]-w[2])*j/ny+w[2]
+                for k in range(nz):
+                    z = (w[5]-w[4])*k/nz+w[4]
+
+                    v = F(x,y,z)
+                    p1 = np.array([x,y,z])
+                    p2 = p1 + mindist*v/np.linalg.norm(v)
+
+                    plt.add(kaxe.Arrow(
+                        p1, 
+                        p2, 
+                        color=(255*i/nx, 255*j/ny, 255*k/nz, 200), 
+                        headSize=20, 
+                        lineThickness=10
+                    ))
+
+        plt.show()
+        plt.save('tests/images/vectorimagearrow3d.png')
 
 
 if __name__ == '__main__':
@@ -1821,13 +1871,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.argument()
-    # Test.testSingleMesh()
-    # Test.testColorMap()
-    # Test.testQQPlot()
-    # Test.testHistogram()
-    Test.test3DVector()
-    # Test.test3Dfunction()
-    # Test.test3DCoordinateSystem()
-
-
+    # Test.testPrettyMathPlots()
+    # Test.test3DVector()
+    Test.testVectorField3D()

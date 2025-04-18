@@ -93,7 +93,8 @@ class Plot3D(Window):
                  rotation:Union[list, tuple]=[60, -70], 
                  size:Union[bool, list, tuple]=None, 
                  drawBackground:bool=False,
-                 light:list=[0,0,0]
+                 light:list=[0,0,0],
+                 addMarkers:bool=True
         ):
         
         super().__init__()
@@ -123,6 +124,7 @@ class Plot3D(Window):
         self.__boxed__ = True
         self.__frame__ = False
         self.__normal__ = False
+        self.__centerAddMarkers__ = addMarkers
         self.__isBackgroundDrawn__ = drawBackground
 
         self.firstAxisTitle = None
@@ -144,8 +146,9 @@ class Plot3D(Window):
         self.attrmap.setAttr('marker.showLine', False)
         self.attrmap.setAttr('marker.tickWidth', 2)
         self.attrmap.setAttr('marker.offsetTick', True)
-        self.attrmap.setAttr('arrowWidth',  0.02)
-        self.attrmap.setAttr('arrowHeight',   0.075)
+        self.attrmap.setAttr('arrowWidth', 0.02)
+        self.attrmap.setAttr('arrowHeight', 0.075)
+        self.attrmap.setAttr('axis.showArrow', True)
 
         self.attrmap.default(attr='xNumbers', value=None)
         self.attrmap.default(attr='yNumbers', value=None)
@@ -285,13 +288,10 @@ class Plot3D(Window):
         self.axisLines[i] = line
         self.axis[i] = axis
         
-        if arrowRotationVector is not None:
+        if arrowRotationVector is not None and self.getAttr('axis.showArrow'):
             
-            #######
-            # skal flyttes
             self.arrowWidth = self.getAttr('arrowWidth')
             self.arrowHeight = self.getAttr('arrowHeight')
-            #######
 
             connect = line.p2 - line.p1
             connect = connect / np.linalg.norm(connect)
@@ -302,14 +302,20 @@ class Plot3D(Window):
             dw = normal * self.arrowWidth
             dh = connect * self.arrowHeight
 
-            self.render.add3DObject(Triangle(line.p1, line.p1 + dw + dh, line.p1 + dh * 2/3))
-            self.render.add3DObject(Triangle(line.p1, line.p1 - dw + dh, line.p1 + dh * 2/3))
+            dhoff = dh/6
 
-            self.render.add3DObject(Triangle(line.p2, line.p2 + dw - dh, line.p2 - dh * 2/3))
-            self.render.add3DObject(Triangle(line.p2, line.p2 - dw - dh, line.p2 - dh * 2/3))
+            axis.startArrows = [
+                self.render.add3DObject(Triangle(line.p1 - dhoff, line.p1 + dw + dh, line.p1 + dh * 2/3)),
+                self.render.add3DObject(Triangle(line.p1 - dhoff, line.p1 - dw + dh, line.p1 + dh * 2/3))
+            ]
 
-            line.p1 += 1/3*dh
-            line.p2 -= 1/3*dh
+            axis.endArrows = [
+                self.render.add3DObject(Triangle(line.p2 + dhoff, line.p2 + dw - dh, line.p2 - dh * 2/3)),
+                self.render.add3DObject(Triangle(line.p2 + dhoff, line.p2 - dw - dh, line.p2 - dh * 2/3))
+            ]
+
+            # line.p1 += 1/3*dh
+            # line.p2 -= 1/3*dh
             
         # adjust to perspective distance
         # ved stor nok w er det ikke nødvendigt        
@@ -638,6 +644,14 @@ class Plot3D(Window):
         return False
 
 
+    def __checkAxisCrossover__(self):
+        self.axis[0].checkCrossOvers(self, self.axis[1])
+        self.axis[0].checkCrossOvers(self, self.axis[2])
+        self.axis[1].checkCrossOvers(self, self.axis[0])
+        self.axis[1].checkCrossOvers(self, self.axis[2])
+        self.axis[2].checkCrossOvers(self, self.axis[0])
+        self.axis[2].checkCrossOvers(self, self.axis[1])
+
     def __after__(self):
         # add to window
         
@@ -762,9 +776,7 @@ class Plot3D(Window):
             axisy = self.__createAxis__(axis[1], 1)
             axisz = self.__createAxis__(axis[2], 2)
 
-            axisx.checkCrossOvers(self, axisy)
-            axisx.checkCrossOvers(self, axisz)
-            axisy.checkCrossOvers(self, axisz)
+            self.__checkAxisCrossover__()
             
             #### Add grid lines
             if self.__isBackgroundDrawn__:
@@ -781,22 +793,22 @@ class Plot3D(Window):
 
             line = Line3D(self.pixel(self.windowAxis[0], y, z), self.pixel(self.windowAxis[1], y, z))
             R = self.render.camera.R
-            axisx = self.__createAxis__(line, 0, False, [0,1,0])
+            axisx = self.__createAxis__(line, 0, self.__centerAddMarkers__, [0,1,0])
             self.render.add3DObject(line)
 
             line = Line3D(self.pixel(x, self.windowAxis[2], z), self.pixel(x, self.windowAxis[3], z))
-            axisy = self.__createAxis__(line, 1, False, [1,0,0])
-            axisy.markers = []
+            axisy = self.__createAxis__(line, 1, self.__centerAddMarkers__, [1,0,0])
+            if not self.__centerAddMarkers__:
+                axisy.markers = []
             self.render.add3DObject(line)
 
             line = Line3D(self.pixel(x, y, self.windowAxis[4]), self.pixel(x, y, self.windowAxis[5]))
-            axisz = self.__createAxis__(line, 2, False, [1,0,0])
-            axisz.markers = []
+            axisz = self.__createAxis__(line, 2, self.__centerAddMarkers__, [1,0,0])
+            if not self.__centerAddMarkers__:
+                axisz.markers = []
             self.render.add3DObject(line)
 
-            axisx.checkCrossOvers(self, axisy)
-            axisx.checkCrossOvers(self, axisz)
-            axisy.checkCrossOvers(self, axisz)
+            self.__checkAxisCrossover__()
 
 
         if self.firstAxisTitle:
@@ -910,8 +922,14 @@ class PlotCenter3D(Plot3D):
         light direction. If null vector is given light will not be added.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None, light:list=[0,0,0]):
-        super().__init__(window, rotation, size=size, light=light)
+    def __init__(self, 
+                 window:list=None, 
+                 rotation=[60, -70], 
+                 size:Union[bool, list, tuple]=None, 
+                 light:list=[0,0,0],
+                 addMarkers:bool=True,
+        ):
+        super().__init__(window, rotation, size=size, light=light, addMarkers=addMarkers)
         self.__boxed__ = False
         self.__frame__ = False
         self.__normal__ = True
@@ -933,7 +951,13 @@ class PlotFrame3D(Plot3D):
         light direction. If null vector is given light will not be added.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], drawBackground=True, size:Union[bool, list, tuple]=None, light:list=[0,0,0]):
+    def __init__(self,  
+                 window:list=None, 
+                 rotation=[60, -70], 
+                 drawBackground=True, 
+                 size:Union[bool, list, tuple]=None, 
+                 light:list=[0,0,0],
+        ):
         super().__init__(window, rotation, size=size, drawBackground=drawBackground, light=light)
         self.__boxed__ = True
         self.__frame__ = True
@@ -956,7 +980,12 @@ class PlotEmpty3D(Plot3D):
         light direction. If null vector is given light will not be added.
     """
 
-    def __init__(self,  window:list=None, rotation=[60, -70], size:Union[bool, list, tuple]=None, light:list=[0,0,0]):
+    def __init__(self,  
+                window:list=None, 
+                rotation=[60, -70], 
+                size:Union[bool, list, tuple]=None, 
+                light:list=[0,0,0],
+        ):
         super().__init__(window, rotation, size=size, light=light)
         self.__boxed__ = False
         self.__frame__ = False

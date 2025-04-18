@@ -620,28 +620,34 @@ class Axis(AttrObject):
 
 
     def __checkMarkersOverlapping__(self, parent, axis):
+
         if not(len(self.markers) == 0 or len(axis.markers) == 0):
             
-            def min_(l):
-                if len(l) == 1:
-                    return l[0]
-                return min(*l, key=lambda x: x.x)
-            def max_(l):
-                if len(l) == 1:
-                    return l[0]
-                return max(*l, key=lambda x: x.x)
+            # def min_(l):
+            #     if len(l) == 1:
+            #         return l[0]
+            #     return min(*l, key=lambda x: x.x)
+            # def max_(l):
+            #     if len(l) == 1:
+            #         return l[0]
+            #     return max(*l, key=lambda x: x.x)
 
-            afirst = min_(self.markers)
-            bfirst = min_(axis.markers)
+            # afirst = min_(self.markers)
+            # bfirst = min_(axis.markers)
             
-            alast = max_(self.markers)
-            blast = max_(axis.markers)
+            # alast = max_(self.markers)
+            # blast = max_(axis.markers)
 
+            # l = [
+            #     (alast, blast),
+            #     (alast, bfirst),
+            #     (afirst, blast),
+            #     (afirst, bfirst)
+            # ]
+
+            # check all
             l = [
-                (alast, blast),
-                (alast, bfirst),
-                (afirst, blast),
-                (afirst, bfirst)
+                (i, j) for j in axis.markers for i in self.markers
             ]
 
             # textbuble
@@ -688,6 +694,33 @@ class Axis(AttrObject):
                 break
 
 
+
+    def __distancePointInLineSegment__(self, p, p1, p2):
+        point = np.array(p, dtype=float)
+        a = np.array(p1, dtype=float)
+        b = np.array(p2, dtype=float)
+
+        ab = b - a
+        ap = point - a
+
+        # Compute projection of ap onto ab
+        ab_length_squared = np.dot(ab, ab)
+        if ab_length_squared == 0:
+            # Line start and end are the same point
+            return np.linalg.norm(point - a)
+
+        t = np.dot(ap, ab) / ab_length_squared
+
+        if t < 0.0:
+            closest = a
+        elif t > 1.0:
+            closest = b
+        else:
+            closest = a + t * ab
+
+        return np.linalg.norm(point - closest)
+
+
     def checkCrossOvers(self, parent, axis):
 
         self.__checkMarkersOverlapping__(parent, axis)
@@ -695,23 +728,12 @@ class Axis(AttrObject):
         # check arrow
         if not self.getAttr('showArrow'):
             return
-
-        # check start and end points
-        startdist = min(
-            vlen(vdiff(self.startPos, axis.startPos)),
-            vlen(vdiff(self.startPos, axis.endPos))
-        )
-
-        enddist = min(
-            vlen(vdiff(self.endPos, axis.startPos)),
-            vlen(vdiff(self.endPos, axis.endPos))
-        )
         
-        if startdist < 5:
+        if self.__distancePointInLineSegment__(self.startPos, axis.startPos, axis.endPos) < 5:
             self.startArrows[0].hide()
             self.startArrows[1].hide()
 
-        if enddist < 5:
+        if self.__distancePointInLineSegment__(self.endPos, axis.startPos, axis.endPos) < 5:
             self.endArrows[0].hide()
             self.endArrows[1].hide()
 

@@ -104,11 +104,22 @@ class Triangle:
         self.p3 = array([float(i) for i in p3])
         self.color = formatColor(color)
         self.ableToUseLight = ableToUseLight
+        self.__hidden__ = False
+
+
+    def hide(self):
+        self.__hidden__ = True
+
+    def show(self):
+        self.__hidden__ = False
+
 
     def getZ(self, R):
         return ((R @ self.p1)[2] + (R @ self.p2)[2] + (R @ self.p3)[2]) / 3
 
     def draw(self, render):
+        if self.__hidden__: return
+
         self.p1_proj = render.pixel(*self.p1)
         self.p2_proj = render.pixel(*self.p2)
         self.p3_proj = render.pixel(*self.p3)
