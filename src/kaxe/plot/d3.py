@@ -101,6 +101,8 @@ class Plot3D(Window):
 
         rotation = rotation.copy()
         rotation[0] -= 90
+        
+        self.forceWidthHeight = False # secret toggle only used by Kaxe.Grid and internal use
 
         """
         
@@ -821,13 +823,29 @@ class Plot3D(Window):
             axisz.addTitle(self.thirdAxisTitle, self)
 
         self.image.img = self.render.render()
-        bbox = self.image.img.getbbox()
-        oldpadding = [i for i in self.padding]
-        self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
-        x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
-        self.pushAll(x,y)
-        self.__includeAllAgain__()
         
+        if self.forceWidthHeight:
+            """
+            with this toggle the image will be placed in the middle
+            """
+            w, h = self.getSize()
+
+            self.image.img.width, self.image.img.height
+
+            self.pushAll((w - self.image.img.width)/2, (h - self.image.img.height)/2)
+
+        else:
+            """
+            crop image and resize the whole image
+            """
+
+            bbox = self.image.img.getbbox()
+            oldpadding = [i for i in self.padding]
+            self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
+            x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
+            self.pushAll(x,y)
+            self.__includeAllAgain__()
+
         # self.addPaddingCondition(bottom=-y+10)
 
 

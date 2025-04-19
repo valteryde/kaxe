@@ -1859,6 +1859,55 @@ class Test:
         plt.show()
         plt.save('tests/images/vectorimagearrow3d.png')
 
+    
+    def testGridWith3D():
+        
+        grid = kaxe.Grid()
+
+        p2d = kaxe.Plot()
+        p2d.add(kaxe.Function(lambda x: x**2-5))
+
+        p3d = kaxe.Plot3D()
+        p3d.add(kaxe.Function(lambda x,y: x**2 + y**2 - 5))
+
+        grid.addRow(p2d, p3d)
+        grid.show()
+
+
+    def testGridDiffrentRows():
+        """
+        does not currently work
+        """
+        raise NotImplementedError()
+
+        mg = kaxe.Grid()
+
+        g1 = kaxe.Grid()
+
+        p1 = kaxe.Plot()
+        p1.add(randomObject(False))
+
+        p2 = kaxe.Plot()
+        p2.add(randomObject(False))
+        
+        g1.addRow(p1, p2)
+
+        p3 = kaxe.Plot()
+        p3.add(randomObject(False))
+        
+        mg.addColumn(g1, p3)
+
+        mg.show()
+
+    
+    def testPOTATO():
+        plt = kaxe.PlotCenter3D()
+        plt.style(width=3000, height=3000)
+
+        plt.add(kaxe.Function3D(lambda x,y: x**2+y**2-5, numPoints=300))
+
+        plt.show()
+
 
 if __name__ == '__main__':
     import os
@@ -1871,6 +1920,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    # Test.testPrettyMathPlots()
-    # Test.test3DVector()
-    Test.testVectorField3D()
+    Test.testPOTATO()

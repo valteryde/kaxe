@@ -167,7 +167,7 @@ class Window(AttrObject):
 
         fontSize = documentFontSize/(procentWidth*(documentWidth-2*documentMarginProcent))*width
         
-        self.style(width=int(width), height=int(height), fontSize=int(fontSize), outerPadding=(5,5,5,5))
+        self.style(width=int(width), height=int(height), fontSize=int(fontSize), outerPadding=(10,10,10,10))
 
 
     # paddings

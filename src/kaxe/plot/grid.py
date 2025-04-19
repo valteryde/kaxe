@@ -5,7 +5,7 @@ from ..core.window import *
 from ..core.legend import LegendBox
 from typing import Union
 from PIL import Image
-
+from .d3 import XYZPLOT
 
 class Grid(AttrObject):
     """
@@ -102,6 +102,7 @@ class Grid(AttrObject):
 
         # add styles to window
         # and calculate sizes
+        maxWidth = 0
         for row in grid:
             
             maxHeight = 0
@@ -114,10 +115,15 @@ class Grid(AttrObject):
                 memfile = BytesIO()
                 plot.showProgressBar = False
                 plot.printDebugInfo = False
+
+                if plot == XYZPLOT:
+                    plot.forceWidthHeight = True
+
                 plot.save(memfile)
                 plot.__ioBytes = memfile
 
                 w, h = plot.getSize()
+                maxWidth = max(w, maxWidth)
                 
                 maxHeight = max(h, maxHeight)
                 
@@ -138,8 +144,9 @@ class Grid(AttrObject):
 
             height += maxHeight
         
-        width = gapcol * (len(row) - 1) + len(row) * cellWidth + leftpadding + rightpadding
-        
+        largetsRowNumber = max(len(i) for i in grid)
+        width = gapcol * (largetsRowNumber - 1) + largetsRowNumber * cellWidth + leftpadding + rightpadding
+
         size = (
             width + self.outerPadding[0] + self.outerPadding[2],
             height + self.outerPadding[1] + self.outerPadding[3] + toppadding
@@ -189,6 +196,7 @@ class Grid(AttrObject):
             y += maxHeight
 
         self.__bakedImage__ = image
+
         return image
 
     
@@ -231,7 +239,11 @@ class Grid(AttrObject):
             return
 
         img = self.__bake__()
-        img.save(fpath)
+        
+        if fpath is str:
+            img.save(fpath)
+        else:
+            img.save(fpath, format="png")
 
 
     def show(self):
@@ -265,12 +277,4 @@ class Grid(AttrObject):
 
 
     def getSize(self):
-        return self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-    
-    # def show(self):
-    #     if self.__bakedImage__:
-    #         self.__bakedImage__.show()
-    #         return
-
-    #     img = self.__bake__()
-    #     img.show()
+        return self.__bakedImage__.size
