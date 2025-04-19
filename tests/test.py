@@ -814,33 +814,30 @@ class Test:
     def test3D():
         
         plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5])
-        plt.style(width=1000, height=1000)
         plt.help()
         cmap = kaxe.Colormaps.standard
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap, numPoints=500))
         plt.save('tests/images/3d-box.png')
 
         plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5])
-        plt.style(width=1000, height=1000)
         plt.help()
         cmap = kaxe.Colormaps.standard
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap, numPoints=500))
         plt.save('tests/images/3d-frame-2.png')
 
         plt = kaxe.Plot3D(window=[-1,1,-1,1,-0.5,0.5])
-        plt.style(width=1000, height=1000, backgroundColor=(0,0,100,255), color=(255,255,255,255))
+        plt.style(backgroundColor=(0,0,100,255), color=(255,255,255,255))
         cmap = kaxe.Colormaps.green
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-box-style.png')
 
         plt = kaxe.PlotFrame3D(window=[-1,1,-1,1,-0.5,0.5])
-        plt.style(width=1000, height=1000)
         cmap = kaxe.Colormaps.cream
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
         plt.save('tests/images/3d-frame.png')
         
         plt = kaxe.PlotEmpty3D(window=[-1,1,-1,1,0,1])
-        plt.style(width=1000, height=1000, backgroundColor=(0,0,0,0))
+        plt.style(backgroundColor=(0,0,0,0))
         cmap = kaxe.Colormaps.red
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.5, color=cmap, fill=False))
         plt.save('tests/images/3d-empty.png')
@@ -895,7 +892,6 @@ class Test:
         plt.save('tests/images/crossover.png')
 
         plt = kaxe.Plot3D()
-        plt.style(width=1000, height=1000)
         plt.help()
         cmap = kaxe.Colormaps.standard
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3, color=cmap))
@@ -1489,7 +1485,8 @@ class Test:
 
         plt2d = kaxe.Plot([-3, 3, -3, 3])
         plt2d.add(kaxe.Equation( func, lambda x,y: 3 ))
-        # plt.show()
+        plt.show()
+        plt.save('tests/images/f2din3d.png')
 
 
     def testPrettyContour2DIn3D():
@@ -1789,9 +1786,9 @@ class Test:
     def test3DCoordinateSystem():
         
         plt = kaxe.PlotCenter3D(window=[-1,1,-1,1,-0.4,0.6], size=[1, 1.25, 0.75])
-        plt.style(width=1000, height=1000)
+        plt.style(fontSize=80)
         cmap = kaxe.Colormaps.rainbow
-        cmap.setAlpha(150)
+        cmap = cmap.setAlpha(150)
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.1, color=cmap))
         plt.save('tests/images/3d-center.png')
         plt.show()
@@ -1902,15 +1899,16 @@ class Test:
     
     def testPOTATO():
         plt = kaxe.PlotCenter3D()
-        plt.style(width=3000, height=3000)
-
-        plt.add(kaxe.Function3D(lambda x,y: x**2+y**2-5, numPoints=300))
 
         plt.show()
 
 
 if __name__ == '__main__':
     import os
+    try:
+        os.mkdir('tests/images')
+    except FileExistsError:
+        pass
     try:
         os.mkdir('tests/images/3d')
     except FileExistsError:
@@ -1920,4 +1918,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testPOTATO()
+    # Test.argument()
+    Test.test3DCoordinateSystem()

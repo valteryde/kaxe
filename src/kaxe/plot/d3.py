@@ -1,41 +1,4 @@
 
-# DONE:
-# Crop firkanten så der ikke er så meget "dødt" plads rundt om
-#       altså det ikke altid 3d området bruger hele området 
-#       så meget af det kan bare fjernes
-# Progressbar skal have titler
-# .help() skal ikke printe forskellige farver (blå ved ændret)
-# Objects (mappen) skal deles op i 3d og 2d
-# forskellige farvemaps til forskellige funktioner
-#       kunne være ret cool hvis man kunne vælge en grøn farveskala eller en rød farveskala
-#       kan laves som en colormap class
-#       måske tage en farve og så skrue op for den eller ned på en eller
-#       anden måde fx ganget alle indgange med en skalar
-# 
-# Function skal laves som en samlet funktion
-#       det samme med points
-#       -> Her bare brug en "fordeler" funktion
-# z-aksen titel skal altid være op ad
-# Farver skal kunne vælges (som axis)
-# axis.drawMarkersAtEnd burde kun være på dem der på enden og ikke 0.4 i intervallet [-0.5, 0.5]
-
-# DONE: Men ikke testet
-# Punkter skal sortes fra hvis de ligger udenfor
-
-# Påbegyndt:
-# shapes objekter skal have en include metode med vindue som argument så den kan tilføje sig selv
-# Funktion skal "samles" hvis bunden kommer udenfor så trekanterne ikke er underligere
-
-# TODO:
-# Ryd op i koden og slet alt overflødigt
-# Tal på aksen der går igennem (center) og pile
-# Frame ligesom matplotlib med baggrund baggerst i firkanten
-# kunne være fedt med en funktion der bare hedder plot() og så laver den selv enten
-# et 2d eller 3d vindue med fx funktion eller punkter
-# 
-# Måske lidt mere gap imellem marker og akser
-
-
 # window
 from random import randint
 import sys
@@ -136,12 +99,12 @@ class Plot3D(Window):
         self.size = size
 
         # styles
-        self.attrmap.default('width', 1500)
-        self.attrmap.default('height', 1500)
+        self.attrmap.default('width', 2000)
+        self.attrmap.default('height', 2000)
         self.attrmap.default('wireframeLinewidth', 3)
         self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255))
         self.attrmap.default('axisLineColorBackdrop', (200,200,200,255))
-        self.attrmap.default('fontSize', 48)
+        self.attrmap.default('fontSize', 100)
         self.attrmap.setAttr('axis.drawAxis', False)
         self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
         self.attrmap.setAttr('axis.drawMarkersAtEnd', False)

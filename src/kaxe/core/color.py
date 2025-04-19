@@ -78,15 +78,14 @@ class Colormap:
             The alpha value to set, ranging from 0 to 255, where 0 is fully transparent
             and 255 is fully opaque.
         
-        Notes
-        -----
-        This method modifies the `colorGradientSteps` attribute by updating the alpha
-        channel of each color in the gradient.
+        Returns
+        -------
+        Colormap
         """
         
-        self.colorGradientSteps = [
+        return Colormap([
             np.array([*color[:3],alpha255]) for color in self.colorGradientSteps
-        ]
+        ])
 
 
 class SingleColormap(Colormap):

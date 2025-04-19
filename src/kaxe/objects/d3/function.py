@@ -12,6 +12,54 @@ from ...core.color import Colormaps, Colormap
 import numpy as np
 import math
 import numbers
+from numba import njit
+import time
+
+
+
+### OPTIMIZING
+@njit
+def getTriangleNormal(p1, p2, p3):
+
+    Ax, Ay, Az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
+    Bx, By, Bz = p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]
+
+    Nx = Ay * Bz - Az * By
+    Ny = Az * Bx - Ax * Bz
+    Nz = Ax * By - Ay * Bx
+
+    return (Nx, Ny, Nz)
+
+@njit
+def isHorizontalTriangle(dependantVariable, p1, p2, p3):
+    normal = getTriangleNormal(p1, p2, p3)
+
+    if dependantVariable == "z":
+        return (
+            np.isclose(normal[0], 0) and 
+            np.isclose(normal[1], 0) and 
+            (not np.isclose(normal[2], 0))
+        )
+    elif dependantVariable == "y":
+        return (
+            np.isclose(normal[0], 0) and 
+            (not np.isclose(normal[1], 0)) and 
+            np.isclose(normal[2], 0)
+        )
+    elif dependantVariable == "x":
+        return (
+            (not np.isclose(normal[0], 0)) and 
+            np.isclose(normal[1], 0) and 
+            np.isclose(normal[2], 0)
+        )
+
+
+
+
+
+
+
+
 
 
 class Function3D(Base3DObject):
@@ -25,7 +73,7 @@ class Function3D(Base3DObject):
     color : Colormap, optional
         The colormap to be used for plotting. If None, the standard colormap is used.
     numPoints : int, optional
-        The number of points to be used for plotting. If None, defaults to 150 if `fill` is True, otherwise 25.
+        The number of points to be used for plotting. If None, defaults to 500 if `fill` is True, otherwise 25.
     fill : bool
         Whether to fill the plot. default is True
     drawDiagonalLines: bool
@@ -74,50 +122,17 @@ class Function3D(Base3DObject):
 
         self.numPoints = numPoints
         if numPoints is None and fill:
-            self.numPoints = 150
+            self.numPoints = 500
         elif numPoints is None:
             self.numPoints = 25
 
 
-    def __getTriangleNormal__(self, p1, p2, p3):
-
-        Ax, Ay, Az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
-        Bx, By, Bz = p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]
-
-        Nx = Ay * Bz - Az * By
-        Ny = Az * Bx - Ax * Bz
-        Nz = Ax * By - Ay * Bx
-
-        return (Nx, Ny, Nz)
-
-
-    def __isHorizontalTriangle__(self, p1, p2, p3):
-        normal = self.__getTriangleNormal__(p1, p2, p3)
-
-        if self.dependantVariable == "z":
-            return (
-                np.isclose(normal[0], 0) and 
-                np.isclose(normal[1], 0) and 
-                (not np.isclose(normal[2], 0))
-            )
-        elif self.dependantVariable == "y":
-            return (
-                np.isclose(normal[0], 0) and 
-                (not np.isclose(normal[1], 0)) and 
-                np.isclose(normal[2], 0)
-            )
-        elif self.dependantVariable == "x":
-            return (
-                (not np.isclose(normal[0], 0)) and 
-                np.isclose(normal[1], 0) and 
-                np.isclose(normal[2], 0)
-            )
-
+    
 
     def __addTriangle__(self, render, p1, p2, p3, color, isRealpoint):
         
         # dont draw vertical vertices
-        if self.__isHorizontalTriangle__(p1, p2, p3) and not isRealpoint:
+        if isHorizontalTriangle(self.dependantVariable, p1, p2, p3) and not isRealpoint:
             return
 
         render.add3DObject(
@@ -145,7 +160,7 @@ class Function3D(Base3DObject):
     def __addTriangleOutline__(self, render, p1, p2, p3, color, isRealpoint, xn, yn):
         
         # dont draw vertical vertices
-        if self.__isHorizontalTriangle__(p1, p2, p3) and not isRealpoint:
+        if isHorizontalTriangle(self.dependantVariable, p1, p2, p3) and not isRealpoint:
             return
 
         render.add3DObject(Line3D(p1,p2,color=color))
