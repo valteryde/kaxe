@@ -1898,7 +1898,9 @@ class Test:
 
     
     def testPOTATO():
-        plt = kaxe.PlotCenter3D()
+        plt = kaxe.PlotCenter3D(addMarkers=False)
+
+        plt.add(kaxe.Potato())
 
         plt.show()
 
@@ -1919,4 +1921,6 @@ if __name__ == '__main__':
         pass
 
     # Test.argument()
-    Test.test3DCoordinateSystem()
+    # Test.test3DCoordinateSystem()
+    Test.testPOTATO()
+
