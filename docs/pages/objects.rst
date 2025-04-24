@@ -125,3 +125,15 @@ Smart objects adapts to which input is given at creates the corrosponding object
 
     .. image:: /_static/mesh.png
         :width: 300 px
+
+.. autoclass:: kaxe.Potato
+    :members: 
+
+    .. image:: /_static/potato.png
+        :width: 300 px
+
+.. autoclass:: kaxe.SolidOfRotation
+    :members: 
+
+    .. image:: /_static/solidofrotation.png
+        :width: 300 px

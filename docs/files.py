@@ -10,6 +10,7 @@ import sys
 import random
 import numpy as np
 from random import randint
+import scipy.interpolate
 
 sys.path.insert(0, str(Path('src').resolve()))
 import kaxe
@@ -62,9 +63,9 @@ def create2DWithObject(obj, fname, window=None):
     plt.save(j(fname))
 
 
-def create3DWithObject(obj, fname, window=None):
+def create3DWithObject(obj, fname, window=None, light=[0,0,0]):
     
-    plt = kaxe.Plot3D(window)
+    plt = kaxe.Plot3D(window, light=light)
     plt.add(obj)
     plt.save(j(fname))
 
@@ -146,6 +147,7 @@ def createAllDocImages():
 
     create3DWithObject(kaxe.ParametricEquation(lambda t: (math.cos(4*t), math.sin(4*t), t), [0, 4*math.pi], width=10, color=kaxe.Colormaps.standard), 'parametricequation3d', [-2, 2, -2, 2, 0, 4*math.pi])
     create3DWithObject(kaxe.Arrow((0,0,0), (1,0,1)), 'arrow3d', [0,1,0,1,0,1])
+    create3DWithObject(kaxe.Potato(), 'potato')
 
     nums = 50
     points = [
@@ -186,6 +188,14 @@ def createAllDocImages():
     plt = kaxe.PlotFrame3D(mesh.getBoundingBox(), size=True, light=[0,0,1])
     plt.add(mesh)
     plt.save(j('mesh'))
+
+    plt = kaxe.PlotCenter3D([0, 80, -30, 30, -30, 30], [70, -70], addMarkers=False, size=True, light=[0,1,1])
+    func = scipy.interpolate.CubicSpline([0, 20, 40, 60, 80], [0, 20, 10, 14, 0])
+    interval = [0, 60]
+    plt.add(kaxe.ParametricEquation(lambda x: (x, 0, func(x)), interval))
+    plt.add(kaxe.SolidOfRotation(func, *interval, numPointsHeight=1000, numRings=200, color=kaxe.Colormaps.rainbow.setAlpha(230)))
+    plt.save(j('solidofrotation'))
+
 
 
 try:

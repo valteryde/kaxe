@@ -73,8 +73,11 @@ class Pillars:
         
         xcopy = list(self.x).copy()
         xcopy.sort()
-        self.farLeft = xcopy[0] - (xcopy[1] - xcopy[0])/2
-        self.farRight = xcopy[-1] + (xcopy[-1] - xcopy[-2])/2
+        try:
+            self.farLeft = xcopy[0] - (xcopy[1] - xcopy[0])/2
+            self.farRight = xcopy[-1] + (xcopy[-1] - xcopy[-2])/2
+        except IndexError:
+            pass
         
         self.farTop = 0
         for height in self.heights:

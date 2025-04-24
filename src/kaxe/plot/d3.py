@@ -861,6 +861,13 @@ class Plot3D(Window):
             self.windowAxis[4] <= z <= self.windowAxis[5],
         ])
 
+    def insidePixel(self, x, y, z):
+        return all([
+            -self.h <= x <= self.h,
+            -self.h <= y <= self.h,
+            -self.h <= z <= self.h,
+        ])
+
     
     def inside(self, x, y, z=None):
         if z is None:

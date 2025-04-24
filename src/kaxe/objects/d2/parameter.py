@@ -149,6 +149,12 @@ class ParametricEquation:
                     if type(self.color) is Colormap:
                         color = self.color.getColor(ls[i][3], *self.interval)
 
+                    if not parent.insidePixel(ls[i][0], ls[i][1], ls[i][2]):
+                        continue
+
+                    if not parent.insidePixel(ls[i+1][0], ls[i+1][1], ls[i+1][2]):
+                        continue
+                    
                     render.add3DObject( Line3D(
                         (ls[i][0], ls[i][1], ls[i][2]), 
                         (ls[i+1][0], ls[i+1][1], ls[i+1][2]), 

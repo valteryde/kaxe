@@ -1898,9 +1898,40 @@ class Test:
 
     
     def testPOTATO():
-        plt = kaxe.PlotCenter3D(addMarkers=False)
+        plt = kaxe.PlotCenter3D([0, 80, -40, 0, 0, 10], [70, -70], addMarkers=False, light=[0,1,1])
 
-        plt.add(kaxe.Potato())
+        color = kaxe.Colormaps.blue.setAlpha(255)
+        potato = kaxe.Potato(color=color, height=8)
+        potato.mesh.translate((15, -10, 0))
+        plt.add(potato)
+
+        color = kaxe.Colormaps.red.setAlpha(255)
+        potato = kaxe.Potato(color=color, height=8)
+        potato.mesh.rotate([0,0,1], math.radians(90))
+        potato.mesh.translate((60, -20, 2))
+        plt.add(potato)
+
+        p1 = (55,-20,7)
+        p2 = (10,-10,5)
+        plt.add(kaxe.Arrow((0,0,0), p1))
+        plt.add(kaxe.Arrow((0,0,0), p2))
+        plt.add(kaxe.Arrow(p2, p1))
+
+        plt.show()
+
+
+    def testSolidofRevolution():
+        
+        plt = kaxe.PlotCenter3D([0, 80, -30, 30, -30, 30], [70, -70], addMarkers=True, size=True, light=[0,1,1])
+        plt.title('x', 'y', 'z')
+
+        func = scipy.interpolate.CubicSpline([0, 20, 40, 60, 80], [0, 20, 10, 14, 0])
+
+        interval = [0, 60]
+
+        plt.add(kaxe.ParametricEquation(lambda x: (x, 0, func(x)), interval))
+
+        plt.add(kaxe.SolidOfRotation(func, *interval, numPointsHeight=1000, numRings=200, color=kaxe.Colormaps.rainbow.setAlpha(230)))
 
         plt.show()
 
@@ -1922,5 +1953,6 @@ if __name__ == '__main__':
 
     # Test.argument()
     # Test.test3DCoordinateSystem()
-    Test.testPOTATO()
+    # Test.testPOTATO()
+    Test.testSolidofRevolution()
 
