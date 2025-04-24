@@ -34,11 +34,18 @@ class Bar(Window):
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
     # akserne i nederste hjørne
 
-    def __init__(self, rotate:bool=False, maxHeight:bool=None): # |
+    def __init__(self, 
+                 rotate:bool=False, 
+                 minHeight:Union[int, float]=None, 
+                 maxHeight:Union[int, float]=None,
+                 pushMarkers=False,
+        ): # |
         super().__init__()
         self.identity = 'barchart'
         self.rotate = rotate
         self.maxHeight = maxHeight
+        self.minHeight = minHeight
+        self.pushMarkers = pushMarkers
 
         self.attrmap.default('titleFontSize', 100)
         self.attrmap.default('width', 3000)
@@ -60,6 +67,7 @@ class Bar(Window):
 
         self.maxNumber = 0
         self.maxNumberAmount = 0
+        self.minNumber = 0
         self.bars = []
         self.numberAmount = 0
 
@@ -73,6 +81,10 @@ class Bar(Window):
     def __getMaxNumber__(self):
         if self.maxHeight: return self.maxHeight
         return self.maxNumber
+
+    def __getMinNumber__(self):
+        if self.minHeight: return self.minHeight
+        return self.minNumber
 
 
     def __getColors__(self):
@@ -88,8 +100,7 @@ class Bar(Window):
 
     def __prepare__(self):
 
-        
-        self.axis.addStartAndEnd(0, self.__getMaxNumber__())
+        self.axis.addStartAndEnd(min(self.__getMinNumber__(), 0), max(self.__getMaxNumber__(), 0))
         
         topPoint = (self.windowBox[0], self.windowBox[3]-self.windowBox[1])
         if self.rotate:
@@ -133,10 +144,38 @@ class Bar(Window):
         if self.firstAxisTitle and self.rotate:
             self.firstTitle = Text(self.firstAxisTitle, 0, self.windowBox[1]+self.windowBox[3]/2, fontSize=self.getAttr('fontSize'), rotate=90)
         
-        if self.firstAxisTitle:
+        if self.firstAxisTitle and not self.rotate:
             self.addPaddingCondition(bottom=self.getAttr('axis.titleGap'))
+        elif self.firstAxisTitle:
+            self.addPaddingCondition(left=self.getAttr('axis.titleGap'))
+            self.firstTitle.push(-self.firstTitle.width/2, 0)
+        
+        if self.firstAxisTitle:
             self.addDrawingFunction(self.firstTitle)
+            self.__includeAllAgain__()
             self.include(*self.firstTitle.getCenterPos(), self.firstTitle.width, self.firstTitle.height)
+
+
+    def __createBar__(self, x, y, number, barWidth, i):
+        # så længde den er lineær så dur det her
+        if self.rotate:
+            height = self.axis.get(number)[0] - self.axis.get(0)[0]
+                    
+            if height < 0:
+                x0, y0, w, h = y + height, x, height * -1, barWidth
+            else:
+                x0, y0, w, h = y, x, height, barWidth
+
+        else:
+            height = self.axis.get(number)[1] - self.axis.get(0)[1]
+
+            if height < 0:
+                x0, y0, w, h = x, y + height, barWidth, height * -1
+            else:
+                x0, y0, w, h = x, y, barWidth, height
+
+        shapes.Rectangle(x0, y0, w, h, color=self.colors[i], batch=self.barbatch)
+        return height
 
 
     # bars
@@ -155,20 +194,14 @@ class Bar(Window):
         for label, numbers in self.bars:
             
             if self.rotate:
-                y = self.windowBox[0]
+                y = self.axis.get(0)[0]
             else:
-                y = self.windowBox[1]
+                y = self.axis.get(0)[1]
 
 
             for i, number in enumerate(numbers):
 
-                # så længde den er lineær så dur det her
-                if self.rotate:
-                    height = self.axis.get(number)[0] - self.windowBox[0]
-                    shapes.Rectangle(y, x, height, barWidth, color=self.colors[i], batch=self.barbatch)
-                else:
-                    height = self.axis.get(number)[1] - self.windowBox[1]
-                    shapes.Rectangle(x, y, barWidth, height, color=self.colors[i], batch=self.barbatch)
+                height = self.__createBar__(x, y, number, barWidth, i)
 
                 y += height
 
@@ -186,12 +219,26 @@ class Bar(Window):
                         rotate=self.getAttr('rotateLabel')
             )
             
+            smallgap = self.getAttr('fontSize')*0.25
             if self.rotate:
-                text.push(-text.width/2 - self.getAttr('fontSize')*0.25, 0)
+                text.push(-text.width/2 - smallgap, 0)
+
+                if self.pushMarkers and numbers[0] > 0:
+                    text.push(y + text.width + 2 * smallgap, 0)
+
+                elif self.pushMarkers:
+                    text.push(y, 0)
+
             else:
-                text.push(0, -text.height/2 - self.getAttr('fontSize')*0.25)
+                text.push(0, -text.height/2 - smallgap)
+
+                if self.pushMarkers and numbers[0] > 0:
+                    text.push(0, y + text.height + 2 * smallgap)
+
+                elif self.pushMarkers:
+                    text.push(0, y)
             
-            self.include(*text.getCenterPos(), text.width, text.height)
+            self.includeElement(text)
 
             x += barWidth + barGap
 
@@ -214,6 +261,7 @@ class Bar(Window):
         if type(numbers) is not list: numbers = [numbers]
         filterednums = [i for i in numbers if i is not None]
         self.maxNumber = max(sum(filterednums), self.maxNumber)
+        self.minNumber = min(sum(filterednums), self.minNumber)
         self.maxNumberAmount = max(len(filterednums), self.maxNumberAmount)
         self.numberAmount += len(filterednums)
         self.bars.append([label, numbers])
@@ -293,10 +341,15 @@ class GroupBar(Bar):
     # delfunktioner. fx __setAxisPos__ ændres af BoxPlot til altid at have 
     # akserne i nederste hjørne
 
-    def __init__(self, rotate=False, maxHeight=0):
-        super().__init__(rotate, maxHeight)
+    def __init__(self, rotate=False, minHeight=None,  maxHeight=None, pushMarkers=False):
+        super().__init__(rotate, minHeight, maxHeight, pushMarkers=pushMarkers)
         self.identity = 'groupbarchart'
 
+
+    def __getMinNumber__(self):
+        if self.minHeight: return self.minHeight
+        return min([min([j for j in i if j is not None]) for _, i in self.bars])
+    
 
     def __getMaxNumber__(self):
         if self.maxHeight: return self.maxHeight
@@ -334,20 +387,15 @@ class GroupBar(Bar):
         for label, numbers in self.bars:
             
             if self.rotate:
-                y = self.windowBox[0]
+                y = self.axis.get(0)[0]
             else:
-                y = self.windowBox[1]
+                y = self.axis.get(0)[1]
 
             for i, number in enumerate(numbers):
                 if number is None: continue
 
                 # så længde den er lineær så dur det her
-                if self.rotate:
-                    height = self.axis.get(number)[0] - self.windowBox[0]
-                    shapes.Rectangle(y, x, height, barWidth, color=self.colors[i], batch=self.barbatch)
-                else:
-                    height = self.axis.get(number)[1] - self.windowBox[1]
-                    shapes.Rectangle(x, y, barWidth, height, color=self.colors[i], batch=self.barbatch)
+                self.__createBar__(x, y, number, barWidth, i)
 
                 x += smallBarGap + barWidth
             x -= barWidth + smallBarGap
@@ -366,10 +414,24 @@ class GroupBar(Bar):
                         rotate=self.getAttr('rotateLabel')
             )
 
+            smallgap = self.getAttr('fontSize')*0.25
             if self.rotate:
-                text.push(-(text.width/2 + self.getAttr('fontSize')*0.25), -(len([i for i in numbers if i is not None])-1) * barWidth/2)
+                text.push(-(text.width/2 + smallgap), -(len([i for i in numbers if i is not None])-1) * barWidth/2)
+
+                if self.pushMarkers and numbers[0] > 0:
+                    text.push(self.axis.get(min(numbers))[0] + text.width + 2 * smallgap, 0)
+
+                elif self.pushMarkers:
+                    text.push(self.axis.get(min(numbers))[0], 0)
+
             else:
-                text.push( -((len([i for i in numbers if i is not None])-1) * barWidth/2), -(text.height/2 + self.getAttr('fontSize')*0.25))
+                text.push( -((len([i for i in numbers if i is not None])-1) * barWidth/2), -(text.height/2 + smallgap))
+
+                if self.pushMarkers and numbers[0] > 0:
+                    text.push(0, self.axis.get(min(numbers))[1] + text.height + 2 * smallgap)
+
+                elif self.pushMarkers:
+                    text.push(0, self.axis.get(min(numbers))[1])
             
             self.include(*text.getCenterPos(), text.width, text.height)
 

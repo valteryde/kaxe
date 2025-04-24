@@ -60,10 +60,14 @@ class Test:
         else:
             eval('Test.test{}()'.format(sys.argv[1]))
 
-    def run():
+    def run():        
+        startTime = time.time()
         kaxe.setSetting(removeInfo=True)
+        count = 0
+        failed = 0
         for i in dir(Test):
             if 'test' in i:
+                count += 1
                 print('\033[94m' + 'Running {}'.format(i) + '\033[0m')
                 try:
                     now = time.time()
@@ -72,6 +76,8 @@ class Test:
                     print('\033[92m'+ 'Ran {} successfull in {} s'.format(i, round(time.time() - now, 3)))
                 except Exception as e:
                     print('\033[91m' + 'Error in test {}: {}'.format(i, e) + '\033[0m')
+                    failed += 1
+        print('\033[93m' + '{} tests ran in {} min [{} failed]'.format(count, round((time.time() - startTime)/60, 3), failed) + '\033[0m')
 
     def testNormal():
         plot = kaxe.Plot()
@@ -794,7 +800,7 @@ class Test:
         plt.title('x aksen', 'y aksen', 'z aksen')
         plt.style(width=500, height=500, outerPadding=(0,0,0,0))
 
-        f = plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 9))
+        f = plt.add(kaxe.Function3D(lambda x,y: math.sin(x)**2 + y**2 - 9, fill=False))
 
         if randint(0,1):
             f.legend('Kaxe nu i 3D')
@@ -1935,6 +1941,80 @@ class Test:
 
         plt.show()
 
+    def testBarBellow():
+
+        # Single bar
+        grid = kaxe.Grid()
+        grid.style(width=4000, height=4000)
+
+        p1 = kaxe.Bar()
+        nums = 10
+        for i in range(nums//2):
+            p1.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p1.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+
+        p2 = kaxe.Bar(rotate=True)
+        nums = 10
+        for i in range(nums//2):
+            p2.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p2.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+        
+        p3 = kaxe.Bar(rotate=False, pushMarkers=True)
+        nums = 10
+        for i in range(nums//2):
+            p3.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p3.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+        
+        p4 = kaxe.Bar(rotate=True, pushMarkers=True)
+        nums = 10
+        for i in range(nums//2):
+            p4.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p4.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+
+        grid.addRow(p1, p2)
+        grid.addRow(p3, p4)
+        grid.save('tests/images/barbellow.png')
+
+        # Group bar
+        grid = kaxe.Grid()
+        grid.style(width=4000, height=4000)
+
+        p1 = kaxe.GroupBar()
+        nums = 10
+        for i in range(nums//2):
+            p1.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p1.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+
+        p2 = kaxe.GroupBar(rotate=True)
+        nums = 10
+        for i in range(nums//2):
+            p2.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p2.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+        
+        p3 = kaxe.GroupBar(rotate=False, pushMarkers=True)
+        nums = 10
+        for i in range(nums//2):
+            p3.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p3.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+        
+        p4 = kaxe.GroupBar(rotate=True, pushMarkers=True)
+        nums = 10
+        for i in range(nums//2):
+            p4.add(i, math.exp(-i/4))
+        for i in range(nums//2):
+            p4.add(i, [-math.exp((i-nums//4)/4), -random()*.2])
+
+        grid.addRow(p1, p2)
+        grid.addRow(p3, p4)
+        grid.save('tests/images/groupbarbellow.png')
+
 
 if __name__ == '__main__':
     import os
@@ -1951,8 +2031,5 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    Test.testHistogram()
     # Test.argument()
-    # Test.test3DCoordinateSystem()
-    # Test.testPOTATO()
-    Test.testSolidofRevolution()
-
