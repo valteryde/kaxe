@@ -41,11 +41,12 @@ class Equation:
     """
     
 
-    def __init__(self, left, right, color:tuple=None, width:int=2):
+    def __init__(self, left, right, color:tuple=None, width:int=2, computePadding=50):
         self.batch = shapes.Batch()
 
         self.left = left
         self.right = right
+        self.computePadding = computePadding
         
         self.width = width
         if color is None:
@@ -192,7 +193,10 @@ class Equation:
         if parent == identities.XYZPLOT:
             parent = getEquivalent2DPlot(parent)
         box = parent.windowBox
-        box = [box[0], box[2], box[1], box[3]]
+        box = [
+            box[0] - self.computePadding, box[2] + self.computePadding, 
+            box[1] - self.computePadding , box[3] + self.computePadding
+        ]
         self.__getPointsInBox__(box, len(self.steps)-1, parent)
 
         # Translate to 3D plot
@@ -226,7 +230,9 @@ class Equation:
             The symbol to be used in the legend.
         color : optional
             The color to be used for the legend text. If not provided, the default color will be used.
-        
+        computePadding: int, optional
+            When generating the equation some padding can be needed to include the edges properly (default is 50).
+            
         Returns
         -------
         self : object

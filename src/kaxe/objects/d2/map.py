@@ -146,21 +146,28 @@ class HeatMap:
         A colormap instance to map data values to colors (default is Colormaps.standard).
     """
 
-    def __init__(self, data, cmap=Colormaps.standard, unitPerPixel:list[float]=[1,1]):
+    def __init__(self, 
+                data,
+                cmap=Colormaps.standard, 
+                unitPerPixel:list[float]=[1,1],
+                position:Union[list, tuple]=(0,0),
+        ):
+        
         self.batch = shapes.Batch()
         self.cmap = cmap
         
         self.data = data
         self.unitPerPixel = unitPerPixel
+        self.position = position
 
         # max, min
         self.minValue = min([min(row) for row in self.data])
         self.maxValue = max([max(row) for row in self.data])
 
         self.farLeft = len(data[0]) * self.unitPerPixel[0]
-        self.farRight = 0
+        self.farRight = position[0]
         self.farTop = len(data) * self.unitPerPixel[1]
-        self.farBottom = 0
+        self.farBottom = position[1]
         
         self.supports = [identities.XYPLOT]
 
@@ -175,12 +182,15 @@ class HeatMap:
 
             for cellNum, cell in enumerate(row):
                 
-                p = parent.pixel(cellNum*self.unitPerPixel[0], rowNum*self.unitPerPixel[1])
+                p = parent.pixel(
+                    cellNum*self.unitPerPixel[0] + self.position[0], 
+                    rowNum*self.unitPerPixel[1] + self.position[1]
+                )
                 if not parent.inside(*p): continue
 
                 w, h = width, height
                 p1 = parent.inversepixel(p[0]+w, p[1]+h)
-                p1 = parent.pixel(*p1)
+                p1 = parent.pixel(p1[0], p1[1])
                 if not parent.inside(*p1):
                     p1 = parent.clamp(*p1)
                     w = p1[0] - p[0]

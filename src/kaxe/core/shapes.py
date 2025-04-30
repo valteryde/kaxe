@@ -1,4 +1,5 @@
 
+# https://github.com/treeform/pixie-python
 # https://pypi.org/project/drawsvg/
 
 from random import randint
@@ -85,7 +86,7 @@ class Shape:
         try:
             if self.engine == engine.PILLOW:
                 self.drawPillow(*args, **kwargs)
-        except AttributeError:
+        except ZeroDivisionError:
             logging.critical('No man')
 
     
@@ -240,16 +241,20 @@ class Circle(Shape):
         else:
             self.x += self.radius   
             y -= 2 * self.radius
-
-        doubleRadius = self.radius*2 # FIX
-        img = newImage(doubleRadius*2, doubleRadius*2, (0,0,0,0))
-        draw = ImageDraw.Draw(img)
+        
+        # Create a small RGBA circle image
+        doubleradius = int(2*self.radius)
+        circle = Image.new("RGBA", (doubleradius, doubleradius), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(circle)
+        pos = (0, 0, 2 * self.radius, 2 * self.radius)
         if self.fill:
-            draw.ellipse((0, 0, doubleRadius, doubleRadius), fill=self.color)
+            draw.ellipse(pos, fill=self.color)
         else:
-            draw.ellipse((0, 0, doubleRadius, doubleRadius), outline=self.color, width=self.width)
-        img = img.crop(img.getbbox())
-        blitImageToSurface(surface, img, (self.x - self.radius, y))
+            draw.ellipse(pos, outline=self.color, width=self.width)
+
+        # Paste the circle onto the main image using itself as the mask
+        surface.paste(circle, (int(self.x - self.radius), int(y)), mask=circle)
+
 
 
     def getBoundingBox(self): # returns 

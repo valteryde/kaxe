@@ -30,7 +30,9 @@ class Contour:
         The colormap to be used for the contour (default is None, which uses the standard colormap).
     lineThickness : int, optional
         The thickness of the contour lines (default is 10).
-    
+    computePadding: int, optional
+        When generating the contour equations some padding can be needed to include the edges properly (default is 50).
+        
     Examples
     --------
     >>> def example_func(x, y):
@@ -40,7 +42,7 @@ class Contour:
 
     """
     
-    def __init__(self, func3D:FunctionType, a:Union[int, float]=-20, b:Union[int, float]=20, steps:Union[int, float]=15, colorMap:Colormap=None, lineThickness:int=2):
+    def __init__(self, func3D:FunctionType, a:Union[int, float]=-20, b:Union[int, float]=20, steps:Union[int, float]=15, colorMap:Colormap=None, lineThickness:int=2, computePadding:int=50):
         self.batch = shapes.Batch()
     
         self.func = func3D
@@ -62,13 +64,15 @@ class Contour:
 
         self.__equations = []
 
+        self.computePadding = computePadding
+
     
     def finalize(self, parent):
 
         for i in range(self.steps):
             z = self.a + (self.b - self.a) * i/self.steps
 
-            eq = Equation(lambda *args: z, self.func, color=self.color.getColor(z, self.a, self.b), width=self.lineThickness)
+            eq = Equation(lambda *args: z, self.func, color=self.color.getColor(z, self.a, self.b), width=self.lineThickness, computePadding=self.computePadding)
             eq.finalize(parent)
             self.__equations.append(eq)
 
@@ -107,8 +111,3 @@ class Contour:
         if color:
             self.legendColor = color
         return self
-
-
-
-
-

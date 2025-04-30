@@ -1095,6 +1095,7 @@ class Test:
         plt.title('x', 'y left', 'y right')
 
         plt.save('tests/images/doubleaxis.png')
+        plt.show()
 
 
     def testBodePlotGrid():
@@ -1184,12 +1185,20 @@ class Test:
     def testBubbles():
         
         plt = kaxe.Plot([-10, 10, -10, 10])
+        plt.style(backgroundColor=(255,200,200,255))
 
         plt.add(kaxe.Function(lambda x: x))
 
         for i in range(2):
             v = randint(-10, 10)
             plt.add(kaxe.Bubble(randomword(randint(1, 20)), (randint(-10, 10), randint(-10, 10)), (v,v)))
+
+        v = randint(-10, 10)
+        plt.add(kaxe.Bubble(
+            randomword(randint(10, 20)), 
+            (randint(-10, 10), randint(-10, 10)), 
+            (v,v), backgroundColor=(255,255,0,100)
+        ))
 
         plt.show()
 
@@ -2031,5 +2040,8 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
-    Test.testHistogram()
-    # Test.argument()
+    # Test.testBubbles()
+    # Test.testDobuleAxisPlot()
+    # Test.testHistogram()
+    
+    Test.argument()

@@ -7,6 +7,7 @@ from ...core.symbol import symbol as symbols
 from ...core.text import Text
 from ...core.helper import *
 from ...plot import identities
+import numpy as np
 
 class Bubble:
     """
@@ -26,13 +27,23 @@ class Bubble:
         The thickness of the line pointing to the bubble, by default 5.
     fontSize : int, optional
         The font size of the text inside the bubble, by default 32.
-
+    backgroundColor : tuple, optional
+        The background color of the bubble in RGB format, by default WHITE.
+        
     Examples
     --------
     >>> plt.add( Bubble("kaxe is cool", (0,1), (2, 5)) )
     """
     
-    def __init__(self, text:str, centerPos, lineEndPos, color:tuple=BLACK, lineThickness:int=5, fontSize:int=32):
+    def __init__(self, 
+                 text:str, 
+                 centerPos, 
+                 lineEndPos, 
+                 color:tuple=BLACK, 
+                 lineThickness:int=5, 
+                 fontSize:int=32,
+                 backgroundColor=WHITE,
+        ):
 
         self.batch = shapes.Batch()
     
@@ -40,6 +51,7 @@ class Bubble:
         self.lineEndPos = lineEndPos
         self.text = str(text)
         self.fontSize = fontSize
+        self.backgroundColor = backgroundColor
 
         self.lineThickness = lineThickness
 
@@ -56,9 +68,14 @@ class Bubble:
         text = Text(self.text, *centerpos, self.fontSize)
         size = max(text.width, text.height) / 2
 
-        line = shapes.Line(*centerpos, *parent.pixel(*self.lineEndPos), color=self.color, batch=self.batch, width=self.lineThickness*2)
-        outerCircle = shapes.Circle(*centerpos, size+2*self.lineThickness, color=self.color, batch=self.batch)
-        innerCircle = shapes.Circle(*centerpos, size+self.lineThickness, color=WHITE, batch=self.batch)
+        radius = size+2*self.lineThickness
+        centerpos = np.array(centerpos)
+        v = np.array(parent.pixel(*self.lineEndPos)) - centerpos
+        v = radius * v / np.linalg.norm(v)
+
+        self.line = shapes.Line(*(centerpos + v), *parent.pixel(*self.lineEndPos), color=self.color, batch=self.batch, width=self.lineThickness*2)
+        self.innerCircle = shapes.Circle(*centerpos, radius, color=self.backgroundColor, batch=self.batch)
+        self.outerCircle = shapes.Circle(*centerpos, radius, color=self.color, fill=False, batch=self.batch)
 
         # instead of draw and push
         parent.addDrawingFunction(self.batch)
