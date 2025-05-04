@@ -65,8 +65,6 @@ class Plot3D(Window):
         rotation = rotation.copy()
         rotation[0] -= 90
         
-        self.forceWidthHeight = False # secret toggle only used by Kaxe.Grid and internal use
-
         """
         
            +--------------+
@@ -91,6 +89,7 @@ class Plot3D(Window):
         self.__normal__ = False
         self.__centerAddMarkers__ = addMarkers
         self.__isBackgroundDrawn__ = drawBackground
+        self.forceWidthHeight = False # secret toggle only used by Kaxe.Grid and internal use
 
         self.firstAxisTitle = None
         self.secondAxisTitle = None
