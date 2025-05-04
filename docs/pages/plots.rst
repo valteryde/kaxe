@@ -103,6 +103,7 @@ Logarithmic Plot
 .. autoclass:: kaxe.Plot3D
     :show-inheritance:
     :members:
+    :exclude-members: forceWidthHeight
 
     .. image:: /_static/plot3d.png
         :width: 400 px

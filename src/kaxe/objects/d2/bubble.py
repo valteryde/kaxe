@@ -43,6 +43,8 @@ class Bubble:
                  lineThickness:int=5, 
                  fontSize:int=32,
                  backgroundColor=WHITE,
+                 outlineColor=BLACK, 
+                 padding=10
         ):
 
         self.batch = shapes.Batch()
@@ -52,6 +54,8 @@ class Bubble:
         self.text = str(text)
         self.fontSize = fontSize
         self.backgroundColor = backgroundColor
+        self.outlineColor = outlineColor
+        self.padding = padding
 
         self.lineThickness = lineThickness
 
@@ -68,14 +72,14 @@ class Bubble:
         text = Text(self.text, *centerpos, self.fontSize)
         size = max(text.width, text.height) / 2
 
-        radius = size+2*self.lineThickness
+        radius = size+2*self.lineThickness + self.padding
         centerpos = np.array(centerpos)
         v = np.array(parent.pixel(*self.lineEndPos)) - centerpos
         v = radius * v / np.linalg.norm(v)
 
         self.line = shapes.Line(*(centerpos + v), *parent.pixel(*self.lineEndPos), color=self.color, batch=self.batch, width=self.lineThickness*2)
         self.innerCircle = shapes.Circle(*centerpos, radius, color=self.backgroundColor, batch=self.batch)
-        self.outerCircle = shapes.Circle(*centerpos, radius, color=self.color, fill=False, batch=self.batch)
+        self.outerCircle = shapes.Circle(*centerpos, radius, color=self.outlineColor, fill=False, batch=self.batch)
 
         # instead of draw and push
         parent.addDrawingFunction(self.batch)
@@ -114,4 +118,3 @@ class Bubble:
         if color:
             self.legendColor = color
         return self
-
