@@ -10,9 +10,9 @@ import numpy as np
 
 class Pillars:
     """
-    Diffrent pillars in plots
+    Different pillars in plots
 
-    This is diffrent from the Bar charts and Group Bar charts. This Object can be 
+    This is different from the Bar charts and Group Bar charts. This Object can be 
     inserted into classical plots.
         
     Parameters
@@ -21,15 +21,16 @@ class Pillars:
         The x-coordinates of the center of the pillar.
     heights : list or array-like
         The heights of the pillar at each x-coordinate. 
-        If this list contains multiple list inside each pillar will consist of 
-        multiple colors; This feature is not supported in polar plot
+        If this list contains multiple lists inside, each pillar will consist of 
+        multiple colors; This feature is not supported in polar plot.
     color : tuple, optional
         The RGB color of the pillar. If None, a random color is assigned. Default is None.
     width : int, optional
         The width of the pillar. Default is None.
-    outlineWidth :
-
-    outlineColor
+    outlineWidth : int, optional
+        The width of the outline around the pillar. Default is 5.
+    outlineColor : tuple, optional
+        The RGBA color of the outline around the pillar. Default is (0, 0, 0, 255).
         
     See also
     --------
@@ -65,7 +66,7 @@ class Pillars:
             self.color = [getRandomColor() for i in range(maxColors)]
             self.randomColor = True
         else:
-            if not (type(colors) in [list, tuple]):
+            if not (type(colors[0]) in [list, tuple]):
                 colors = [colors]
             self.color = colors
 
@@ -183,7 +184,7 @@ class Pillars:
 
 class Histogram:
 
-    def __new__(self, data:list, bins:int=5, color:list=None, width:int=None):
+    def __new__(self, data:list, bins:int=5, color:list=None, width:int=None, outlineColor:tuple=(0,0,0,255), outlineWidth=5):
         """
         Create a new instance of the Pillars object with histogram data.
         
@@ -209,4 +210,4 @@ class Histogram:
         
         hist, bin = np.histogram(data, bins=bins, density=True)
         bin = [(bin[i]+bin[i+1])/2 for i in range(len(bin)-1)]
-        return Pillars(bin, list(hist), colors=color, width=width)
+        return Pillars(bin, list(hist), colors=color, width=width, outlineColor=outlineColor, outlineWidth=outlineWidth)

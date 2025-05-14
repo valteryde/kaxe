@@ -144,6 +144,14 @@ class HeatMap:
         A 2D list containing the data values for the heatmap.
     cmap : Colormap, optional
         A colormap instance to map data values to colors (default is Colormaps.standard).
+    unitPerPixel : list of float, optional
+        A list containing the width and height of each pixel in the heatmap in terms of the unit space (default is [1, 1]).
+    position : list or tuple, optional
+        The (x, y) position of the bottom-left corner of the heatmap in the unit space (default is (0, 0)).
+    minValue : float or int, optional
+        The minimum value for the heatmap. If not provided, it is calculated from the data.
+    maxValue : float or int, optional
+        The maximum value for the heatmap. If not provided, it is calculated from the data.
     """
 
     def __init__(self, 
@@ -151,6 +159,8 @@ class HeatMap:
                 cmap=Colormaps.standard, 
                 unitPerPixel:list[float]=[1,1],
                 position:Union[list, tuple]=(0,0),
+                minValue = None,
+                maxValue = None
         ):
         
         self.batch = shapes.Batch()
@@ -161,8 +171,15 @@ class HeatMap:
         self.position = position
 
         # max, min
-        self.minValue = min([min(row) for row in self.data])
-        self.maxValue = max([max(row) for row in self.data])
+        if minValue:
+            self.minValue = minValue
+        else:
+            self.minValue = min([min(row) for row in self.data])
+
+        if maxValue:
+            self.maxValue = maxValue
+        else:
+            self.maxValue = max([max(row) for row in self.data])
 
         self.farLeft = len(data[0]) * self.unitPerPixel[0]
         self.farRight = position[0]

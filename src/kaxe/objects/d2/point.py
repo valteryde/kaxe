@@ -64,7 +64,7 @@ class Points2D:
         self.legendColor = self.color
         self.connect = connect
         
-        if len(self.x) > 1:
+        if len(self.x) > 0:
             self.farLeft = min(self.x)
             self.farRight = max(self.x)
             self.farTop = max(self.y)
