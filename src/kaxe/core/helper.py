@@ -1,6 +1,10 @@
 
 import math
 import numbers
+import time
+import numpy as np
+from numba import njit, jit
+from PIL import Image
 
 # math
 def intersectLines(n1, p1, n2, p2):
@@ -140,3 +144,27 @@ def isRealNumber(x):
     if math.isnan(x):
         return False
     return True
+
+
+def getbbox(image:Image.Image, needle:tuple) -> list:
+
+    # Convert image to NumPy array and int16 to handle subtraction safely
+    image_np = np.array(image).astype(np.int16)
+    needle = np.array(needle, dtype=np.int16)
+    tolerance = 1
+
+    # Create a mask of pixels that are NOT equal to the needle
+    diff = np.abs(image_np - needle)
+    non_background_mask = np.any(diff > tolerance, axis=-1)  # True where pixel != needle
+
+    # Find where non-background pixels are
+    rows, cols = np.where(non_background_mask)
+
+    if len(rows) == 0 or len(cols) == 0:
+        return [0, 0, *image.size]
+    else:
+        y_min, y_max = rows.min(), rows.max()
+        x_min, x_max = cols.min(), cols.max()
+        bbox = (int(x_min), int(y_min), int(x_max + 1), int(y_max + 1))
+        return bbox
+    

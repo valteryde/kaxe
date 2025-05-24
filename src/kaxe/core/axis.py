@@ -47,14 +47,23 @@ class Axis(AttrObject):
         self.directionVector = directionVector
         self.titleNormal = np.array(titleNormal) / vlen(titleNormal)
         self.vLen = vlen(directionVector)
+        
+        # For 3D axis may be in the screen (or out)
+        self.__allowOverLappingCheck__ = True
+        self.__noMarkers__ = False
+        if self.vLen < 0.1:
+            self.__allowOverLappingCheck__ = False
+            self.__noMarkers__ = True
+
         self.v = (directionVector[0]/self.vLen, directionVector[1]/self.vLen)
         self.n = (-self.v[1],self.v[0])
-        self.finalized = False    
+        self.finalized = False
         self.markers = []
         
         # only a refernce for the name of attribute on parent object
         self.numberOnAxisGoalReference = numberOnAxisGoalReference
         self.userAddedMarkers = []
+        
 
     def add(self, text:str, pos:Union[int, float], showLine:bool=True):
         """
@@ -91,6 +100,9 @@ class Axis(AttrObject):
     
 
     def computeMarkersAutomatic(self, parent):
+        if self.__noMarkers__:
+            return []
+
         markers = []
         assert self.finalized
 
@@ -621,6 +633,9 @@ class Axis(AttrObject):
 
     def __checkMarkersOverlapping__(self, parent, axis):
 
+        if not self.__allowOverLappingCheck__ or not axis.__allowOverLappingCheck__:
+            return
+
         if not(len(self.markers) == 0 or len(axis.markers) == 0):
             
             # def min_(l):
@@ -655,6 +670,7 @@ class Axis(AttrObject):
 
             posSelfCenter = np.array((self.startPos/2 + self.endPos/2))
             posAxisCenter = np.array((axis.startPos/2 + axis.endPos/2))
+            
             for a, b in l:
                 if not hasattr(a, 'textLabel') or not hasattr(b, 'textLabel'):
                     continue
@@ -674,14 +690,17 @@ class Axis(AttrObject):
                 vb = posAxisCenter - posMarkerB
                 vb /= np.sqrt(np.dot(vb, vb))
 
-                for i in range(parent.width): # maxpixel
 
-                    b.textLabel.push(*vb*10)
-                    a.textLabel.push(*va*10)
+                push_factor = 10
+                numTries = parent.width//100
+                for i in range(numTries): # maxpixel
+
+                    b.textLabel.push(*vb*push_factor)
+                    a.textLabel.push(*va*push_factor)
 
                     if not self.__topLeftBoxOverlays__(a.textLabel, b.textLabel):
-                        b.textLabel.push(*vb*10)
-                        a.textLabel.push(*va*10)
+                        b.textLabel.push(*vb*push_factor)
+                        a.textLabel.push(*va*push_factor)
                         
                         parent.includeElement(a.textLabel)
                         parent.includeElement(b.textLabel)
@@ -689,6 +708,9 @@ class Axis(AttrObject):
                         break
                     
                 else:
+                    # give up and go back
+                    b.textLabel.push(*vb*push_factor*(-numTries))
+                    a.textLabel.push(*va*push_factor*(-numTries))
                     continue
                 
                 break

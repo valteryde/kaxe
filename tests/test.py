@@ -2025,6 +2025,7 @@ class Test:
         grid.save('tests/images/groupbarbellow.png')
 
 
+
 if __name__ == '__main__':
     import os
     try:
@@ -2043,5 +2044,6 @@ if __name__ == '__main__':
     # Test.testBubbles()
     # Test.testDobuleAxisPlot()
     # Test.testHistogram()
-    
-    Test.argument()
+    # Test.argument()
+
+    Test.testMesh()

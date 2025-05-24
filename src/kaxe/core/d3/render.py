@@ -14,19 +14,18 @@ import numpy as np
 from ..window import settings
 
 class Render:
-    def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0]):
+    def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0], backgroundColor=(255,255,255,255)):
         self.width = width
         self.height = height
         self.lightDirection = np.array([float(i) for i in light])
         self.useLight = any(light)
 
+        self.backgroundColor = backgroundColor
         self.camera = Camera()
         if w: self.camera.w = w
-        self.image = Image.new('RGBA', (self.width, self.height), (255, 255, 255, 0))
+        self.image = Image.new('RGBA', (self.width, self.height), self.backgroundColor)
         self.image = array(self.image)
         self.camera.satelite(*cameraAngle)
-
-        self.backgroundColor = 255,255,255,0
 
         self.objects3d = []
 

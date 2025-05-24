@@ -15,7 +15,7 @@ def blendColors(fg, bg):
     r = uint8(fg[0] * a_fg + bg[0] * a_bg)
     g = uint8(fg[1] * a_fg + bg[1] * a_bg)
     b = uint8(fg[2] * a_fg + bg[2] * a_bg)
-    a = uint8(fg[3])  # Preserve foreground alpha as uint8
+    a = uint8((fg[3] + bg[3])/2)  # Preserve foreground alpha as uint8
     
     return (r, g, b, a)
 

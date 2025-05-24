@@ -2,7 +2,7 @@
 # window
 from random import randint
 import sys
-from ..core.helper import insideBox
+from ..core.helper import insideBox, getbbox
 from ..core.window import Window, settings
 from ..core.shapes import ImageShape
 from ..core.axis import Axis
@@ -101,6 +101,7 @@ class Plot3D(Window):
         self.attrmap.default('width', 2000)
         self.attrmap.default('height', 2000)
         self.attrmap.default('wireframeLinewidth', 3)
+        self.attrmap.default('backgroundColor', (255,255,255,255))
         self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255))
         self.attrmap.default('axisLineColorBackdrop', (200,200,200,255))
         self.attrmap.default('fontSize', 100)
@@ -354,12 +355,14 @@ class Plot3D(Window):
         self.setAttr('width', width)
         self.setAttr('height', height)
 
+        self.backgroundColor = self.getAttr("backgroundColor")
         self.render = Render(
             width=self.getAttr('width'), 
             height=self.getAttr('height'),
             cameraAngle=[math.radians(self.rotation[0]), 
                          math.radians(self.rotation[1])],
-            light=self.light
+            light=self.light,
+            backgroundColor=self.backgroundColor
         )
         
         self.__createWireframe__()
@@ -801,7 +804,7 @@ class Plot3D(Window):
             crop image and resize the whole image
             """
 
-            bbox = self.image.img.getbbox()
+            bbox = getbbox(self.image.img, self.backgroundColor)
             oldpadding = [i for i in self.padding]
             self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
             x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
