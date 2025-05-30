@@ -49,8 +49,8 @@ def randomObject(legend=True):
     
 
 def randomword(length):
-   letters = string.ascii_lowercase
-   return ''.join(choice(letters) for i in range(length))
+    letters = string.ascii_lowercase
+    return ''.join(choice(letters) for i in range(length))
 
 
 class Test:
@@ -89,6 +89,15 @@ class Test:
         plt.show()
 
 
+    def test3DText():
+        
+        plt = kaxe.Plot()
+
+        plt.add(kaxe.Text())
+
+        plt.show()
+
+
 if __name__ == '__main__':
     import os
     try:
@@ -96,7 +105,9 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
     
-    Test.testTransparent3DPlot()
+    Test.test3DText()
+    
+    # Test.testTransparent3DPlot()
 
     # Test.testBubbles()
     # Test.testDobuleAxisPlot()

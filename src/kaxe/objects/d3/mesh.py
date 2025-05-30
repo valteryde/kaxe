@@ -32,7 +32,9 @@ class Mesh(Base3DObject):
         The mesh object containing the 3D geometry. Contains all verticies data as three points. 
     color: Colormap, optional
         Colormap to display based on average vertices z-value for each triangle.
-
+    excludeLight : bool, optional
+        Whether to exclude lighting effects. Default is True.
+        
     Examples
     --------
     >>> mesh = kaxe.Mesh( meshlist )
@@ -43,11 +45,12 @@ class Mesh(Base3DObject):
 
     """
     
-    def __init__(self, mesh, color:Colormap=None):
+    def __init__(self, mesh, color:Colormap=None, excludeLight=False):
         super().__init__()
 
         self.mesh:stlmesh.Mesh = mesh
         self.color = color
+        self.excludeLight:bool = excludeLight
 
         self.bounds = self.getBoundingBox
 
@@ -60,7 +63,7 @@ class Mesh(Base3DObject):
             self.cmap = Colormaps.standard
 
     
-    def open(fpath, color:Colormap=None):
+    def open(fpath, **kwargs):
         """
         Reads a STL file and creates a Mesh object
         
@@ -85,10 +88,10 @@ class Mesh(Base3DObject):
         if not STLLIBIMPORTED:
             raise ImportError('Please ensure that the numpy-stl library is installed')
 
-        return Mesh(stlmesh.Mesh.from_file(fpath), color=color)
+        return Mesh(stlmesh.Mesh.from_file(fpath), **kwargs)
 
 
-    def fromVectors(vectors, color:Colormap=None):
+    def fromVectors(vectors, **kwargs):
         """
         Creates a mesh objects from vectors
         
@@ -108,7 +111,7 @@ class Mesh(Base3DObject):
         data = np.zeros(len(vectors), dtype=stlmesh.Mesh.dtype)
         mesh = stlmesh.Mesh(data, remove_empty_areas=False)
         mesh.vectors = vectors
-        return Mesh(mesh, color=color)
+        return Mesh(mesh, **kwargs)
 
 
 
@@ -123,7 +126,7 @@ class Mesh(Base3DObject):
                 continue
 
             color = self.cmap.getColor(avgZ, parent.windowAxis[4], parent.windowAxis[5])
-            render.add3DObject(Triangle(parent.pixel(*p1), parent.pixel(*p2), parent.pixel(*p3), color=color))
+            render.add3DObject(Triangle(parent.pixel(*p1), parent.pixel(*p2), parent.pixel(*p3), color=color, ableToUseLight=(not self.excludeLight)))
 
         del self.mesh
         
