@@ -10,11 +10,10 @@ class Camera:
         self.pos = np.array([0,0,0])
         self.angle = np.array([0,0,0])
         self.w = 999999
-        self.scale = 1
-        self.__calculateRotationMatrix__()
+        self.calculateRotationMatrix()
         
     
-    def __calculateRotationMatrix__(self):
+    def calculateRotationMatrix(self):
         self.R = Rotation.from_euler('zyx', self.angle).as_matrix()
 
 
@@ -25,15 +24,14 @@ class Camera:
 
         xm = (x * self.w) / (self.w + z)
         ym = (y * self.w) / (self.w + z)
-        return array([xm*self.scale, ym*self.scale])
+        return array([xm, ym])
 
 
-    def satelite(self, azimuth, zenith, d=2):
+    def satelite(self, azimuth, zenith):
 
-        self.scale = 1/d
         self.angle = array([azimuth, 0, zenith])
 
-        self.__calculateRotationMatrix__()
+        self.calculateRotationMatrix()
 
     
     

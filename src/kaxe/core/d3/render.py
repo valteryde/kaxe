@@ -55,7 +55,6 @@ class Render:
         
         self.objects3d = nontransparent + transparent
 
-        
         showProgressBar = not settings["removeInfo"]
         if showProgressBar: bar = tqdm.tqdm(total=len(self.objects3d), desc="3D compute")
         for obj in self.objects3d:

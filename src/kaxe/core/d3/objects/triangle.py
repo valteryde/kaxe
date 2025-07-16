@@ -5,7 +5,6 @@ from numba import njit
 from ..helper import clamp, formatColor
 from .color import addColorToBuffers
 
-
 @njit
 def sign(p1, p2, p3):
     return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
@@ -104,14 +103,15 @@ class Triangle:
         self.p3 = array([float(i) for i in p3])
         self.color = formatColor(color)
         self.ableToUseLight = ableToUseLight
-        self.__hidden__ = False
+        self.hidden = False
+        self._pos = None
 
 
     def hide(self):
-        self.__hidden__ = True
+        self.hidden = True
 
     def show(self):
-        self.__hidden__ = False
+        self.hidden = False
 
 
     def getZ(self, R):
@@ -139,3 +139,5 @@ class Triangle:
             useLight       = render.useLight and self.ableToUseLight
         )
     
+    def getRemovableTriangles(self):
+        yield self._pos

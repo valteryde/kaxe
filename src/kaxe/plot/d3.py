@@ -2,6 +2,7 @@
 # window
 from random import randint
 import sys
+import time
 from ..core.helper import insideBox, getbbox
 from ..core.window import Window, settings
 from ..core.shapes import ImageShape
@@ -10,6 +11,7 @@ from ..core.marker import Marker
 
 # 3d 
 from ..core.d3.render import Render
+from ..core.d3.openglrender import OpenGLRender
 from ..core.d3.objects.line import Line3D
 from ..core.d3.objects.point import Point3D
 from ..core.d3.objects.triangle import Triangle
@@ -19,8 +21,27 @@ import math
 import numpy as np
 from PIL import Image
 from typing import Union
+from numba import njit
+from io import BytesIO
+
 
 XYZPLOT = 'xyz'
+
+@njit
+def sign(p, p1, p2):
+    return (p[0] - p2[0]) * (p1[1] - p2[1]) - (p1[0] - p2[0]) * (p[1] - p2[1])
+
+@njit
+def isPointInTriangle(p, p1, p2, p3, tol=-1):
+    
+    d1 = sign(p, p1, p2)
+    d2 = sign(p, p2, p3)
+    d3 = sign(p, p3, p1)
+        
+    has_neg = (d1 < -tol) or (d2 < -tol) or (d3 < -tol)
+    has_pos = (d1 > tol) or (d2 > tol) or (d3 > tol)
+    
+    return not (has_neg and has_pos)
 
 
 class Plot3D(Window):
@@ -81,6 +102,9 @@ class Plot3D(Window):
 
         """
 
+        self.engine = "numba"
+        self.engine = "taichi"
+
         self.identity = XYZPLOT
         self.light = light
         self.axis = [None, None, None]
@@ -89,7 +113,7 @@ class Plot3D(Window):
         self.__normal__ = False
         self.__centerAddMarkers__ = addMarkers
         self.__isBackgroundDrawn__ = drawBackground
-        self.forceWidthHeight = False # secret toggle only used by Kaxe.Grid and internal use
+        self.forceWidthHeight = True # secret toggle only used by Kaxe.Grid and internal use
 
         self.firstAxisTitle = None
         self.secondAxisTitle = None
@@ -100,7 +124,9 @@ class Plot3D(Window):
         # styles
         self.attrmap.default('width', 2000)
         self.attrmap.default('height', 2000)
-        self.attrmap.default('wireframeLinewidth', 3)
+        self.attrmap.default('guiWidth', 1000), 
+        self.attrmap.default('guiHeight', 750), 
+        self.attrmap.default('wireframeLinewidth', 5)
         self.attrmap.default('backgroundColor', (255,255,255,255))
         self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255))
         self.attrmap.default('axisLineColorBackdrop', (200,200,200,255))
@@ -119,6 +145,11 @@ class Plot3D(Window):
         self.attrmap.default(attr='yNumbers', value=None)
         self.attrmap.default(attr='zNumbers', value=None)
 
+        self.backgroundTriangles = []
+
+        self.__cachedAxis__ = None
+        self.__cachedXYZ__ = None
+
         """
         window:tuple [x0, x1, y0, y1, z0, z1] axis
         """
@@ -128,6 +159,16 @@ class Plot3D(Window):
 
         self.h = 1/2
         
+        self.__setRotation__(rotation)
+
+        self.windowAxis = window
+        if window is None:
+            self.windowAxis = []
+
+        self.__triangleFaces__ = dict()
+        self.__lines__ = set()
+
+    def __setRotation__(self, rotation):
         if rotation[0] < 0:
             rotation[0] = 360 + rotation[0]%360
         if rotation[1] < 0:
@@ -135,18 +176,13 @@ class Plot3D(Window):
 
         self.rotation = [rotation[0]%360, rotation[1]%360]
 
-        self.windowAxis = window
-        if window is None:
-            self.windowAxis = []
-
-
-
     def __createAxisBoxLine__(self, p1, p2, axisType, color=(0,0,0,255)):
         lineWidth = self.getAttr('wireframeLinewidth')
         
         line = Line3D(p1, p2, width=lineWidth, color=color)
         line.__axisType = axisType # x, y or z
-        return self.render.add3DObject(line)
+
+        return line
 
 
     def __createWireframe__(self):
@@ -246,6 +282,7 @@ class Plot3D(Window):
         axis.setPos(a, b)
         axis.addStartAndEnd(self.window[0+i*2], self.window[1+i*2])
         axis.finalize(self)
+        
         if addMarkers:
             markers = axis.computeMarkersAutomatic(self)
             axis.addMarkersToAxis(markers, self)
@@ -310,7 +347,6 @@ class Plot3D(Window):
             self.l12
         ]
 
-
         for _ in range(1000):
             self.render.SCL -= stepSize
 
@@ -324,10 +360,20 @@ class Plot3D(Window):
 
             else:
                 break
-            
 
     def __before__(self):
         # assert self.__normal__ != self.__boxed__
+
+        width, height = self.getAttr('width'), self.getAttr('height')
+        guiwidth, guiheight = self.getAttr('guiWidth'), self.getAttr('guiHeight')
+
+        ratio = min(guiwidth / height, guiheight / width, 1)
+
+        self.setAttr('width', int(width * ratio))
+        self.setAttr('height', int(height * ratio))
+
+        self.width = self.getAttr('width')
+        self.height = self.getAttr('height')
 
         # finish making plot
         # fit "plot" into window
@@ -351,10 +397,6 @@ class Plot3D(Window):
 
         self.offset = np.array((-self.h,-self.h,-self.h)) * self.size
 
-        width = height = min(self.getAttr('width'), self.getAttr('height'))
-        self.setAttr('width', width)
-        self.setAttr('height', height)
-
         self.backgroundColor = self.getAttr("backgroundColor")
         self.render = Render(
             width=self.getAttr('width'), 
@@ -364,7 +406,15 @@ class Plot3D(Window):
             light=self.light,
             backgroundColor=self.backgroundColor
         )
-        
+        self.render = OpenGLRender(
+            width=self.getAttr('width'), 
+            height=self.getAttr('height'),
+            cameraAngle=[math.radians(self.rotation[0]+90), 
+                         math.radians(self.rotation[1])],
+            light=self.light,
+            backgroundColor=self.backgroundColor
+        )
+    
         self.__createWireframe__()
         self.__scaleRender__()
         
@@ -390,6 +440,16 @@ class Plot3D(Window):
 
         # self.__drawDebug__()
 
+        for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
+
+            n = np.cross(v1, v2)
+            smallzOffset = (n/np.linalg.norm(n))/5000
+            smallzOffset *= 1
+
+            # self.__triangleFaces__[i] = (
+            #     self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=[0,0,0,0], ableToUseLight=False)),
+            #     self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=[0,0,0,0], ableToUseLight=False))
+            # )
 
     def __drawDebug__(self):
         """
@@ -433,11 +493,10 @@ class Plot3D(Window):
             (255,255,0,255),
         ]
 
-
         for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
 
-            self.render.add3DObject(Triangle(p1, p2, p3, color=colors[i]))
-            self.render.add3DObject(Triangle(p4, p2, p3, color=colors[i]))
+            # self.render.add3DObject(Triangle(p1, p2, p3, color=colors[i]))
+            # self.render.add3DObject(Triangle(p4, p2, p3, color=colors[i]))
 
             n = np.cross(v1, v2)
 
@@ -471,10 +530,15 @@ class Plot3D(Window):
         n = np.cross(v1, v2)
         smallzOffset = (n/np.linalg.norm(n))/5000
         smallzOffset *= 1
-
-        self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor, ableToUseLight=False))
-        self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor, ableToUseLight=False))
-                
+        
+        if len(self.backgroundTriangles) < 6:
+            self.backgroundTriangles.append(
+                self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor, ableToUseLight=False))
+            )
+            self.backgroundTriangles.append(
+                self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=backgroundColor, ableToUseLight=False))
+            )
+        
         # find den koordinat som de alle sammen har altså holdes konstant igennem fladen
         for i in range(3): # 3 koordinater
             if p1[i] == p2[i] == p3[i] == p4[i]:
@@ -483,7 +547,7 @@ class Plot3D(Window):
                     xyz[i] = self.windowAxis[i*2]
                 else:
                     xyz[i] = self.windowAxis[i*2+1]
-
+            
 
     def __drawGridLines__(self, axisx:Axis, axisy:Axis, axisz:Axis, xyz):
         axisLineColor = self.getAttr('axisLineColorBackdrop')
@@ -496,8 +560,8 @@ class Plot3D(Window):
             if i.x == self.windowAxis[1]:
                 x -= epsilon                
 
-            self.render.add3DObject(Line3D(self.pixel(x, self.windowAxis[2], xyz[2]), self.pixel(x, self.windowAxis[3], xyz[2]), color=axisLineColor))
-            self.render.add3DObject(Line3D(self.pixel(x, xyz[1], self.windowAxis[4]), self.pixel(x, xyz[1], self.windowAxis[5]), color=axisLineColor))
+            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(x, self.windowAxis[2], xyz[2]), self.pixel(x, self.windowAxis[3], xyz[2]), color=axisLineColor)))
+            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(x, xyz[1], self.windowAxis[4]), self.pixel(x, xyz[1], self.windowAxis[5]), color=axisLineColor)))
             
         for i in axisy.markers:
             epsilon = (self.windowAxis[3] - self.windowAxis[2]) / 1000
@@ -507,8 +571,8 @@ class Plot3D(Window):
             if i.x == self.windowAxis[3]:
                 x -= epsilon
 
-            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], x, xyz[2]), self.pixel(self.windowAxis[1], x, xyz[2]), color=axisLineColor))
-            self.render.add3DObject(Line3D(self.pixel(xyz[0], x, self.windowAxis[4]), self.pixel(xyz[0], x, self.windowAxis[5]), color=axisLineColor))
+            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], x, xyz[2]), self.pixel(self.windowAxis[1], x, xyz[2]), color=axisLineColor)))
+            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(xyz[0], x, self.windowAxis[4]), self.pixel(xyz[0], x, self.windowAxis[5]), color=axisLineColor)))
             
         for i in axisz.markers:
             epsilon = (self.windowAxis[5] - self.windowAxis[4]) / 1000
@@ -518,27 +582,31 @@ class Plot3D(Window):
             if i.x == self.windowAxis[5]:
                 x -= epsilon
 
-            self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], x), self.pixel(self.windowAxis[1], xyz[1], x), color=axisLineColor))
-            self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], x), self.pixel(xyz[0], self.windowAxis[3], x), color=axisLineColor))
+            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], x), self.pixel(self.windowAxis[1], xyz[1], x), color=axisLineColor)))
+            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], x), self.pixel(xyz[0], self.windowAxis[3], x), color=axisLineColor)))
     
     
-    def isPointInTriangle(self, p, p1, p2, p3, tol=-1):
-        def sign(p, p1, p2):
-            return (p[0] - p2[0]) * (p1[1] - p2[1]) - (p1[0] - p2[0]) * (p[1] - p2[1])
-    
-        d1 = sign(p, p1, p2)
-        d2 = sign(p, p2, p3)
-        d3 = sign(p, p3, p1)
-            
-        has_neg = (d1 < -tol) or (d2 < -tol) or (d3 < -tol)
-        has_pos = (d1 > tol) or (d2 > tol) or (d3 > tol)
-            
-        return not (has_neg and has_pos)
-
 
     def is3DPointInsideAnyBoxFace(self, p1, p2):
         """
-        stupidly slow function, but it really only has to be run 30 times
+        Mål: Tjekke om punktet er inde i de tegnede firkanter.
+        Det er lidt et hack, men ideen er at tjekke midterpunkterne på hver linje og så 
+        tjekke n-pixel normal for linjen i begge retninger (markeret a og b). 
+        Problemmet er nemlig at vi tjekker trekanterne i normal fladerene og de flader 
+        trekanter adskilles af de mulige akselinje. 
+           +--------------+
+          /|             /|
+         / |            / |
+        *--+-----------*  |
+        |  |           |  |
+        |  |          a|b |
+        |  |           |  |
+        |  +-----------+--+
+        | /            | /
+        |/             |/
+        *--------------*
+        Det gør så også at den langsomme funktion is3DPointInsideAnyBoxFace skal
+        køres dobbelt så mange gange
         """
 
         p1, p2 = self.render.pixel(*p1), self.render.pixel(*p2)
@@ -546,23 +614,22 @@ class Plot3D(Window):
 
         v = p2 - p1
         n = np.array([-v[1], v[0]])
-        n = n/np.linalg.norm(n)
+        n = n / np.linalg.norm(n)
 
         topPoint = point + n
         bottomPoint = point - n
 
-        for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
+        for p1, p2, p3, p4 in self.projectedFaceNormals:
 
-            a = self.isPointInTriangle(topPoint, self.render.pixel(*p1), self.render.pixel(*p2), self.render.pixel(*p3))
-            b = self.isPointInTriangle(topPoint, self.render.pixel(*p4), self.render.pixel(*p2), self.render.pixel(*p3))
+            a = isPointInTriangle(topPoint, p1, p2, p3)
+            b = isPointInTriangle(topPoint, p4, p2, p3)
 
-            c = self.isPointInTriangle(bottomPoint, self.render.pixel(*p1), self.render.pixel(*p2), self.render.pixel(*p3))
-            d = self.isPointInTriangle(bottomPoint, self.render.pixel(*p4), self.render.pixel(*p2), self.render.pixel(*p3))
-
+            c = isPointInTriangle(bottomPoint, p1, p2, p3)
+            d = isPointInTriangle(bottomPoint, p4, p2, p3)
+            
             if (a or b) and (c or d): return True
 
         return False
-
 
     def __distancePointToLine__(self, px, py, x1, y1, x2, y2):
         """Calculate the perpendicular distance from a point (px, py) to a line segment (x1, y1) - (x2, y2)"""
@@ -578,6 +645,7 @@ class Plot3D(Window):
         
         return np.hypot(px - closest_x, py - closest_y)
 
+    
     def __thickAxisLinesOverlap__(self, l1, l2):
         """
         Check if two thick lines (treated as rectangles) overlap
@@ -619,136 +687,153 @@ class Plot3D(Window):
         self.axis[2].checkCrossOvers(self, self.axis[0])
         self.axis[2].checkCrossOvers(self, self.axis[1])
 
+
     def __after__(self):
         # add to window
         
-        self.image = ImageShape(Image.new('RGBA', (self.width, self.height)), 0, 0)
+        self.render.skipObjectUpdate = self.render.count % 30 != 0
+
+        for tri in self.backgroundTriangles:
+            self.render.remove3DObject(tri)
+        self.backgroundTriangles.clear()
+
+        for line in self.__lines__:
+            self.render.remove3DObject(line)
+        self.__lines__.clear()
+
+        self.image = ImageShape(Image.new('RGBA', (self.width, self.height)), 0, 0) # 0.5-1 ms
         self.addDrawingFunction(self.image)
+
+        # Update projectedFaceNormals
+        self.projectedFaceNormals = [
+            (
+                self.render.pixel(*p1),
+                self.render.pixel(*p2),
+                self.render.pixel(*p3),        
+                self.render.pixel(*p4)
+            )
+            for (p1, p2, p3, p4, *_) in self.faceNormals
+        ]
+
 
         # BOXED AND FRAMED
         if self.__boxed__:
             
-            #### Add axis to correct line 
-            # Calculate faces facing camera
-            xyz = {}
-            
-            for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
+            if (not self.render.skipObjectUpdate or not self.__cachedAxis__):
 
-                n = np.cross(v1, v2)
-                x,y,z = self.render.camera.R @ n
+                #### Add axis to correct line 
+                # Calculate faces facing camera
+                xyz = {}
                 
-                n = np.array([n[0], n[1], -n[2]])
-                x,y,z = self.render.camera.R @ n
+                # loop : 0.3 ms
+                for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
+
+                    n = np.cross(v1, v2)
+                    x,y,z = self.render.camera.R @ n
+                    
+                    n = np.array([n[0], n[1], -n[2]])
+                    x,y,z = self.render.camera.R @ n
+                    
+                    # TODO: 
+                    #   Understand why this works
+                    # [180; 270]
+                    specialcase = (180 < self.rotation[1] < 270)
+                    over90 = self.rotation[1] > 90
+                    if (y < 0 and (over90 and not specialcase)): continue
+                    if (y > 0 and (not over90 or specialcase)): continue
+
+                    if self.__isBackgroundDrawn__:
+                        self.__drawBackground__(i, xyz)
                 
-                # TODO: 
-                #   Understand why this works
-                # [180; 270]
-                specialcase = (180 < self.rotation[1] < 270)
-                over90 = self.rotation[1] > 90
-                if (y < 0 and (over90 and not specialcase)): continue
-                if (y > 0 and (not over90 or specialcase)): continue
+                #### Get positions for axis
+                # Regler:
+                #   Akse må ikke ligge inden i firkanten altså overlappe noget
+                #   Aksen skal være tættest på kameraet som muligt.
+                #   Akser må ikke overlappe hindanden
+                closestAxis = [
+                    (math.inf, None), 
+                    (math.inf, None), 
+                    (math.inf, None)
+                ]
 
-                if self.__isBackgroundDrawn__:
-                    self.__drawBackground__(i, xyz)
-
-            
-            #### Get positions for axis
-            # Regler:
-            #   Akse må ikke ligge inden i firkanten altså overlappe noget
-            #   Aksen skal være tættest på kameraet som muligt.
-            #   Akser må ikke overlappe hindanden
-            closestAxis = [
-                (math.inf, None), 
-                (math.inf, None), 
-                (math.inf, None)
-            ]
-
-            drawnAxis = []
-            alternativeAxis = {}
-            for i, lines in enumerate(self.lines):
+                alternativeAxis = {}
                 
-                for possibleAxis in lines:
+                # loop : 3.5 ms (old)
+                # loop : 0.3 ms (new)
+                for i, lines in enumerate(self.lines):
                     
-                    p1 = possibleAxis.p1
-                    p2 = possibleAxis.p2
-                    
-                    # Mål: Tjekke om punktet er inde i de tegnede firkanter.
-                    # Det er lidt et hack, men ideen er at tjekke midterpunkterne på hver linje og så 
-                    # tjekke n-pixel normal for linjen i begge retninger (markeret a og b). 
-                    # Problemmet er nemlig at vi tjekker trekanterne i normal fladerene og de flader 
-                    # trekanter adskilles af de mulige akselinje. 
-                    #    +--------------+
-                    #   /|             /|
-                    #  / |            / |
-                    # *--+-----------*  |
-                    # |  |           |  |
-                    # |  |          a|b |
-                    # |  |           |  |
-                    # |  +-----------+--+
-                    # | /            | /
-                    # |/             |/
-                    # *--------------*
-                    # Det gør så også at den langsomme funktion is3DPointInsideAnyBoxFace skal
-                    # køres dobbelt så mange gange
-                    
-                    if self.is3DPointInsideAnyBoxFace(p1, p2):
-                        drawnAxis.append(possibleAxis)
-                        continue    
-                    
-                    camera = np.array([0, -4*self.h, 0])
-                    p1 = self.render.camera.R @ p1 - camera
-                    p2 = self.render.camera.R @ p2 - camera
-                    p3 = self.render.camera.R @ p3 - camera
+                    for possibleAxis in lines:
 
-                    dist = min(np.linalg.norm(p1), np.linalg.norm(p2), np.linalg.norm(p3))
-                    
-                    if dist < closestAxis[i][0]:
-
-                        closestAxis[i] = (dist, possibleAxis)
-                    
-                    if closestAxis[i][1] != possibleAxis:
-                        alternativeAxis[i] = possibleAxis
-            
-            # front runners
-            axis:list[Line3D] = [
-                closestAxis[0][1],
-                closestAxis[1][1],
-                closestAxis[2][1],
-            ]
-
-            # tjek om linjerne overlapper
-            for i, l1 in enumerate(axis):
-                if i not in alternativeAxis.keys():
-                    continue
-
-                for j, l2 in enumerate(axis):
-
-                    if i == j: continue
-
-                    overlapping = self.__thickAxisLinesOverlap__(l1, l2)
-
-                    if overlapping:
+                        p1 = possibleAxis.p1
+                        p2 = possibleAxis.p2
                         
-                        axis[i] = alternativeAxis[i]
+                        # Se note i funktionen is3DPointInsideAnyBoxFace
+                        if self.is3DPointInsideAnyBoxFace(p1, p2):
+                            continue
+                        
+                        camera = np.array([0, -4*self.h, 0])
+                        p1 = self.render.camera.R @ p1 - camera
+                        p2 = self.render.camera.R @ p2 - camera
+                        p3 = self.render.camera.R @ p3 - camera
 
-                        break
-                    
+                        dist = min(np.linalg.norm(p1), np.linalg.norm(p2), np.linalg.norm(p3))
+                        
+                        if dist < closestAxis[i][0]:
+
+                            closestAxis[i] = (dist, possibleAxis)
+                        
+                        if closestAxis[i][1] != possibleAxis:
+                            alternativeAxis[i] = possibleAxis
+            
+                # front runners
+                axis:list[Line3D] = [
+                    closestAxis[0][1],
+                    closestAxis[1][1],
+                    closestAxis[2][1],
+                ]
+
+                # loop : 0.2 ms
+                # tjek om linjerne overlapper
+                for i, l1 in enumerate(axis):
+                    if i not in alternativeAxis.keys():
+                        continue
+
+                    for j, l2 in enumerate(axis):
+
+                        if i == j: continue
+
+                        overlapping = self.__thickAxisLinesOverlap__(l1, l2)
+
+                        if overlapping:
+                            
+                            axis[i] = alternativeAxis[i]
+
+                            break
+            
+            else:
+                axis = self.__cachedAxis__
+                xyz = self.__cachedXYZ__
 
             if self.__frame__:
-                for line in drawnAxis:
-                    line.hide()
+                for line in axis:
+                    self.render.add3DObject(line)
+                    self.__lines__.add(line)
 
             ## create axis
+            # createAxis * 3 = 5.5 ms (old)
+            # createAxis * 3 = 1 ms (new)
+            self.__cachedAxis__ = axis
+            self.__cachedXYZ__ = xyz
             axisx = self.__createAxis__(axis[0], 0)
             axisy = self.__createAxis__(axis[1], 1)
             axisz = self.__createAxis__(axis[2], 2)
 
-            self.__checkAxisCrossover__()
+            self.__checkAxisCrossover__() # 0.2 ms
             
             #### Add grid lines
+            # loop: 0.2 ms
             if self.__isBackgroundDrawn__:
                 self.__drawGridLines__(axisx, axisy, axisz, xyz)
-
         
         # AXIS IN THE MIDDLE
         if self.__normal__:
@@ -759,24 +844,22 @@ class Plot3D(Window):
             z = min(max(self.windowAxis[4], 0), self.windowAxis[5])
 
             line = Line3D(self.pixel(self.windowAxis[0], y, z), self.pixel(self.windowAxis[1], y, z))
-            R = self.render.camera.R
             axisx = self.__createAxis__(line, 0, self.__centerAddMarkers__, [0,1,0])
-            self.render.add3DObject(line)
+            self.__lines__.add(self.render.add3DObject(line))
 
             line = Line3D(self.pixel(x, self.windowAxis[2], z), self.pixel(x, self.windowAxis[3], z))
             axisy = self.__createAxis__(line, 1, self.__centerAddMarkers__, [1,0,0])
             if not self.__centerAddMarkers__:
                 axisy.markers = []
-            self.render.add3DObject(line)
+            self.__lines__.add(self.render.add3DObject(line))
 
             line = Line3D(self.pixel(x, y, self.windowAxis[4]), self.pixel(x, y, self.windowAxis[5]))
             axisz = self.__createAxis__(line, 2, self.__centerAddMarkers__, [1,0,0])
             if not self.__centerAddMarkers__:
                 axisz.markers = []
-            self.render.add3DObject(line)
+            self.__lines__.add(self.render.add3DObject(line))
 
             self.__checkAxisCrossover__()
-
 
         if self.firstAxisTitle:
             axisx.addTitle(self.firstAxisTitle, self)
@@ -787,32 +870,137 @@ class Plot3D(Window):
         if self.thirdAxisTitle:
             axisz.addTitle(self.thirdAxisTitle, self)
 
-        self.image.img = self.render.render()
+        # self.image.img = self.render.render()
         
-        if self.forceWidthHeight:
-            """
-            with this toggle the image will be placed in the middle
-            """
-            w, h = self.getSize()
+        # if self.forceWidthHeight:
+        #     """
+        #     with this toggle the image will be placed in the middle
+        #     """
+        #     w, h = self.getSize()
 
-            self.image.img.width, self.image.img.height
+        #     self.pushAll((w - self.image.img.width)/2, (h - self.image.img.height)/2)
 
-            self.pushAll((w - self.image.img.width)/2, (h - self.image.img.height)/2)
+        # else:
+        #     """
+        #     crop image and resize the whole image
+        #     """
 
-        else:
-            """
-            crop image and resize the whole image
-            """
-
-            bbox = getbbox(self.image.img, self.backgroundColor)
-            oldpadding = [i for i in self.padding]
-            self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
-            x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
-            self.pushAll(x,y)
-            self.__includeAllAgain__()
+        #     bbox = getbbox(self.image.img, self.backgroundColor)
+        #     oldpadding = [i for i in self.padding]
+        #     self.__setSize__(bbox[2] - bbox[0], bbox[3] - bbox[1])
+        #     x, y = -bbox[0]-oldpadding[0], -(self.image.img.height-bbox[3])-oldpadding[1]
+        #     self.pushAll(x,y)
+        #     self.__includeAllAgain__()
 
         # self.addPaddingCondition(bottom=-y+10)
 
+
+    def __start__(self):
+
+        self.showProgressBar = False
+        self.printDebugInfo = False
+
+        # get styles
+        self.width = self.getAttr('width')
+        self.height = self.getAttr('height')
+
+        self.windowBox = [
+            self.padding[0], 
+            self.padding[1], 
+            self.width+self.padding[0], 
+            self.height+self.padding[1]
+        ]
+        self.__calculateWindowBorders__()
+
+        self.__before__()
+
+        # self.render.SCL -= 300
+        self.render.SCL -= 100
+
+        self.__addInnerContent__()
+        
+        self.originalShapes = self.shapes.copy()
+
+        # GUI Loop
+        originalPadding = self.padding.copy()
+
+        def overlay(rotation=self.rotation):
+            
+            self.setAttr('width', self.render.width)
+            self.setAttr('height', self.render.height)
+            self.width = self.getAttr('width')
+            self.height = self.getAttr('height')
+
+            self.windowBox = [0, 0, self.width, self.height]
+
+            self.padding = originalPadding.copy()
+            self.__included__.clear()
+
+            self.shapes = self.originalShapes.copy()
+            self.rotation = rotation
+            self.__setRotation__(rotation)
+
+            # self.render.camera.angle[0] += 0.01/2
+            # self.render.camera.angle[2] += 0.02/2
+
+            self.render.camera.satelite(math.radians(self.rotation[0]), math.radians(self.rotation[1]))
+
+            self.__after__()
+            # print((time.time() - now)*1000) # ca 10 sek
+            # self.__addOuterContent__()
+
+            # include all elements
+            self.__includeAllAgain__()
+
+            self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
+
+            # add style padding
+            # self.addPaddingCondition(*self.getAttr('outerPadding'))
+
+            self.attrmap.setAttr('backgroundColor', (0,0,0,0))
+            surface = self.__pillowPaint__()
+
+            surface = surface.crop([0,0,self.render.width, self.render.height])
+
+            surface = surface.transpose(Image.Transpose.ROTATE_270)
+            
+            return surface
+
+        return overlay
+
+
+    def save(self, fname:Union[str, BytesIO]):
+
+        self.setAttr('guiWidth', self.getAttr('width'))
+        self.setAttr('guiHeight', self.getAttr('height'))
+
+        self.showProgressBar = False
+        self.printDebugInfo = False 
+
+        overlay = self.__start__()
+
+        self.render.debugDrawOverlay = False
+
+        image = self.render.render(overlay)
+        image = image.crop(getbbox(image, self.backgroundColor))
+        
+        if fname == None:
+            pass
+        elif fname is str:
+            image.save(fname)
+        else:
+            image.save(fname, format="png")
+
+        return image
+
+    def show(self, gui=True):
+
+        if gui:
+            overlay = self.__start__()
+            self.render.debugDrawOverlay = True
+            self.render.gui(overlay)
+        else:
+            self.save(None).show()
 
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
         """

@@ -286,7 +286,9 @@ class Axis(AttrObject):
 
         markers += self.userAddedMarkers
 
+        # loop : 1.7 ms
         for marker in markers:
+        
             marker_ = Marker(
                 marker["text"],
                 marker["pos"],
@@ -300,7 +302,8 @@ class Axis(AttrObject):
 
             marker_.finalize(parent)
             self.markers.append(marker_)
-        
+    
+            
         # get largets overlap
         maxOverlays = 1
         for a in self.markers:
@@ -362,7 +365,6 @@ class Axis(AttrObject):
                             marker.tickLine.color[2],
                             marker.tickLine.color[3]//4,
                         )
-
 
     def autoAddMarkers(self, parent):
         self.setAttrMap(parent.attrmap)

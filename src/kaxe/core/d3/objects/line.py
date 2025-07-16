@@ -93,6 +93,8 @@ class Line3D:
         self.width = width
         self.color = formatColor(color)
         self.hidden = False
+        self._triangles = []
+        self.ableToUseLight = False
 
     def getZ(self, R):
         return ((R @ self.p1)[2] + (R @ self.p2)[2]) / 2
@@ -116,3 +118,9 @@ class Line3D:
     
     def hide(self):
         self.hidden = True
+
+    def getRemovableTriangles(self):
+        for tri in self._triangles:
+            yield tri._pos
+        
+        self._triangles.clear()

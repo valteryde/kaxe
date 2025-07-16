@@ -6,6 +6,8 @@ from .shapes import *
 from fondi import MathText
 import numpy as np
 
+textImageCache = {}
+maxTextCacheSize = 100
 
 class Text(Shape):
     
@@ -18,7 +20,9 @@ class Text(Shape):
                  rotate:int=0, 
                  batch:Batch=None, 
                  anchor_x:str="center", 
-                 anchor_y:str="center", *args, **kwargs
+                 anchor_y:str="center", 
+                 cacheImage=True,
+                 *args, **kwargs
         ):
         
         self.batch = batch
@@ -53,7 +57,14 @@ class Text(Shape):
         text = res
 
         # make pil image
-        pilImage = MathText(text, self.fontSize, self.color).image
+        key = str(text), fontSize, tuple(color)
+        cachedImage = textImageCache.get(key)
+        if cachedImage:
+            pilImage = cachedImage
+        else:
+            pilImage = MathText(text, self.fontSize, self.color).image
+            textImageCache[key] = pilImage
+        
         # width = pilImage.width 
         # height = pilImage.height 
 

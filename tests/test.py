@@ -1746,6 +1746,7 @@ class Test:
         ]
 
         plt = kaxe.PlotEmpty3D(window, size=True, light=[0, 0, 1])
+        plt = kaxe.PlotFrame3D(window, size=True, light=[0, 0, 1])
         plt.adjust(0.6)
         plt.style( zNumbers=10 )
         plt.add( mesh )
@@ -1805,7 +1806,7 @@ class Test:
         cmap = kaxe.Colormaps.rainbow
         cmap = cmap.setAlpha(150)
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.1, color=cmap))
-        plt.save('tests/images/3d-center.png')
+        # plt.save('tests/images/3d-center.png')
         plt.show()
 
 
@@ -2046,4 +2047,7 @@ if __name__ == '__main__':
     # Test.testHistogram()
     # Test.argument()
 
-    Test.testMesh()
+    # Test.testPrettyContour2DIn3D()
+    # Test.test3DCoordinateSystem()
+    # Test.testSolidofRevolution()
+    Test.testLightning()

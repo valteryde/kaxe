@@ -98,15 +98,16 @@ class Marker(AttrObject):
         # force specefic height
 
         self.textLabel = Text(self.text,
-                                  x=pos[0], 
-                                  y=pos[1], 
-                                  color=color, 
-                                #   batch=self.batch, 
-                                  anchor_x="center",
-                                  anchor_y="center",
-                                # font_name=self.font,
-                                  fontSize=int(fontSize),
+            x=pos[0], 
+            y=pos[1], 
+            color=color, 
+        #   batch=self.batch, 
+            anchor_x="center",
+            anchor_y="center",
+        # font_name=self.font,
+            fontSize=int(fontSize),
         )
+        
 
         # da den placeres på aksen til at starte med skal den bare 
         # flyttes tickLength ned med n.
