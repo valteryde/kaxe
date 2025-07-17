@@ -93,6 +93,7 @@ class Test:
 
         # plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9))
         plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9, numPoints=100, color=kaxe.Colormaps.rainbow)) # .setAlpha(150)
+        plt.add(kaxe.Points3D((0, 0, 0), (1, 1, 1), (2, 2, 2), color=kaxe.Colormaps.red.setAlpha(150)))
 
         plt.show()
         # plt.show(gui=False)

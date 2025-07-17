@@ -24,7 +24,7 @@ from PIL import Image
 from typing import Union
 from numba import njit
 from io import BytesIO
-
+from ..core.d3.helper import formatColor
 
 XYZPLOT = 'xyz'
 
@@ -184,7 +184,7 @@ class Plot3D(Window):
         lineWidth = self.getAttr('wireframeLinewidth')
         
         line = Line3D(p1, p2, width=lineWidth, color=color)
-        line.__axisType = axisType # x, y or z
+        line.axisType = axisType # x, y or z
 
         return line
 
@@ -416,7 +416,7 @@ class Plot3D(Window):
         if self.__boxed__ or self.__frame__:
             for i in self.lines:
                 for line in i:
-                    line.color = lineBoxColor
+                    line.color = formatColor(lineBoxColor)
         else:
             for i in self.lines:
                 for line in i:

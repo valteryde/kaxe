@@ -4,6 +4,10 @@ from ..helper import magnitude, clamp, formatColor
 import math
 from numba import jit, njit
 from .color import addColorToBuffers
+from numba import float64, int32
+from numba.experimental import jitclass
+from numba.typed import List
+from numba.types import ListType
 
 @njit
 def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, color):
@@ -85,16 +89,28 @@ def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int
                 # possible rounding
                 continue
 
+@jitclass()
+class Line3DNumba:
+    p1 : float64[:]
+    p2 : float64[:]
+    width : float64
+    color : int32[:]
+    hidden : bool
+    ableToUseLight : bool
+    tp : str
+    axisType : str
+    _triangles : ListType(int32)
 
-class Line3D:
-    def __init__(self, p1, p2, color=(0,0,0,255), width=5, ableToUseLight=False):
+    def __init__(self, p1, p2, color=array((0,0,0,255)), width=5, ableToUseLight=False):
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.width = width
-        self.color = formatColor(color)
+        self.color = color
         self.hidden = False
-        self._triangles = []
         self.ableToUseLight = ableToUseLight
+        self._triangles = List.empty_list(int32)
+        self.tp = "line3d"
+        self.axisType = ""
 
     def getZ(self, R):
         return ((R @ self.p1)[2] + (R @ self.p2)[2]) / 2
@@ -124,10 +140,44 @@ class Line3D:
             yield tri._pos
         
         self._triangles.clear()
-    
 
-class FlatLine3D(Line3D):
-    def __init__(self, p1, p2, n, color=(0,0,0,255), width=5, ableToUseLight=True):
-        super().__init__(p1, p2, color, width, ableToUseLight=ableToUseLight)
-        self.n = n
 
+def Line3D(p1, p2, color=array((0,0,0,255)), width=5, ableToUseLight=False):
+    """
+    Create a 3D line object
+    """
+    return Line3DNumba(p1, p2, formatColor(color), width, ableToUseLight)
+
+
+
+@jitclass()
+class FlatLine3DNumba:
+    p1 : float64[:] # pyright: ignore[reportInvalidTypeForm]
+    p2 : float64[:] # pyright: ignore[reportInvalidTypeForm]
+    n : float64[:] # pyright: ignore[reportInvalidTypeForm]
+    width : float64 # pyright: ignore[reportInvalidTypeForm]
+    color : int32[:] # pyright: ignore[reportInvalidTypeForm]
+    hidden : bool
+    ableToUseLight : bool
+    tp : str
+    axisType : str
+    _triangles : ListType(int32)
+
+    def __init__(self, p1, p2, n, color=array((0,0,0,255)), width=5, ableToUseLight=False):
+        self.p1 = array([float(i) for i in p1])
+        self.p2 = array([float(i) for i in p2])
+        self.n = array([float(i) for i in n])
+        self.width = width
+        self.color = color
+        self.hidden = False
+        self.axisType = ""
+        self._triangles = List.empty_list(int32)
+        self.ableToUseLight = ableToUseLight
+        self.tp = "flatline3d"
+
+
+def FlatLine3D(p1, p2, n, color=array((0,0,0,255)), width=5, ableToUseLight=False):
+    """
+    Create a 3D line object
+    """
+    return FlatLine3DNumba(p1, p2, n, formatColor(color), width, ableToUseLight)

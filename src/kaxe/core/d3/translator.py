@@ -3,9 +3,11 @@ from .render import Render
 from ..shapes import Shape, Line, Circle, Triangle, Batch, LineSegment
 
 from .objects import * # Line3D, Point3D, TextureQuad, Triangle
+from .helper import formatColor
 
 from ...plot.empty import EmptyWindow
 from ...plot.d3 import Plot3D
+import time
 
 def getEquivalent2DPlot(parent:Plot3D) -> EmptyWindow:
 
@@ -58,12 +60,13 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
     plt3d:Plot3D = plt2d.__3DPlotRef
     render:Render = plt3d.render
 
+    now = time.time()
     for shape in objs:
         
         #### Circle
         if type(shape) is Circle:
             x, y = plt2d.inversepixel(shape.x, shape.y)
-            render.add3DObject( Point3D(*plt3d.pixel(x, y, 0), shape.radius, color=shape.color) )
+            render.add3DObject( Point3D(*plt3d.pixel(x, y, 0), shape.radius, color=formatColor(shape.color)) )
     
         
         ### Line
@@ -89,3 +92,4 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
             
                 render.add3DObject( Line3D((x1, y1, z1), (x2, y2, z2), color=shape.color, width=shape.thickness) )
 
+    print(time.time() - now, 's to translate 2D batch to 3D objects')

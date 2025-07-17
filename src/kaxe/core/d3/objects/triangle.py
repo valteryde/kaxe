@@ -4,6 +4,9 @@ from numpy import array, sqrt, dot, uint8, cross
 from numba import njit
 from ..helper import clamp, formatColor
 from .color import addColorToBuffers
+from numba import float64, int32
+import numpy as np
+from numba.experimental import jitclass
 
 @njit
 def sign(p1, p2, p3):
@@ -95,49 +98,79 @@ def drawTriangle(zbuffer,
 
             addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
+@jitclass
+class Triangle3DNumba:
+    p1: float64[:]
+    p2: float64[:]
+    p3: float64[:]
+    color: int32[:]
+    ableToUseLight: bool
+    hidden: bool
+    _pos: int32
+    tp: str
 
-class Triangle:
-    def __init__(self, p1, p2, p3, color=(0,0,0,255), ableToUseLight=True):
+    def __init__(self, p1, p2, p3, color=np.array((0,0,0,255)), ableToUseLight=True):
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.p3 = array([float(i) for i in p3])
-        self.color = formatColor(color)
+        self.color = color
         self.ableToUseLight = ableToUseLight
         self.hidden = False
-        self._pos = None
+        self._pos = -1
+        self.tp = "triangle3d"
 
 
-    def hide(self):
-        self.hidden = True
+def Triangle(p1, p2, p3, color=(0,0,0,255), ableToUseLight=True):
+    """
+    Create a 3D triangle object
+    """
+    return Triangle3DNumba(p1, p2, p3, formatColor(color), ableToUseLight)
 
-    def show(self):
-        self.hidden = False
 
 
-    def getZ(self, R):
-        return ((R @ self.p1)[2] + (R @ self.p2)[2] + (R @ self.p3)[2]) / 3
+# class Triangle:
+#     def __init__(self, p1, p2, p3, color=(0,0,0,255), ableToUseLight=True):
+#         self.p1 = array([float(i) for i in p1])
+#         self.p2 = array([float(i) for i in p2])
+#         self.p3 = array([float(i) for i in p3])
+#         self.color = formatColor(color)
+#         self.ableToUseLight = ableToUseLight
+#         self.hidden = False
+#         self._pos = None
+#         self.tp = "triangle3d"
 
-    def draw(self, render):
-        if self.__hidden__: return
 
-        self.p1_proj = render.pixel(*self.p1)
-        self.p2_proj = render.pixel(*self.p2)
-        self.p3_proj = render.pixel(*self.p3)
-        drawTriangle(
-            zbuffer        = render.zbuffer,
-            colorbuffer    = render.image,
-            R              = render.camera.R,
-            w              = render.camera.w,
-            p1             = self.p1,
-            p2             = self.p2,
-            p3             = self.p3,
-            p1_proj        = self.p1_proj,
-            p2_proj        = self.p2_proj,
-            p3_proj        = self.p3_proj,
-            color          = self.color,
-            lightDirection = render.lightDirection,
-            useLight       = render.useLight and self.ableToUseLight
-        )
+#     def hide(self):
+#         self.hidden = True
+
+#     def show(self):
+#         self.hidden = False
+
+
+#     def getZ(self, R):
+#         return ((R @ self.p1)[2] + (R @ self.p2)[2] + (R @ self.p3)[2]) / 3
+
+#     def draw(self, render):
+#         if self.__hidden__: return
+
+#         self.p1_proj = render.pixel(*self.p1)
+#         self.p2_proj = render.pixel(*self.p2)
+#         self.p3_proj = render.pixel(*self.p3)
+#         drawTriangle(
+#             zbuffer        = render.zbuffer,
+#             colorbuffer    = render.image,
+#             R              = render.camera.R,
+#             w              = render.camera.w,
+#             p1             = self.p1,
+#             p2             = self.p2,
+#             p3             = self.p3,
+#             p1_proj        = self.p1_proj,
+#             p2_proj        = self.p2_proj,
+#             p3_proj        = self.p3_proj,
+#             color          = self.color,
+#             lightDirection = render.lightDirection,
+#             useLight       = render.useLight and self.ableToUseLight
+#         )
     
-    def getRemovableTriangles(self):
-        yield self._pos
+#     def getRemovableTriangles(self):
+#         yield self._pos

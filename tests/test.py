@@ -1517,8 +1517,8 @@ class Test:
         plt3d.style(fontSize=40)
         plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
 
-        plt3d.show()
-        plt3d.save('tests/images/contour3d.png')
+        plt3d.show(gui=False)
+        # plt3d.save('tests/images/contour3d.png')
 
     
     def test3DWidthHeightDiffrence():
@@ -2047,9 +2047,10 @@ if __name__ == '__main__':
     # Test.testHistogram()
     # Test.argument()
 
-    # Test.testPrettyContour2DIn3D()
+    Test.testPrettyContour2DIn3D()
     # Test.test3DCoordinateSystem()
     # Test.testSolidofRevolution()
     # Test.testVectorField3D()
-    Test.testSingleMesh()
+    # Test.testMesh()
+    # Test.testSingleMesh()
     # Test.testLightning()

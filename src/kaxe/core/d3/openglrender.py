@@ -10,8 +10,9 @@ from math import radians, sin, cos
 from typing import Union
 from .camera import Camera
 from PIL import Image
-from .objects.triangle import Triangle
-from .objects.line import Line3D, FlatLine3D
+from .objects.triangle import Triangle, Triangle3DNumba
+from .objects.line import Line3D, FlatLine3D, Line3DNumba, FlatLine3DNumba
+from .objects.point import Point3D, Point3DNumba
 import psutil
 process = psutil.Process()
 import fondi
@@ -21,30 +22,53 @@ import sdl2.ext
 import sdl2.video
 import ctypes
 from ..fileloader import loadFile
+from numba import jit, njit
+from numba.experimental import jitclass
+from numba import int32, float64, float32
+from numba.types import ListType
+from numba.typed import List
+from typing import DefaultDict
+
 
 rotation = [330, 290]
 
+N_0_0_1 = np.array([0, 0, 1], dtype=np.int32)
+N_0_0_M1 = np.array([0, 0, -1], dtype=np.int32)
+N_0_1_0 = np.array([0, 1, 0], dtype=np.int32)
+fN_0_0_1 = np.array([0.0, 0.0, 1.0], dtype=np.float64)
+
+def finalizeTriangleArrayAppend(tri):
+    tri.vectors = np.append(tri.vectors, np.array(tri.tempVectors).astype(np.float32))
+    tri.colors = np.append(tri.colors, np.array(tri.tempColors).astype(np.float32))
+    tri.normals = np.append(tri.normals, np.array(tri.tempNormals).astype(np.float32))
+
+    tri.tempColors.clear()
+    tri.tempVectors.clear()
+    tri.tempNormals.clear()
+
+
+@jitclass()
 class TriangleArray:
+    vectors: float32[:]
+    colors: float32[:]
+    normals: float32[:]
+    freespaces: ListType(int32)
+    tempVectors: ListType(float64[:])
+    tempColors: ListType(float64[:])
+    tempNormals: ListType(float64[:])
 
     def __init__(self):
-        self.vectors = np.array([], dtype=np.float32)
-        self.colors = np.array([], dtype=np.float32)
-        self.normals = np.array([], dtype=np.float32)
-        self.freespaces = []
+        self.vectors = np.empty(0, dtype=np.float32)
+        self.colors = np.empty(0, dtype=np.float32)
+        self.normals = np.empty(0, dtype=np.float32)
+        
+        self.freespaces = List.empty_list(int32)
 
-        self.tempVectors = []
-        self.tempColors = []
-        self.tempNormals = []
+        self.tempVectors = List.empty_list(float64[:])
+        self.tempColors = List.empty_list(float64[:])
+        self.tempNormals = List.empty_list(float64[:])
 
-    def finalizeAppend(self):
-        self.vectors = np.append(self.vectors, np.array(self.tempVectors).astype(np.float32))
-        self.colors = np.append(self.colors, np.array(self.tempColors).astype(np.float32))
-        self.normals = np.append(self.normals, np.array(self.tempNormals).astype(np.float32))
-
-        self.tempColors.clear()
-        self.tempVectors.clear()
-        self.tempNormals.clear()
-
+    
     def remove(self, pos):
         if pos == None:
             return
@@ -160,7 +184,204 @@ def set_rotation_from_diff(dx, dy):
         else:
             rotation[0] = rotation[0] - 1
 
-    
+@jit
+def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
+
+    if len(tri.freespaces) > 0:
+        freepos = tri.freespaces.pop()
+        for i in range(3):
+            tri.vectors[freepos + 3*i + 0] = p1[i]
+            tri.vectors[freepos + 3*i + 1] = p2[i]
+            tri.vectors[freepos + 3*i + 2] = p3[i]
+        
+        colorfreepos = int(freepos*4/3)
+
+        # manual unroll måske 
+        for i in range(3):  # Repeat color 3 times
+            for j in range(4):  # Each color has 4 components (e.g. RGBA)
+                tri.colors[colorfreepos + i * 4 + j] = color[j]
+        
+        for i in range(3):
+            tri.normals[freepos + 3*i + 0] = normal[i]
+            tri.normals[freepos + 3*i + 1] = normal[i]
+            tri.normals[freepos + 3*i + 2] = normal[i]
+        
+        obj._pos = freepos
+
+    else:
+        obj._pos = len(tri.vectors) + len(tri.tempVectors) * 3
+        
+        color = color.astype(np.float64)
+        normal = normal.astype(np.float64)
+
+        tri.tempVectors.append(p1.astype(np.float64))
+        tri.tempVectors.append(p2.astype(np.float64))
+        tri.tempVectors.append(p3.astype(np.float64))
+        for i in range(3):
+            tri.tempColors.append(color)
+
+        for i in range(3):
+            tri.tempNormals.append(normal)
+
+@njit
+def is_close_vec(a, b, tol=1e-8):
+    for i in range(len(a)):
+        if abs(a[i] - b[i]) > tol:
+            return False
+    return True
+
+@njit
+def norm2(vec):
+    return np.sqrt(np.sum(vec * vec))
+
+@njit(cache=True)
+def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=TriangleArray(), triNoLight=TriangleArray()):
+
+    MAX_WIDTH_HEIGHT = np.max(np.array([width, height]))
+
+    for obj in line3d:
+        
+        # Translate to Line
+        # Represent the 3D line as a thin cylinder (approximated by triangles)
+        p1 = obj.p1
+        p2 = obj.p2
+        direction = p2 - p1
+        length = np.linalg.norm(direction)
+        if length == 0:
+            # Degenerate line, skip
+            continue
+
+        direction = direction / length
+        # Find a perpendicular vector in 3D (arbitrary, but consistent)
+        if not is_close_vec(direction, N_0_0_1):
+            perp = np.cross(direction, N_0_0_1)
+        else:
+            perp = np.cross(direction, N_0_1_0)
+        perp = perp / np.linalg.norm(perp)
+
+        # Create a second perpendicular vector to form a basis
+        perp2 = np.cross(direction, perp)
+        perp2 = perp2 / np.linalg.norm(perp2)
+
+        # Cylinder parameters
+        radius = obj.width / MAX_WIDTH_HEIGHT
+        segments = 12  # Increase for smoother cylinder
+
+        # Generate circle points at both ends
+        circle1 = []
+        circle2 = []
+        for i in range(segments):
+            angle = 2 * np.pi * i / segments
+            offset = radius * (np.cos(angle) * perp + np.sin(angle) * perp2)
+            circle1.append(p1 + offset)
+            circle2.append(p2 + offset)
+        
+        # Create side triangles
+        for i in range(segments):
+            next_i = (i + 1) % segments
+            v00 = circle1[i]
+            v01 = circle1[next_i]
+            v10 = circle2[i]
+            v11 = circle2[next_i]
+            # Two triangles per segment
+            
+            # FIXME : virker ikke endnu
+            tri = Triangle3DNumba(v00, v01, v10, obj.color, obj.ableToUseLight)
+            triangle3d.append(tri)
+            # obj._triangles.append(tri)
+            tri = Triangle3DNumba(v10, v01, v11, obj.color, obj.ableToUseLight)
+            triangle3d.append(tri)
+            # obj._triangles.append(tri)
+
+
+        # Optionally, cap the ends (disks)
+        for i in range(1, segments - 1):
+            continue
+            tri = Triangle(circle1[0], circle1[i], circle1[i + 1], obj.color, ableToUseLight=obj.ableToUseLight)
+            objects3d.append(tri)
+            obj._triangles.append(tri)
+            tri = Triangle(circle2[0], circle2[i + 1], circle2[i], obj.color, ableToUseLight=obj.ableToUseLight)
+            objects3d.append(tri)
+            obj._triangles.append(tri)
+
+    for obj in point3d:
+        # Render Point3D as a small sphere (approximated by triangles)
+
+        center = obj.pos
+        radius = 2* obj.radius / MAX_WIDTH_HEIGHT
+        segments = 4
+
+        # Draw a flat circle in the XY plane
+        for i in range(segments):
+            angle1 = 2 * np.pi * i / segments
+            angle2 = 2 * np.pi * (i + 1) / segments
+
+            v1 = center
+            v2 = center + radius * np.array([np.cos(angle1), np.sin(angle1), 0])
+            v3 = center + radius * np.array([np.cos(angle2), np.sin(angle2), 0])
+
+            tri = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
+            triangle3d.append(tri)
+            # obj._triangles.append(tri)
+
+
+    for obj in flatline3d:
+        
+        # FlatLine3D is rendered as a thin rectangle (two triangles)
+        p1 = obj.p1
+        p2 = obj.p2
+        n = obj.n
+        width = obj.width / MAX_WIDTH_HEIGHT
+
+        # Find a perpendicular vector to n and (p2-p1)
+        direction = p2 - p1
+        if norm2(direction) == 0:
+            continue
+        direction = direction / norm2(direction)
+        perp = np.cross(direction, n)
+        if norm2(perp) == 0:
+            perp = fN_0_0_1
+        perp = perp / norm2(perp)
+
+        offset = perp * width / 2
+
+        v1 = p1 + offset
+        v2 = p1 - offset
+        v3 = p2 + offset
+        v4 = p2 - offset
+
+        color = obj.color[:4] / 255
+        normal = n.astype(np.float32)
+
+        # Two triangles for the rectangle
+
+        tri1 = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
+        triangle3d.append(tri1)
+        # obj._triangles.append(tri1)
+        tri2 = Triangle3DNumba(v3, v2, v4, obj.color, obj.ableToUseLight)
+        triangle3d.append(tri2)
+        # obj._triangles.append(tri2)
+
+    for obj in triangle3d:
+
+        # Add each vertex separately to ensure a flat array
+        p1 = obj.p1 * scale
+        p2 = obj.p2 * scale
+        p3 = obj.p3 * scale
+        # Add color for each vertex
+        color = obj.color[:4] / 255
+        
+        # Calculate the normal vector for the triangle
+        normal = np.cross(p2 - p1, p3 - p1)
+        normal = normal / norm2(normal) if norm2(normal) != 0 else normal
+        normal = normal.astype(np.float32)
+        
+        if obj.ableToUseLight:
+            appendTriangle(p1, p2, p3, color, normal, obj, triLight)
+        else:
+            appendTriangle(p1, p2, p3, color, normal, obj, triNoLight)
+
+
 
 def mouse_func(button, state, x, y):
     global dragging
@@ -180,6 +401,13 @@ def idle():
     # rotation[1] += 0.5
     glutPostRedisplay()
 
+
+typesRegistry = {
+    "point3d": Point3DNumba,
+    "triangle3d": Triangle3DNumba,
+    "line3d": Line3DNumba,
+    "flatline3d": FlatLine3DNumba,
+}
 
 class OpenGLRender:
     def __init__(self, width, height, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0], backgroundColor=(255,255,255,255)):
@@ -207,7 +435,6 @@ class OpenGLRender:
         self.image = np.array(self.image)
         self.camera.satelite(*cameraAngle)
 
-        self.objects3d = []
         self.removedObjects3d = []
 
         self.SCL = self.width//10 # pixel scale (tilfældigt)
@@ -224,6 +451,9 @@ class OpenGLRender:
         self.fpsimage = Image.new('RGBA', (0, 0))
         self.memimage = Image.new('RGBA', (0, 0))
 
+        self.objects3d = dict()
+
+
 
     def pixel(self, x, y, z):
         return self.camera.project(np.array((x,y,z))*self.SCL) + self.O
@@ -231,8 +461,14 @@ class OpenGLRender:
 
     def add3DObject(self, obj):
 
-        obj.hidden = False
-        self.objects3d.append(obj)
+        obj.hidden = True
+        
+        if self.objects3d.get(obj.tp) is None:
+            self.objects3d[obj.tp] = List.empty_list(typesRegistry[obj.tp].class_type.instance_type)
+            self.objects3d[obj.tp].append(obj)
+        else:
+            self.objects3d[obj.tp].append(obj)
+
         return obj
 
     def remove3DObject(self, obj):
@@ -247,7 +483,9 @@ class OpenGLRender:
 
         overlayImage = self.overlayFunction(rotation)
 
+        now = time.time()
         self.refresh()
+        print(time.time() - now, 's to refresh')
 
         self.frames += 1
         current_time = time.time()
@@ -310,25 +548,6 @@ class OpenGLRender:
             glMatrixMode(GL_MODELVIEW)
 
 
-    def __appendTriangle__(self, p1, p2, p3, color, normal, obj, tri:TriangleArray):
-
-        if tri.freespaces:
-            freepos = tri.freespaces.pop()
-            tri.vectors[freepos:freepos+9] = np.array([p1, p2, p3]).flatten()
-            colorfreepos = int(freepos*4/3)
-            tri.colors[colorfreepos:colorfreepos+12] = np.array([color, color, color]).flatten()
-            tri.normals[freepos:freepos+9] = np.array([normal, normal, normal]).flatten()
-            obj._pos = freepos
-
-        else:
-            obj._pos = len(tri.vectors) + len(tri.tempVectors) * 3
-            
-            tri.tempVectors.extend((p1, p2, p3))
-            tri.tempColors.extend([color, color, color])
-            tri.tempNormals.extend([normal, normal, normal])
-
-
-
     def refresh(self):
 
         self.count += 1
@@ -355,139 +574,27 @@ class OpenGLRender:
 
         scale = self.SCL
 
-        pos = -1
+        kwargs = {}
+        for key in typesRegistry:
+            kwargs[key] = self.objects3d.get(key, List.empty_list(typesRegistry[key].class_type.instance_type))
 
-        now = time.time()
-        while len(self.objects3d)-1 > pos:
-            pos += 1
-            
-            obj = self.objects3d[pos]
-            
-            if obj.hidden:
-                continue
-
-            if type(obj) is Triangle:
-
-                # Add each vertex separately to ensure a flat array
-                p1 = np.array(obj.p1) * scale * self.guiRatio
-                p2 = np.array(obj.p2) * scale * self.guiRatio
-                p3 = np.array(obj.p3) * scale * self.guiRatio
-                # Add color for each vertex
-                color = np.array(obj.color[:4]) / 255
-                
-                # Calculate the normal vector for the triangle
-                normal = np.cross(p2 - p1, p3 - p1)
-                normal = normal / np.linalg.norm(normal) if np.linalg.norm(normal) != 0 else normal
-                normal = normal.astype(np.float32)
-                
-                if obj.ableToUseLight:
-                    self.__appendTriangle__(p1, p2, p3, color, normal, obj, self.triLight)
-                else:
-                    self.__appendTriangle__(p1, p2, p3, color, normal, obj, self.triNoLight)
-
-            if type(obj) is Line3D:
-                now = time.time()
-
-                # Translate to Line
-                # Represent the 3D line as a thin cylinder (approximated by triangles)
-                p1 = np.array(obj.p1)
-                p2 = np.array(obj.p2)
-                direction = p2 - p1
-                length = np.linalg.norm(direction)
-                if length == 0:
-                    # Degenerate line, skip
-                    continue
-
-                direction = direction / length
-                # Find a perpendicular vector in 3D (arbitrary, but consistent)
-                if not np.allclose(direction, [0, 0, 1]):
-                    perp = np.cross(direction, [0, 0, 1])
-                else:
-                    perp = np.cross(direction, [0, 1, 0])
-                perp = perp / np.linalg.norm(perp)
-
-                # Create a second perpendicular vector to form a basis
-                perp2 = np.cross(direction, perp)
-                perp2 = perp2 / np.linalg.norm(perp2)
-
-                # Cylinder parameters
-                radius = obj.width / max(self.width, self.height)
-                segments = 12  # Increase for smoother cylinder
-
-                # Generate circle points at both ends
-                circle1 = []
-                circle2 = []
-                for i in range(segments):
-                    angle = 2 * np.pi * i / segments
-                    offset = radius * (np.cos(angle) * perp + np.sin(angle) * perp2)
-                    circle1.append(p1 + offset)
-                    circle2.append(p2 + offset)
-                
-                # Create side triangles
-                for i in range(segments):
-                    next_i = (i + 1) % segments
-                    v00 = circle1[i]
-                    v01 = circle1[next_i]
-                    v10 = circle2[i]
-                    v11 = circle2[next_i]
-                    # Two triangles per segment
-                    tri = Triangle(v00, v01, v10, obj.color, ableToUseLight=obj.ableToUseLight)
-                    self.objects3d.append(tri)
-                    obj._triangles.append(tri)
-                    tri = Triangle(v10, v01, v11, obj.color, ableToUseLight=obj.ableToUseLight)
-                    self.objects3d.append(tri)
-                    obj._triangles.append(tri)
-
-                # Optionally, cap the ends (disks)
-                for i in range(1, segments - 1):
-                    tri = Triangle(circle1[0], circle1[i], circle1[i + 1], obj.color, ableToUseLight=obj.ableToUseLight)
-                    self.objects3d.append(tri)
-                    obj._triangles.append(tri)
-                    tri = Triangle(circle2[0], circle2[i + 1], circle2[i], obj.color, ableToUseLight=obj.ableToUseLight)
-                    self.objects3d.append(tri)
-                    obj._triangles.append(tri)
-
-            if type(obj) is FlatLine3D:
-
-                # FlatLine3D is rendered as a thin rectangle (two triangles)
-                p1 = np.array(obj.p1)
-                p2 = np.array(obj.p2)
-                n = np.array(obj.n)
-                width = obj.width / max(self.width, self.height)
-
-                # Find a perpendicular vector to n and (p2-p1)
-                direction = p2 - p1
-                if np.linalg.norm(direction) == 0:
-                    continue
-                direction = direction / np.linalg.norm(direction)
-                perp = np.cross(direction, n)
-                if np.linalg.norm(perp) == 0:
-                    perp = np.array([0, 0, 1])
-                perp = perp / np.linalg.norm(perp)
-
-                offset = perp * width / 2
-
-                v1 = p1 + offset
-                v2 = p1 - offset
-                v3 = p2 + offset
-                v4 = p2 - offset
-
-                color = np.array(obj.color[:4]) / 255
-                normal = n.astype(np.float32)
-
-                # Two triangles for the rectangle
-                tri1 = Triangle(v1, v2, v3, obj.color, ableToUseLight=obj.ableToUseLight)
-                self.objects3d.append(tri1)
-                obj._triangles.append(tri1)
-                tri2 = Triangle(v3, v2, v4, obj.color, ableToUseLight=obj.ableToUseLight)
-                self.objects3d.append(tri2)
-                obj._triangles.append(tri2)
-
+        retrieveAndAppendTriangles(**kwargs,
+            scale=scale, 
+            width=self.width, 
+            height=self.height, 
+            triLight=self.triLight, 
+            triNoLight=self.triNoLight
+        )
 
         self.objects3d.clear()
-        self.triLight.finalizeAppend()
-        self.triNoLight.finalizeAppend()
+        finalizeTriangleArrayAppend(self.triLight)
+        finalizeTriangleArrayAppend(self.triNoLight)
 
+
+    def quit(self, gl_context, window):
+        sdl2.SDL_GL_DeleteContext(gl_context)
+        sdl2.SDL_DestroyWindow(window)
+        sdl2.SDL_Quit()
 
     def gui(self, overlay):
         global dragging, last_mouse
@@ -538,9 +645,14 @@ class OpenGLRender:
             while sdl2.SDL_PollEvent(event):
                 if event.type == sdl2.SDL_QUIT:
                     running = False
+                    self.quit(gl_context, window)
+                    sys.exit()
                 elif event.type == sdl2.SDL_KEYDOWN:
-                    # if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
-                    #     running = False
+                    if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                        self.quit(gl_context, window)
+                        running = False
+                        sys.exit()
+                    
                     if event.key.keysym.sym == sdl2.SDLK_RETURN and (event.key.keysym.mod & sdl2.KMOD_ALT):
                         # Toggle fullscreen on Alt+Enter
                         if not is_fullscreen:
@@ -549,8 +661,6 @@ class OpenGLRender:
                         else:
                             sdl2.SDL_SetWindowFullscreen(window, 0)
                             is_fullscreen = False
-                    if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
-                        running = False
                     
                     if event.key.keysym.sym == sdl2.SDLK_SPACE:
                         idle = True
@@ -594,15 +704,11 @@ class OpenGLRender:
                     set_rotation_from_diff(np.floor(d+comma_rotation), 0)
                     comma_rotation = 0
 
-            reshape(self.guiWidth, self.guiHeight)
-            self.loop()
+            if running:
+                reshape(self.guiWidth, self.guiHeight)
+                self.loop()
 
             sdl2.SDL_GL_SwapWindow(window)
-
-        sdl2.SDL_GL_DeleteContext(gl_context)
-        sdl2.SDL_DestroyWindow(window)
-        sdl2.SDL_Quit()
-        return 0
 
 
     def __setIcon__(self, window):

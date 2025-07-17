@@ -20,7 +20,7 @@ def formatColor(color):
     if len(color) == 3:
         color = [*color, 255]
 
-    return np.array([np.uint8(i) for i in color])
+    return np.array([np.uint8(i) for i in color], dtype=np.int32)
 
 # @jit
 # def isPointInTriangle(v1, v2, v3, pt):

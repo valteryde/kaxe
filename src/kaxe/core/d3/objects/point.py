@@ -2,8 +2,12 @@
 from numpy import array
 from ..helper import magnitude, formatColor
 import math
-from numba import njit
+from numba import njit, int32, float64
+from numba.experimental import jitclass
 from .color import addColorToBuffers
+import numpy as np
+from numba.typed import List
+from numba.types import ListType
 
 @njit
 def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
@@ -28,15 +32,29 @@ def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
             addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
 
+@jitclass()
+class Point3DNumba:
+    x : float64
+    y : float64
+    z : float64
+    radius : float64
+    color : int32[:]
+    pos : float64[:]
+    ableToUseLight : bool
+    tp : str
+    hidden : bool
+    _triangles : ListType(int32)
 
-class Point3D:
-
-    def __init__(self, x, y, z, radius, color=(0,0,0,255)):
+    def __init__(self, x, y, z, radius, color=np.array((0,0,0,255))):
         self.radius = radius
-        self.pos = array((x, y, z))
-        self.looks = 0
-        self.color = formatColor(color)
-
+        self.pos = np.array((x, y, z))
+        # self.looks = 0
+        self.color = color
+        self.ableToUseLight = False
+        self._triangles = List.empty_list(int32)
+        self.tp = "point3d"
+        self.hidden = False
+    
     def getZ(self, R):
         return (self.pos @ R)[2]
 
@@ -53,3 +71,9 @@ class Point3D:
             color       = self.color
         )
     
+
+def Point3D(x, y, z, radius=1, color=(0,0,0,255)):
+    """
+    Create a 3D point object
+    """
+    return Point3DNumba(x, y, z, radius, formatColor(color))
