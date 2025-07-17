@@ -8,11 +8,12 @@ from ..core.window import Window, settings
 from ..core.shapes import ImageShape
 from ..core.axis import Axis
 from ..core.marker import Marker
+from ..core.styles import ComputedAttribute
 
 # 3d 
 from ..core.d3.render import Render
 from ..core.d3.openglrender import OpenGLRender
-from ..core.d3.objects.line import Line3D
+from ..core.d3.objects.line import Line3D, FlatLine3D
 from ..core.d3.objects.point import Point3D
 from ..core.d3.objects.triangle import Triangle
 
@@ -80,8 +81,10 @@ class Plot3D(Window):
                  light:list=[0,0,0],
                  addMarkers:bool=True
         ):
-        
+
         super().__init__()
+
+        self.lastRender = time.time()
 
         rotation = rotation.copy()
         rotation[0] -= 90
@@ -126,7 +129,7 @@ class Plot3D(Window):
         self.attrmap.default('height', 2000)
         self.attrmap.default('guiWidth', 1000), 
         self.attrmap.default('guiHeight', 750), 
-        self.attrmap.default('wireframeLinewidth', 5)
+        self.attrmap.default('wireframeLinewidth', ComputedAttribute(lambda m: max(round(m.getAttr('width')//300), 3)))
         self.attrmap.default('backgroundColor', (255,255,255,255))
         self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255))
         self.attrmap.default('axisLineColorBackdrop', (200,200,200,255))
@@ -135,7 +138,8 @@ class Plot3D(Window):
         self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
         self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
         self.attrmap.setAttr('marker.showLine', False)
-        self.attrmap.setAttr('marker.tickWidth', 2)
+        self.attrmap.setAttr('marker.tickWidth', ComputedAttribute(lambda m: max(round(m.getAttr('width')//300), 1)))
+        self.attrmap.setAttr('marker.tickLength', ComputedAttribute(lambda m: max(round(m.getAttr('width')//100), 10)))
         self.attrmap.setAttr('marker.offsetTick', True)
         self.attrmap.setAttr('arrowWidth', 0.02)
         self.attrmap.setAttr('arrowHeight', 0.075)
@@ -364,17 +368,6 @@ class Plot3D(Window):
     def __before__(self):
         # assert self.__normal__ != self.__boxed__
 
-        width, height = self.getAttr('width'), self.getAttr('height')
-        guiwidth, guiheight = self.getAttr('guiWidth'), self.getAttr('guiHeight')
-
-        ratio = min(guiwidth / height, guiheight / width, 1)
-
-        self.setAttr('width', int(width * ratio))
-        self.setAttr('height', int(height * ratio))
-
-        self.width = self.getAttr('width')
-        self.height = self.getAttr('height')
-
         # finish making plot
         # fit "plot" into window
 
@@ -517,8 +510,10 @@ class Plot3D(Window):
         p1, p2, p3, p4, v1, v2 = self.faceNormals[i]
         
         n = np.cross(v1, v2)
-        smallzOffset = (n/np.linalg.norm(n))/500
-        smallzOffset *= 1
+        
+        # r/|n| = a 
+        a = 1e-4 / np.linalg.norm(n)
+        smallzOffset = n * a
         
         if len(self.backgroundTriangles) < 6:
             self.backgroundTriangles.append(
@@ -537,6 +532,7 @@ class Plot3D(Window):
                 else:
                     xyz[i] = self.windowAxis[i*2+1]
 
+
     def __drawGridLines__(self, axisx:Axis, axisy:Axis, axisz:Axis, xyz):
         axisLineColor = self.getAttr('axisLineColorBackdrop')
         
@@ -546,7 +542,7 @@ class Plot3D(Window):
         midpointy = (self.windowAxis[2] + self.windowAxis[3]) / 2
         midpointz = (self.windowAxis[4] + self.windowAxis[5]) / 2
 
-        alpha = 0.1
+        alpha = 0 # if some smallZOffset is needed
         if xyz[0] > midpointx:
             xyz[0] = xyz[0] + alpha
         else:
@@ -562,6 +558,7 @@ class Plot3D(Window):
         else:
             xyz[2] = xyz[2] - alpha
 
+        width = int(round(self.getAttr('wireframeLinewidth') * 1.25))
 
         for i in axisx.markers:
             epsilon = (self.windowAxis[1] - self.windowAxis[0]) / 1000
@@ -571,8 +568,8 @@ class Plot3D(Window):
             if i.x == self.windowAxis[1]:
                 x -= epsilon                
 
-            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(x, self.windowAxis[2], xyz[2]), self.pixel(x, self.windowAxis[3], xyz[2]), color=axisLineColor)))
-            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(x, xyz[1], self.windowAxis[4]), self.pixel(x, xyz[1], self.windowAxis[5]), color=axisLineColor)))
+            self.__lines__.add(self.render.add3DObject(FlatLine3D(self.pixel(x, self.windowAxis[2], xyz[2]), self.pixel(x, self.windowAxis[3], xyz[2]), (0,0,1), color=axisLineColor, ableToUseLight=False, width=width)))
+            self.__lines__.add(self.render.add3DObject(FlatLine3D(self.pixel(x, xyz[1], self.windowAxis[4]), self.pixel(x, xyz[1], self.windowAxis[5]), (0,1,0), color=axisLineColor, ableToUseLight=False, width=width)))
             
         for i in axisy.markers:
             epsilon = (self.windowAxis[3] - self.windowAxis[2]) / 1000
@@ -582,8 +579,8 @@ class Plot3D(Window):
             if i.x == self.windowAxis[3]:
                 x -= epsilon
 
-            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], x, xyz[2]), self.pixel(self.windowAxis[1], x, xyz[2]), color=axisLineColor)))
-            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(xyz[0], x, self.windowAxis[4]), self.pixel(xyz[0], x, self.windowAxis[5]), color=axisLineColor)))
+            self.__lines__.add(self.render.add3DObject(FlatLine3D(self.pixel(self.windowAxis[0], x, xyz[2]), self.pixel(self.windowAxis[1], x, xyz[2]), (0,0,1), color=axisLineColor, ableToUseLight=False, width=width)))
+            self.__lines__.add(self.render.add3DObject(FlatLine3D(self.pixel(xyz[0], x, self.windowAxis[4]), self.pixel(xyz[0], x, self.windowAxis[5]), (1,0,0), color=axisLineColor, ableToUseLight=False, width=width)))
             
         for i in axisz.markers:
             epsilon = (self.windowAxis[5] - self.windowAxis[4]) / 1000
@@ -593,8 +590,8 @@ class Plot3D(Window):
             if i.x == self.windowAxis[5]:
                 x -= epsilon
 
-            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(self.windowAxis[0], xyz[1], x), self.pixel(self.windowAxis[1], xyz[1], x), color=axisLineColor)))
-            self.__lines__.add(self.render.add3DObject(Line3D(self.pixel(xyz[0], self.windowAxis[2], x), self.pixel(xyz[0], self.windowAxis[3], x), color=axisLineColor)))
+            self.__lines__.add(self.render.add3DObject(FlatLine3D(self.pixel(self.windowAxis[0], xyz[1], x), self.pixel(self.windowAxis[1], xyz[1], x), (0,1,0), color=axisLineColor, ableToUseLight=False, width=width)))
+            self.__lines__.add(self.render.add3DObject(FlatLine3D(self.pixel(xyz[0], self.windowAxis[2], x), self.pixel(xyz[0], self.windowAxis[3], x), (1,0,0), color=axisLineColor, ableToUseLight=False, width=width)))
     
     
 
@@ -702,7 +699,13 @@ class Plot3D(Window):
     def __after__(self):
         # add to window
         
-        self.render.skipObjectUpdate = self.render.count % 30 != 0
+        if time.time() - self.lastRender < 0.1:
+            self.render.skipObjectUpdate = True
+        else:
+            self.lastRender = time.time()
+            self.render.skipObjectUpdate = False
+
+        # self.render.skipObjectUpdate = self.render.count % 30 != 0
 
         for tri in self.backgroundTriangles:
             self.render.remove3DObject(tri)
@@ -981,7 +984,6 @@ class Plot3D(Window):
 
 
     def save(self, fname:Union[str, BytesIO]):
-        return
 
         self.setAttr('guiWidth', self.getAttr('width'))
         self.setAttr('guiHeight', self.getAttr('height'))
@@ -996,6 +998,16 @@ class Plot3D(Window):
         image = self.render.render(overlay)
         image = image.crop(getbbox(image, self.backgroundColor))
         
+        padding = self.getAttr('outerPadding')
+        largeImage = Image.new(
+            'RGBA', 
+            (image.size[0]+padding[0]+padding[2], image.size[1]+padding[1]+padding[3]), 
+            color=self.backgroundColor
+        )
+        largeImage.paste(image, (padding[0], padding[1]))
+
+        image = largeImage
+
         if fname == None:
             pass
         elif fname is str:

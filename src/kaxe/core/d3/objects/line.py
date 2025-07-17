@@ -87,14 +87,14 @@ def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int
 
 
 class Line3D:
-    def __init__(self, p1, p2, color=(0,0,0,255), width=5):
+    def __init__(self, p1, p2, color=(0,0,0,255), width=5, ableToUseLight=False):
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.width = width
         self.color = formatColor(color)
         self.hidden = False
         self._triangles = []
-        self.ableToUseLight = False
+        self.ableToUseLight = ableToUseLight
 
     def getZ(self, R):
         return ((R @ self.p1)[2] + (R @ self.p2)[2]) / 2
@@ -124,3 +124,10 @@ class Line3D:
             yield tri._pos
         
         self._triangles.clear()
+    
+
+class FlatLine3D(Line3D):
+    def __init__(self, p1, p2, n, color=(0,0,0,255), width=5, ableToUseLight=True):
+        super().__init__(p1, p2, color, width, ableToUseLight=ableToUseLight)
+        self.n = n
+

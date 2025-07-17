@@ -11,7 +11,7 @@ from typing import Union
 from .camera import Camera
 from PIL import Image
 from .objects.triangle import Triangle
-from .objects.line import Line3D
+from .objects.line import Line3D, FlatLine3D
 import psutil
 process = psutil.Process()
 import fondi
@@ -139,16 +139,28 @@ def mouse_drag(x, y):
     if last_mouse is not None:
         dx = x - last_mouse[0]
         dy = y - last_mouse[1]
-        rotation[1] += dy
-        rotation[0] += dx
-    
+        
+        set_rotation_from_diff(dx, dy)
+
+    last_mouse[:] = [x, y]
+
+def set_rotation_from_diff(dx, dy):
+    rotation[1] += dy
+    rotation[0] += dx
+
     if rotation[1] % 45 == 0:
         if dy > 0:
             rotation[1] = rotation[1] + 1
         else:
             rotation[1] = rotation[1] - 1
 
-    last_mouse[:] = [x, y]
+    if rotation[0] % 45 == 0:
+        if dx > 0:
+            rotation[0] = rotation[0] + 1
+        else:
+            rotation[0] = rotation[0] - 1
+
+    
 
 def mouse_func(button, state, x, y):
     global dragging
@@ -170,9 +182,16 @@ def idle():
 
 
 class OpenGLRender:
-    def __init__(self, width=500, height=500, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0], backgroundColor=(255,255,255,255)):
+    def __init__(self, width, height, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0], backgroundColor=(255,255,255,255)):
         self.width = width
         self.height = height
+
+        guiwidth, guiheight = 1000, 750
+
+        self.guiRatio = min(guiwidth / height, guiheight / width, 1)
+
+        self.guiWidth = int(round(width * self.guiRatio))
+        self.guiHeight = int(round(height * self.guiRatio))
 
         self.skipObjectUpdate = False
         self.count = 0
@@ -258,6 +277,9 @@ class OpenGLRender:
 
             # Convert Pillow image to RGBA and numpy array
             overlayImage = overlayImage.transpose(Image.Transpose.ROTATE_90)
+            
+            # Resize Pillow Image
+            overlayImage = overlayImage.resize((self.guiWidth, self.guiHeight), Image.LANCZOS)
 
             overlay_np = np.array(overlayImage.convert("RGBA"))
 
@@ -266,10 +288,12 @@ class OpenGLRender:
             # Flip vertically for OpenGL coordinates
             overlay_np = np.flipud(overlay_np)
             
+            # Resize the image to match the OpenGL viewport
+
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
             glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glOrtho(0, self.guiWidth, 0, self.guiHeight, -1, 1)
             glMatrixMode(GL_MODELVIEW)
             glPushMatrix()
             glLoadIdentity()
@@ -342,12 +366,12 @@ class OpenGLRender:
             if obj.hidden:
                 continue
 
-            if isinstance(obj, Triangle):
+            if type(obj) is Triangle:
 
                 # Add each vertex separately to ensure a flat array
-                p1 = np.array(obj.p1) * scale
-                p2 = np.array(obj.p2) * scale
-                p3 = np.array(obj.p3) * scale
+                p1 = np.array(obj.p1) * scale * self.guiRatio
+                p2 = np.array(obj.p2) * scale * self.guiRatio
+                p3 = np.array(obj.p3) * scale * self.guiRatio
                 # Add color for each vertex
                 color = np.array(obj.color[:4]) / 255
                 
@@ -361,8 +385,7 @@ class OpenGLRender:
                 else:
                     self.__appendTriangle__(p1, p2, p3, color, normal, obj, self.triNoLight)
 
-            if isinstance(obj, Line3D):
-
+            if type(obj) is Line3D:
                 now = time.time()
 
                 # Translate to Line
@@ -424,13 +447,46 @@ class OpenGLRender:
                     self.objects3d.append(tri)
                     obj._triangles.append(tri)
 
-                # print((time.time() - now) * 1000)
+            if type(obj) is FlatLine3D:
+
+                # FlatLine3D is rendered as a thin rectangle (two triangles)
+                p1 = np.array(obj.p1)
+                p2 = np.array(obj.p2)
+                n = np.array(obj.n)
+                width = obj.width / max(self.width, self.height)
+
+                # Find a perpendicular vector to n and (p2-p1)
+                direction = p2 - p1
+                if np.linalg.norm(direction) == 0:
+                    continue
+                direction = direction / np.linalg.norm(direction)
+                perp = np.cross(direction, n)
+                if np.linalg.norm(perp) == 0:
+                    perp = np.array([0, 0, 1])
+                perp = perp / np.linalg.norm(perp)
+
+                offset = perp * width / 2
+
+                v1 = p1 + offset
+                v2 = p1 - offset
+                v3 = p2 + offset
+                v4 = p2 - offset
+
+                color = np.array(obj.color[:4]) / 255
+                normal = n.astype(np.float32)
+
+                # Two triangles for the rectangle
+                tri1 = Triangle(v1, v2, v3, obj.color, ableToUseLight=obj.ableToUseLight)
+                self.objects3d.append(tri1)
+                obj._triangles.append(tri1)
+                tri2 = Triangle(v3, v2, v4, obj.color, ableToUseLight=obj.ableToUseLight)
+                self.objects3d.append(tri2)
+                obj._triangles.append(tri2)
+
 
         self.objects3d.clear()
         self.triLight.finalizeAppend()
         self.triNoLight.finalizeAppend()
-
-        # print(len(self.triNoLight.vectors))
 
 
     def gui(self, overlay):
@@ -452,22 +508,18 @@ class OpenGLRender:
         window = sdl2.SDL_CreateWindow(b"Kaxe",
                                     sdl2.SDL_WINDOWPOS_CENTERED,
                                     sdl2.SDL_WINDOWPOS_CENTERED,
-                                    self.width//2, self.height//2,
+                                    self.guiWidth, self.guiHeight,
                                     sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
 
-        file = loadFile("logo-small.png")
-        fpath = ".temp-logo.png"
-        Image.open(file).convert("RGBA").save(fpath, format="PNG")
-        file = sdl2.ext.load_image(fpath)
-        sdl2.SDL_SetWindowIcon(window, file)
-        os.remove(fpath)
+        self.__setIcon__(window)
 
         if not window:
             print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
             return 1
 
         gl_context = sdl2.SDL_GL_CreateContext(window)
-        
+        idle = False
+
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
@@ -476,7 +528,13 @@ class OpenGLRender:
         running = True
         event = sdl2.SDL_Event()
 
+        lasttime = time.time()
+        dt = 0
+        comma_rotation = 0
+
         while running:
+            dt = (time.time() - lasttime) * 1000
+            lasttime = time.time()
             while sdl2.SDL_PollEvent(event):
                 if event.type == sdl2.SDL_QUIT:
                     running = False
@@ -493,6 +551,9 @@ class OpenGLRender:
                             is_fullscreen = False
                     if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
                         running = False
+                    
+                    if event.key.keysym.sym == sdl2.SDLK_SPACE:
+                        idle = True
 
                 elif event.type == sdl2.SDL_WINDOWEVENT:
                     if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
@@ -502,6 +563,7 @@ class OpenGLRender:
                 elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                     if event.button.button == sdl2.SDL_BUTTON_LEFT:
                         dragging[0] = True
+                        idle = False
                         last_mouse[:] = [event.button.x, event.button.y]
                 elif event.type == sdl2.SDL_MOUSEBUTTONUP:
                     if event.button.button == sdl2.SDL_BUTTON_LEFT:
@@ -516,10 +578,23 @@ class OpenGLRender:
 
             sdl2.SDL_GetWindowSize(window, ctypes.byref(width), ctypes.byref(height))
 
-            self.width = width.value
-            self.height = height.value
+            self.guiWidth = width.value
+            self.guiHeight = height.value
 
-            reshape(self.width, self.height)
+            self.width = int(round(self.guiWidth / self.guiRatio))
+            self.height = int(round(self.guiHeight / self.guiRatio))
+
+            if idle:
+                d = dt/30
+
+                if np.floor(d+comma_rotation) == 0:
+                    comma_rotation += d
+                
+                else:
+                    set_rotation_from_diff(np.floor(d+comma_rotation), 0)
+                    comma_rotation = 0
+
+            reshape(self.guiWidth, self.guiHeight)
             self.loop()
 
             sdl2.SDL_GL_SwapWindow(window)
@@ -530,10 +605,21 @@ class OpenGLRender:
         return 0
 
 
+    def __setIcon__(self, window):
+        file = loadFile("logo-small.png")
+        fpath = ".temp-logo.png"
+        Image.open(file).convert("RGBA").save(fpath, format="PNG")
+        file = sdl2.ext.load_image(fpath)
+        sdl2.SDL_SetWindowIcon(window, file)
+        os.remove(fpath)
+
 
     def render(self, overlay):
        
         self.overlayFunction = overlay
+        self.guiRatio = 1
+        self.guiWidth = self.width
+        self.guiHeight = self.height
 
         # Initialize SDL2 with OpenGL context for off-screen rendering
         if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
@@ -552,6 +638,8 @@ class OpenGLRender:
         if not window:
             sdl2.SDL_Quit()
             raise RuntimeError("SDL_CreateWindow Error: " + str(sdl2.SDL_GetError()))
+
+        self.__setIcon__(window)
 
         gl_context = sdl2.SDL_GL_CreateContext(window)
         sdl2.SDL_GL_MakeCurrent(window, gl_context)
