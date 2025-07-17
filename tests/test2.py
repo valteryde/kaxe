@@ -83,18 +83,19 @@ class Test:
 
         plt = kaxe.PlotFrame3D(drawBackground=True)
         # plt.style(width=650, height=750, fontSize=32)
-        # plt.style(width=750, height=650, fontSize=32)
-        plt.style(width=3000, height=2000, fontSize=32)
+        plt.style(width=750, height=650, fontSize=32)
+        # plt.style(width=3000, height=2000, fontSize=32)
 
         # plt.add(kaxe.Function3D(lambda x,y:0, numPoints=10))
         # plt.add(kaxe.Function3D(lambda x,y:6, numPoints=10, color=kaxe.Colormaps.blue.setAlpha(150)))
         # plt.add(kaxe.Function3D(lambda x,y:3, numPoints=10, color=kaxe.Colormaps.blue.setAlpha(150)))
 
-        plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9))
+        # plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9))
+        plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9, numPoints=100, color=kaxe.Colormaps.rainbow)) # .setAlpha(150)
 
         # plt.save("a.png")
-        # plt.show()
-        plt.show(gui=False)
+        plt.show()
+        # plt.show(gui=False)
 
 
     def test3DTaiChiRun():

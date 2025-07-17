@@ -1,140 +1,87 @@
+import sys
+import sdl2
+import sdl2.ext
+import sdl2.video
 from OpenGL.GL import *
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
-import os
-from stl import mesh
-import numpy as np
-import time
-from math import radians, sin, cos
 
-rotation = [0, 0]
 
-def load_obj(filename):
-    # Load STL file using numpy-stl
-    m = mesh.Mesh.from_file(filename)
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
 
-    # Center and scale the mesh to fit in a unit cube at the origin
-    min_ = np.min(m.vectors, axis=(0, 1))
-    max_ = np.max(m.vectors, axis=(0, 1))
-    center = (min_ + max_) / 2
-    scale = 1.0 / np.max(max_ - min_) * 4
-    m.vectors = (m.vectors - center) * scale
+def init_opengl():
+    glClearColor(0.1, 0.2, 0.3, 1.0)
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
 
-    def draw():
-        # Example: assign a color per vertex (repeat or random for demonstration)
-        num_vertices = m.vectors.reshape(-1, 3).shape[0]
-        # Example: cycle through a list of colors
-        color_list = np.array([
-            [1., 0., 0.],  # light blue
-        ], dtype=np.float32)
-        colors = np.tile(color_list, (num_vertices // len(color_list) + 1, 1))[:num_vertices]
+def render():
+    glClear(GL_COLOR_BUFFER_BIT)
 
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_COLOR_ARRAY)
-        vertices = m.vectors.reshape(-1, 3).astype(np.float32)
-        glVertexPointer(3, GL_FLOAT, 0, vertices)
-        glColorPointer(3, GL_FLOAT, 0, colors)
-        glDrawArrays(GL_TRIANGLES, 0, len(vertices))
-        glDisableClientState(GL_COLOR_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
+    glBegin(GL_TRIANGLES)
+    glColor3f(1.0, 0.0, 0.0)
+    glVertex2f(-0.5, -0.5)
+    glColor3f(0.0, 1.0, 0.0)
+    glVertex2f(0.5, -0.5)
+    glColor3f(0.0, 0.0, 1.0)
+    glVertex2f(0.0, 0.5)
+    glEnd()
 
-    return draw
+def main():
+    if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
+        print("SDL_Init Error:", sdl2.SDL_GetError())
+        return 1
 
-model_draw = load_obj("tests/Eiffel_tower_sample.STL")
+    # OpenGL 2.1 context
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
 
-def display():
-    glClearColor(1.0, 1.0, 1.0, 1.0); #RGBA
+    window = sdl2.SDL_CreateWindow(b"PySDL2 + OpenGL Toggle Fullscreen",
+                                   sdl2.SDL_WINDOWPOS_CENTERED,
+                                   sdl2.SDL_WINDOWPOS_CENTERED,
+                                   WINDOW_WIDTH, WINDOW_HEIGHT,
+                                   sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
 
-    # Set light color
-    light_ambient = [1.0, 1.0, 1.0, 1.0]
-    light_diffuse = [0.8, 0.8, 0.8, 1]
-    light_specular = [1.0, 1.0, 1.0, 1]
-    # glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
-    # glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
-    # glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
-    # Set material properties
-    mat_specular = [1.0, 0.0, 0.0, 1.0]
-    mat_shininess = [0.0]
-    # glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
-    # glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
-    # Set light position fixed in world space (not affected by model rotation)
-    light_pos = [0.0, 0.0, 10.0, 0.0]
-    # glLightfv(GL_LIGHT0, GL_POSITION, light_pos)
+    
+    icon_surface = sdl2.ext.load_image("logo-small.png")
+    sdl2.SDL_SetWindowIcon(window, icon_surface)
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glLoadIdentity()
-    glTranslatef(0, 0, -10)
-    glRotatef(rotation[0], 1, 0, 0)
-    glRotatef(rotation[1], 0, 1, 0)
-    model_draw()
-    glutSwapBuffers()
+    if not window:
+        print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
+        return 1
 
-def reshape(width, height):
-    glViewport(0, 0, width, height)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    gluPerspective(60.0, width / float(height), 0.1, 100.0)
-    glMatrixMode(GL_MODELVIEW)
+    gl_context = sdl2.SDL_GL_CreateContext(window)
+    init_opengl()
 
-def mouse_drag(x, y):
-    # GLUT does not provide dx, dy directly, so store last position
-    global last_mouse
-    if last_mouse is not None:
-        dx = x - last_mouse[0]
-        dy = y - last_mouse[1]
-        rotation[0] += dy
-        rotation[1] += dx
-    last_mouse[:] = [x, y]
+    is_fullscreen = False
+    running = True
+    event = sdl2.SDL_Event()
 
-def mouse_func(button, state, x, y):
-    global dragging
-    if button == GLUT_LEFT_BUTTON:
-        if state == GLUT_DOWN:
-            dragging[0] = True
-            last_mouse[:] = [x, y]
-        else:
-            dragging[0] = False
+    while running:
+        while sdl2.SDL_PollEvent(event):
+            if event.type == sdl2.SDL_QUIT:
+                running = False
+            elif event.type == sdl2.SDL_KEYDOWN:
+                # if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                #     running = False
+                if event.key.keysym.sym == sdl2.SDLK_RETURN and (event.key.keysym.mod & sdl2.KMOD_ALT):
+                    # Toggle fullscreen on Alt+Enter
+                    if not is_fullscreen:
+                        sdl2.SDL_SetWindowFullscreen(window, sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP)
+                        is_fullscreen = True
+                    else:
+                        sdl2.SDL_SetWindowFullscreen(window, 0)
+                        is_fullscreen = False
+            elif event.type == sdl2.SDL_WINDOWEVENT:
+                if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
+                    width = event.window.data1
+                    height = event.window.data2
+                    glViewport(0, 0, width, height)
 
-def motion_func(x, y):
-    if dragging[0]:
-        mouse_drag(x, y)
+        render()
+        sdl2.SDL_GL_SwapWindow(window)
 
-def idle():
-    # rotation[0] += 0.5
-    # rotation[1] += 0.5
-    glutPostRedisplay()
+    sdl2.SDL_GL_DeleteContext(gl_context)
+    sdl2.SDL_DestroyWindow(window)
+    sdl2.SDL_Quit()
+    return 0
 
 if __name__ == "__main__":
-
-    dragging = [False]
-    last_mouse = [0, 0]
-
-    def close():
-        print("Closing window...")
-        os._exit(0)
-
-    glutInit(sys.argv)
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-    glutInitWindowSize(720, 480)
-    glutCreateWindow(b"PyOpenGL Cube")
-
-    glEnable(GL_DEPTH_TEST)
-    # glEnable(GL_LIGHTING)
-    # glEnable(GL_LIGHT0)
-
-    glutDisplayFunc(display)
-    glutReshapeFunc(reshape)
-    glutMouseFunc(mouse_func)
-    glutMotionFunc(motion_func)
-    glutIdleFunc(idle)
-    def keyboard_func(key, *_):
-        if key == b'\x1b':  # ESC key
-            close()
-
-    glutKeyboardFunc(keyboard_func)
-    # Remove glutWMCloseFunc if not available in your GLUT implementation
-    try:
-        glutWMCloseFunc(close)  # Register window close callback (not available in standard GLUT)
-    except Exception:
-        pass
-    glutMainLoop()
+    sys.exit(main())

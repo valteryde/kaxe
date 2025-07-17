@@ -1,6 +1,6 @@
 
 from OpenGL.GL import *
-from OpenGL.GLU import *
+# from OpenGL.GLU import *
 from OpenGL.GLUT import *
 import os
 from stl import mesh
@@ -16,6 +16,11 @@ import psutil
 process = psutil.Process()
 import fondi
 import sys
+import sdl2
+import sdl2.ext
+import sdl2.video
+import ctypes
+from ..fileloader import loadFile
 
 rotation = [330, 290]
 
@@ -136,6 +141,13 @@ def mouse_drag(x, y):
         dy = y - last_mouse[1]
         rotation[1] += dy
         rotation[0] += dx
+    
+    if rotation[1] % 45 == 0:
+        if dy > 0:
+            rotation[1] = rotation[1] + 1
+        else:
+            rotation[1] = rotation[1] - 1
+
     last_mouse[:] = [x, y]
 
 def mouse_func(button, state, x, y):
@@ -211,11 +223,7 @@ class OpenGLRender:
         return obj
 
     def loop(self):
-        
-        # get opengl window size
-        self.width = glutGet(GLUT_WINDOW_WIDTH)
-        self.height = glutGet(GLUT_WINDOW_HEIGHT)
-        
+                
         self.O = np.array((self.width//2, self.height//2)) # offset
 
         overlayImage = self.overlayFunction(rotation)
@@ -276,8 +284,6 @@ class OpenGLRender:
             glMatrixMode(GL_PROJECTION)
             glPopMatrix()
             glMatrixMode(GL_MODELVIEW)
-        
-        glutSwapBuffers()
 
 
     def __appendTriangle__(self, p1, p2, p3, color, normal, obj, tri:TriangleArray):
@@ -435,49 +441,120 @@ class OpenGLRender:
         dragging = [False]
         last_mouse = [0, 0]
 
-        def close():
-            print("Closing window...")
-            os._exit(0)
+        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
+            print("SDL_Init Error:", sdl2.SDL_GetError())
+            return 1
 
-        glutInit(sys.argv)
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-        glutInitWindowSize(self.width, self.height)
-        glutCreateWindow(b"Kaxe")
+        # OpenGL 2.1 context
+        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
+        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
 
+        window = sdl2.SDL_CreateWindow(b"Kaxe",
+                                    sdl2.SDL_WINDOWPOS_CENTERED,
+                                    sdl2.SDL_WINDOWPOS_CENTERED,
+                                    self.width//2, self.height//2,
+                                    sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
+
+        file = loadFile("logo-small.png")
+        fpath = ".temp-logo.png"
+        Image.open(file).convert("RGBA").save(fpath, format="PNG")
+        file = sdl2.ext.load_image(fpath)
+        sdl2.SDL_SetWindowIcon(window, file)
+        os.remove(fpath)
+
+        if not window:
+            print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
+            return 1
+
+        gl_context = sdl2.SDL_GL_CreateContext(window)
+        
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
 
-        glutDisplayFunc(self.loop)
-        glutReshapeFunc(reshape)
-        glutMouseFunc(mouse_func)
-        glutMotionFunc(motion_func)
-        glutIdleFunc(idle)
-        def keyboard_func(key, *_):
-            if key == b'\x1b':  # ESC key
-                close()
+        is_fullscreen = False
+        running = True
+        event = sdl2.SDL_Event()
 
-        glutKeyboardFunc(keyboard_func)
-        # Remove glutWMCloseFunc if not available in your GLUT implementation
-        try:
-            glutWMCloseFunc(close)  # Register window close callback (not available in standard GLUT)
-        except Exception:
-            pass
-        
-        glutMainLoop()
+        while running:
+            while sdl2.SDL_PollEvent(event):
+                if event.type == sdl2.SDL_QUIT:
+                    running = False
+                elif event.type == sdl2.SDL_KEYDOWN:
+                    # if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                    #     running = False
+                    if event.key.keysym.sym == sdl2.SDLK_RETURN and (event.key.keysym.mod & sdl2.KMOD_ALT):
+                        # Toggle fullscreen on Alt+Enter
+                        if not is_fullscreen:
+                            sdl2.SDL_SetWindowFullscreen(window, sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP)
+                            is_fullscreen = True
+                        else:
+                            sdl2.SDL_SetWindowFullscreen(window, 0)
+                            is_fullscreen = False
+                    if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                        running = False
+
+                elif event.type == sdl2.SDL_WINDOWEVENT:
+                    if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
+                        width = event.window.data1
+                        height = event.window.data2
+                        glViewport(0, 0, width, height)
+                elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
+                    if event.button.button == sdl2.SDL_BUTTON_LEFT:
+                        dragging[0] = True
+                        last_mouse[:] = [event.button.x, event.button.y]
+                elif event.type == sdl2.SDL_MOUSEBUTTONUP:
+                    if event.button.button == sdl2.SDL_BUTTON_LEFT:
+                        dragging[0] = False
+
+                elif event.type == sdl2.SDL_MOUSEMOTION:
+                    if dragging[0]:
+                        motion_func(event.motion.x, event.motion.y)
+            
+            width = ctypes.c_int()
+            height = ctypes.c_int()
+
+            sdl2.SDL_GetWindowSize(window, ctypes.byref(width), ctypes.byref(height))
+
+            self.width = width.value
+            self.height = height.value
+
+            reshape(self.width, self.height)
+            self.loop()
+
+            sdl2.SDL_GL_SwapWindow(window)
+
+        sdl2.SDL_GL_DeleteContext(gl_context)
+        sdl2.SDL_DestroyWindow(window)
+        sdl2.SDL_Quit()
+        return 0
+
 
 
     def render(self, overlay):
        
         self.overlayFunction = overlay
 
-        # Initialize GLUT in off-screen mode
-        glutInit(sys.argv)
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-        glutInitWindowSize(self.width, self.height)
-        glutInitWindowPosition(0, 0)
-        window = glutCreateWindow(b"Kaxe Offscreen")
-        # glutHideWindow()  # Hide the window for off-screen rendering
+        # Initialize SDL2 with OpenGL context for off-screen rendering
+        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
+            raise RuntimeError("SDL_Init Error: " + str(sdl2.SDL_GetError()))
+
+        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
+        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+
+        window = sdl2.SDL_CreateWindow(
+            b"Kaxe Offscreen",
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            self.width, self.height,
+            sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_HIDDEN
+        )
+        if not window:
+            sdl2.SDL_Quit()
+            raise RuntimeError("SDL_CreateWindow Error: " + str(sdl2.SDL_GetError()))
+
+        gl_context = sdl2.SDL_GL_CreateContext(window)
+        sdl2.SDL_GL_MakeCurrent(window, gl_context)
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
@@ -502,6 +579,13 @@ class OpenGLRender:
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo)
 
         if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+            glBindFramebuffer(GL_FRAMEBUFFER, 0)
+            glDeleteFramebuffers(1, [fbo])
+            glDeleteTextures([tex])
+            glDeleteRenderbuffers(1, [rbo])
+            sdl2.SDL_GL_DeleteContext(gl_context)
+            sdl2.SDL_DestroyWindow(window)
+            sdl2.SDL_Quit()
             raise RuntimeError("Framebuffer is not complete")
 
         # Render the scene
@@ -519,7 +603,9 @@ class OpenGLRender:
         glDeleteFramebuffers(1, [fbo])
         glDeleteTextures([tex])
         glDeleteRenderbuffers(1, [rbo])
-        glutDestroyWindow(window)
+        sdl2.SDL_GL_DeleteContext(gl_context)
+        sdl2.SDL_DestroyWindow(window)
+        sdl2.SDL_Quit()
 
         self.image = image
         return self.image

@@ -440,17 +440,6 @@ class Plot3D(Window):
 
         # self.__drawDebug__()
 
-        for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
-
-            n = np.cross(v1, v2)
-            smallzOffset = (n/np.linalg.norm(n))/5000
-            smallzOffset *= 1
-
-            # self.__triangleFaces__[i] = (
-            #     self.render.add3DObject(Triangle(p1+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=[0,0,0,0], ableToUseLight=False)),
-            #     self.render.add3DObject(Triangle(p4+smallzOffset, p2+smallzOffset, p3+smallzOffset, color=[0,0,0,0], ableToUseLight=False))
-            # )
-
     def __drawDebug__(self):
         """
         DEBUG:
@@ -528,7 +517,7 @@ class Plot3D(Window):
         p1, p2, p3, p4, v1, v2 = self.faceNormals[i]
         
         n = np.cross(v1, v2)
-        smallzOffset = (n/np.linalg.norm(n))/5000
+        smallzOffset = (n/np.linalg.norm(n))/500
         smallzOffset *= 1
         
         if len(self.backgroundTriangles) < 6:
@@ -547,10 +536,32 @@ class Plot3D(Window):
                     xyz[i] = self.windowAxis[i*2]
                 else:
                     xyz[i] = self.windowAxis[i*2+1]
-            
 
     def __drawGridLines__(self, axisx:Axis, axisy:Axis, axisz:Axis, xyz):
         axisLineColor = self.getAttr('axisLineColorBackdrop')
+        
+        xyz = xyz.copy()
+
+        midpointx = (self.windowAxis[0] + self.windowAxis[1]) / 2
+        midpointy = (self.windowAxis[2] + self.windowAxis[3]) / 2
+        midpointz = (self.windowAxis[4] + self.windowAxis[5]) / 2
+
+        alpha = 0.1
+        if xyz[0] > midpointx:
+            xyz[0] = xyz[0] + alpha
+        else:
+            xyz[0] = xyz[0] - alpha
+
+        if xyz[1] > midpointy:
+            xyz[1] = xyz[1] + alpha
+        else:
+            xyz[1] = xyz[1] - alpha
+            
+        if xyz[2] > midpointz:
+            xyz[2] = xyz[2] + alpha
+        else:
+            xyz[2] = xyz[2] - alpha
+
 
         for i in axisx.markers:
             epsilon = (self.windowAxis[1] - self.windowAxis[0]) / 1000
@@ -970,6 +981,7 @@ class Plot3D(Window):
 
 
     def save(self, fname:Union[str, BytesIO]):
+        return
 
         self.setAttr('guiWidth', self.getAttr('width'))
         self.setAttr('guiHeight', self.getAttr('height'))
