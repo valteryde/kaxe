@@ -7,6 +7,7 @@ from .color import addColorToBuffers
 from numba import float64, int32
 import numpy as np
 from numba.experimental import jitclass
+from .pointer import Pointer
 
 @njit
 def sign(p1, p2, p3):
@@ -98,6 +99,7 @@ def drawTriangle(zbuffer,
 
             addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
+
 @jitclass
 class Triangle3DNumba:
     p1: float64[:]
@@ -106,18 +108,22 @@ class Triangle3DNumba:
     color: int32[:]
     ableToUseLight: bool
     hidden: bool
-    _pos: int32
     tp: str
+    pointer: Pointer
 
-    def __init__(self, p1, p2, p3, color=np.array((0,0,0,255)), ableToUseLight=True):
+    def __init__(self, p1, p2, p3, color, ableToUseLight):
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.p3 = array([float(i) for i in p3])
         self.color = color
         self.ableToUseLight = ableToUseLight
         self.hidden = False
-        self._pos = -1
         self.tp = "triangle3d"
+        self.pointer = Pointer()
+
+
+    def getRemovableTriangles(self):
+        return [self.pointer.pos]
 
 
 def Triangle(p1, p2, p3, color=(0,0,0,255), ableToUseLight=True):

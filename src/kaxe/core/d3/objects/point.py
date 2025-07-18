@@ -8,6 +8,7 @@ from .color import addColorToBuffers
 import numpy as np
 from numba.typed import List
 from numba.types import ListType
+from .pointer import pointer_type
 
 @njit
 def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
@@ -43,7 +44,7 @@ class Point3DNumba:
     ableToUseLight : bool
     tp : str
     hidden : bool
-    _triangles : ListType(int32)
+    _triangles : ListType(pointer_type)
 
     def __init__(self, x, y, z, radius, color=np.array((0,0,0,255))):
         self.radius = radius
@@ -51,10 +52,17 @@ class Point3DNumba:
         # self.looks = 0
         self.color = color
         self.ableToUseLight = False
-        self._triangles = List.empty_list(int32)
+        self._triangles = List.empty_list(pointer_type)
         self.tp = "point3d"
         self.hidden = False
     
+    def getRemovableTriangles(self):
+        res = []
+        for tri in self._triangles:
+            res.append(tri.pos)
+        self._triangles.clear()
+        return res
+
     def getZ(self, R):
         return (self.pos @ R)[2]
 

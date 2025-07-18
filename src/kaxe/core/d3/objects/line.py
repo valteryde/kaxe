@@ -8,6 +8,8 @@ from numba import float64, int32
 from numba.experimental import jitclass
 from numba.typed import List
 from numba.types import ListType
+from .pointer import pointer_type
+
 
 @njit
 def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, color):
@@ -99,18 +101,18 @@ class Line3DNumba:
     ableToUseLight : bool
     tp : str
     axisType : str
-    _triangles : ListType(int32)
+    _triangles : ListType(pointer_type)
 
-    def __init__(self, p1, p2, color=array((0,0,0,255)), width=5, ableToUseLight=False):
+    def __init__(self, p1, p2, color, width, ableToUseLight):
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
         self.width = width
         self.color = color
         self.hidden = False
         self.ableToUseLight = ableToUseLight
-        self._triangles = List.empty_list(int32)
         self.tp = "line3d"
         self.axisType = ""
+        self._triangles = List.empty_list(pointer_type)
 
     def getZ(self, R):
         return ((R @ self.p1)[2] + (R @ self.p2)[2]) / 2
@@ -136,10 +138,11 @@ class Line3DNumba:
         self.hidden = True
 
     def getRemovableTriangles(self):
+        res = []
         for tri in self._triangles:
-            yield tri._pos
-        
+            res.append(tri.pos)
         self._triangles.clear()
+        return res
 
 
 def Line3D(p1, p2, color=array((0,0,0,255)), width=5, ableToUseLight=False):
@@ -161,7 +164,7 @@ class FlatLine3DNumba:
     ableToUseLight : bool
     tp : str
     axisType : str
-    _triangles : ListType(int32)
+    _triangles : ListType(pointer_type) # pyright: ignore[reportInvalidTypeForm]
 
     def __init__(self, p1, p2, n, color=array((0,0,0,255)), width=5, ableToUseLight=False):
         self.p1 = array([float(i) for i in p1])
@@ -171,10 +174,16 @@ class FlatLine3DNumba:
         self.color = color
         self.hidden = False
         self.axisType = ""
-        self._triangles = List.empty_list(int32)
+        self._triangles = List.empty_list(pointer_type)
         self.ableToUseLight = ableToUseLight
         self.tp = "flatline3d"
 
+    def getRemovableTriangles(self):
+        res = []
+        for tri in self._triangles:
+            res.append(tri.pos)
+        self._triangles.clear()
+        return res
 
 def FlatLine3D(p1, p2, n, color=array((0,0,0,255)), width=5, ableToUseLight=False):
     """

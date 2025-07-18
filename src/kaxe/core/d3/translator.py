@@ -92,4 +92,4 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
             
                 render.add3DObject( Line3D((x1, y1, z1), (x2, y2, z2), color=shape.color, width=shape.thickness) )
 
-    print(time.time() - now, 's to translate 2D batch to 3D objects')
+    # print(time.time() - now, 's to translate 2D batch to 3D objects')

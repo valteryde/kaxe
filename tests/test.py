@@ -1517,7 +1517,7 @@ class Test:
         plt3d.style(fontSize=40)
         plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
 
-        plt3d.show(gui=False)
+        plt3d.show()
         # plt3d.save('tests/images/contour3d.png')
 
     

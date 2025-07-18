@@ -37,15 +37,6 @@ N_0_0_M1 = np.array([0, 0, -1], dtype=np.int32)
 N_0_1_0 = np.array([0, 1, 0], dtype=np.int32)
 fN_0_0_1 = np.array([0.0, 0.0, 1.0], dtype=np.float64)
 
-def finalizeTriangleArrayAppend(tri):
-    tri.vectors = np.append(tri.vectors, np.array(tri.tempVectors).astype(np.float32))
-    tri.colors = np.append(tri.colors, np.array(tri.tempColors).astype(np.float32))
-    tri.normals = np.append(tri.normals, np.array(tri.tempNormals).astype(np.float32))
-
-    tri.tempColors.clear()
-    tri.tempVectors.clear()
-    tri.tempNormals.clear()
-
 
 @jitclass()
 class TriangleArray:
@@ -53,9 +44,9 @@ class TriangleArray:
     colors: float32[:]
     normals: float32[:]
     freespaces: ListType(int32)
-    tempVectors: ListType(float64[:])
-    tempColors: ListType(float64[:])
-    tempNormals: ListType(float64[:])
+    tempVectors: ListType(float32[:])
+    tempColors: ListType(float32[:])
+    tempNormals: ListType(float32[:])
 
     def __init__(self):
         self.vectors = np.empty(0, dtype=np.float32)
@@ -64,9 +55,9 @@ class TriangleArray:
         
         self.freespaces = List.empty_list(int32)
 
-        self.tempVectors = List.empty_list(float64[:])
-        self.tempColors = List.empty_list(float64[:])
-        self.tempNormals = List.empty_list(float64[:])
+        self.tempVectors = List.empty_list(float32[:])
+        self.tempColors = List.empty_list(float32[:])
+        self.tempNormals = List.empty_list(float32[:])
 
     
     def remove(self, pos):
@@ -76,6 +67,64 @@ class TriangleArray:
         self.freespaces.append(pos)
         for i in range(9):
             self.vectors[pos+i] = 0
+
+
+    # def finalizeAppend(self):
+    #     self.vectors = np.append(self.vectors, self.tempVectors)
+    #     self.colors = np.append(self.colors, self.tempColors)
+    #     self.normals = np.append(self.normals, self.tempNormals)
+
+    #     self.tempColors.clear()
+    #     self.tempVectors.clear()
+    #     self.tempNormals.clear()
+
+    def finalizeAppend(self):
+        # Flatten tempVectors into one array
+        n = len(self.tempVectors)
+        new_vector_data = np.empty(self.vectors.size + 3 * n, dtype=np.float32)
+
+        for i in range(self.vectors.size):
+            new_vector_data[i] = self.vectors[i]
+
+        for i in range(n):
+            vec = self.tempVectors[i]
+            for j in range(3):
+                new_vector_data[self.vectors.size + i * 3 + j] = vec[j]
+
+        self.vectors = new_vector_data
+
+        # Flatten tempColors
+        c = len(self.tempColors)
+        new_color_data = np.empty(self.colors.size + 4 * c, dtype=np.float32)
+
+        for i in range(self.colors.size):
+            new_color_data[i] = self.colors[i]
+
+        for i in range(c):
+            col = self.tempColors[i]
+            for j in range(4):
+                new_color_data[self.colors.size + i * 4 + j] = col[j]
+
+        self.colors = new_color_data
+
+        # Flatten tempNormals
+        m = len(self.tempNormals)
+        new_normal_data = np.empty(self.normals.size + 3 * m, dtype=np.float32)
+
+        for i in range(self.normals.size):
+            new_normal_data[i] = self.normals[i]
+
+        for i in range(m):
+            norm = self.tempNormals[i]
+            for j in range(3):
+                new_normal_data[self.normals.size + i * 3 + j] = norm[j]
+
+        self.normals = new_normal_data
+
+        # Clear lists manually using pop()
+        self.tempVectors.clear()
+        self.tempColors.clear()
+        self.tempNormals.clear()
 
 
 def display(triLight:TriangleArray, triNoLight:TriangleArray):
@@ -190,9 +239,9 @@ def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
     if len(tri.freespaces) > 0:
         freepos = tri.freespaces.pop()
         for i in range(3):
-            tri.vectors[freepos + 3*i + 0] = p1[i]
-            tri.vectors[freepos + 3*i + 1] = p2[i]
-            tri.vectors[freepos + 3*i + 2] = p3[i]
+            tri.vectors[freepos + i + 0] = p1[i]
+            tri.vectors[freepos + i + 3] = p2[i]
+            tri.vectors[freepos + i + 6] = p3[i]
         
         colorfreepos = int(freepos*4/3)
 
@@ -202,21 +251,21 @@ def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
                 tri.colors[colorfreepos + i * 4 + j] = color[j]
         
         for i in range(3):
-            tri.normals[freepos + 3*i + 0] = normal[i]
-            tri.normals[freepos + 3*i + 1] = normal[i]
-            tri.normals[freepos + 3*i + 2] = normal[i]
+            tri.normals[freepos + i + 0] = normal[i]
+            tri.normals[freepos + i + 3] = normal[i]
+            tri.normals[freepos + i + 6] = normal[i]
         
-        obj._pos = freepos
+        obj.pointer.pos = freepos
 
     else:
-        obj._pos = len(tri.vectors) + len(tri.tempVectors) * 3
+        obj.pointer.pos = len(tri.vectors) + len(tri.tempVectors) * 3
         
-        color = color.astype(np.float64)
-        normal = normal.astype(np.float64)
+        color = color.astype(np.float32)
+        normal = normal.astype(np.float32)
 
-        tri.tempVectors.append(p1.astype(np.float64))
-        tri.tempVectors.append(p2.astype(np.float64))
-        tri.tempVectors.append(p3.astype(np.float64))
+        tri.tempVectors.append(p1.astype(np.float32))
+        tri.tempVectors.append(p2.astype(np.float32))
+        tri.tempVectors.append(p3.astype(np.float32))
         for i in range(3):
             tri.tempColors.append(color)
 
@@ -234,7 +283,7 @@ def is_close_vec(a, b, tol=1e-8):
 def norm2(vec):
     return np.sqrt(np.sum(vec * vec))
 
-@njit(cache=True)
+@njit
 def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=TriangleArray(), triNoLight=TriangleArray()):
 
     MAX_WIDTH_HEIGHT = np.max(np.array([width, height]))
@@ -288,23 +337,25 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
             # FIXME : virker ikke endnu
             tri = Triangle3DNumba(v00, v01, v10, obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
-            # obj._triangles.append(tri)
+            obj._triangles.append(tri.pointer)
             tri = Triangle3DNumba(v10, v01, v11, obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
-            # obj._triangles.append(tri)
+            obj._triangles.append(tri.pointer)
 
 
         # Optionally, cap the ends (disks)
         for i in range(1, segments - 1):
-            continue
-            tri = Triangle(circle1[0], circle1[i], circle1[i + 1], obj.color, ableToUseLight=obj.ableToUseLight)
-            objects3d.append(tri)
-            obj._triangles.append(tri)
-            tri = Triangle(circle2[0], circle2[i + 1], circle2[i], obj.color, ableToUseLight=obj.ableToUseLight)
-            objects3d.append(tri)
-            obj._triangles.append(tri)
+            tri = Triangle3DNumba(circle1[0], circle1[i], circle1[i + 1], obj.color, obj.ableToUseLight)
+            triangle3d.append(tri)
+            obj._triangles.append(tri.pointer)
+            
+            tri = Triangle3DNumba(circle2[0], circle2[i + 1], circle2[i], obj.color, obj.ableToUseLight)
+            triangle3d.append(tri)
+            obj._triangles.append(tri.pointer)
+
 
     for obj in point3d:
+        
         # Render Point3D as a small sphere (approximated by triangles)
 
         center = obj.pos
@@ -321,8 +372,8 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
             v3 = center + radius * np.array([np.cos(angle2), np.sin(angle2), 0])
 
             tri = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
+            obj._triangles.append(tri.pointer)
             triangle3d.append(tri)
-            # obj._triangles.append(tri)
 
 
     for obj in flatline3d:
@@ -354,13 +405,15 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
         normal = n.astype(np.float32)
 
         # Two triangles for the rectangle
-
         tri1 = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
         triangle3d.append(tri1)
-        # obj._triangles.append(tri1)
+        obj._triangles.append(tri1.pointer)
         tri2 = Triangle3DNumba(v3, v2, v4, obj.color, obj.ableToUseLight)
         triangle3d.append(tri2)
-        # obj._triangles.append(tri2)
+        obj._triangles.append(tri2.pointer)
+
+    # Allocate spaces + use freespaces
+    # So every triangle prior to creation has a position
 
     for obj in triangle3d:
 
@@ -579,7 +632,7 @@ class OpenGLRender:
             kwargs[key] = self.objects3d.get(key, List.empty_list(typesRegistry[key].class_type.instance_type))
 
         retrieveAndAppendTriangles(**kwargs,
-            scale=scale, 
+            scale=scale * self.guiRatio, 
             width=self.width, 
             height=self.height, 
             triLight=self.triLight, 
@@ -587,8 +640,9 @@ class OpenGLRender:
         )
 
         self.objects3d.clear()
-        finalizeTriangleArrayAppend(self.triLight)
-        finalizeTriangleArrayAppend(self.triNoLight)
+        
+        self.triLight.finalizeAppend()
+        self.triNoLight.finalizeAppend()
 
 
     def quit(self, gl_context, window):
