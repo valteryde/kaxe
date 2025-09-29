@@ -82,7 +82,7 @@ class Test:
         # plt3d = kaxe.Plot3D([-10, 10, -10, 10, 0, 40], rotation=[-45, -60], drawBackground=True)
 
         plt = kaxe.PlotFrame3D(drawBackground=True)
-        plt.style(width=650, height=750, fontSize=32)
+        # plt.style(width=650, height=750, fontSize=32)
         # plt.style(width=750, height=650, fontSize=32)
         # plt.style(width=3000, height=2000, fontSize=64)
         # plt.style(width=1500, height=1000, fontSize=64)
@@ -93,7 +93,7 @@ class Test:
 
         # plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9))
         plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9, numPoints=100, color=kaxe.Colormaps.rainbow)) # .setAlpha(150)
-        plt.add(kaxe.Points3D((0, 0, 0), (1, 1, 1), (2, 2, 2), color=kaxe.Colormaps.red.setAlpha(150)))
+        # plt.add(kaxe.Points3D((0, 0, 0), (1, 1, 1), (2, 2, 2), color=kaxe.Colormaps.red.setAlpha(150)))
 
         plt.show()
         # plt.show(gui=False)

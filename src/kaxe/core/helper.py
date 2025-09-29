@@ -167,4 +167,24 @@ def getbbox(image:Image.Image, needle:tuple) -> list:
         x_min, x_max = cols.min(), cols.max()
         bbox = (int(x_min), int(y_min), int(x_max + 1), int(y_max + 1))
         return bbox
-    
+
+
+def to_numpy(im):
+    im.load()
+    # unpack data
+    e = Image._getencoder(im.mode, 'raw', im.mode)
+    e.setimage(im.im)
+
+    # NumPy buffer for the result
+    shape, typestr = Image._conv_type_shape(im)
+    data = np.empty(shape, dtype=np.dtype(typestr))
+    mem = data.data.cast('B', (data.data.nbytes,))
+
+    bufsize, s, offset = 65536, 0, 0
+    while not s:
+        l, s, d = e.encode(bufsize)
+        mem[offset:offset + len(d)] = d
+        offset += len(d)
+    if s < 0:
+        raise RuntimeError("encoder error %d in tobytes" % s)
+    return data

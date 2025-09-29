@@ -754,12 +754,12 @@ class Axis(AttrObject):
             return
         
         if self.__distancePointInLineSegment__(self.startPos, axis.startPos, axis.endPos) < 5:
-            self.startArrows[0].hide()
-            self.startArrows[1].hide()
+            self.startArrows[0].hidden = True
+            self.startArrows[1].hidden = True
 
         if self.__distancePointInLineSegment__(self.endPos, axis.startPos, axis.endPos) < 5:
-            self.endArrows[0].hide()
-            self.endArrows[1].hide()
+            self.endArrows[0].hidden = True
+            self.endArrows[1].hidden = True
 
 
     # *** api ***

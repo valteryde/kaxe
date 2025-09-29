@@ -28,7 +28,10 @@ from numba import int32, float64, float32
 from numba.types import ListType
 from numba.typed import List
 from typing import DefaultDict
-
+import cv2
+import numpy as np
+from ..profiler import Profiler
+from ..helper import to_numpy
 
 rotation = [330, 290]
 
@@ -38,20 +41,36 @@ N_0_1_0 = np.array([0, 1, 0], dtype=np.int32)
 fN_0_0_1 = np.array([0.0, 0.0, 1.0], dtype=np.float64)
 
 
-@jitclass()
+@jitclass([
+    ('vectors', float32[:]),
+    ('colors', float32[:]),
+    ('normals', float32[:]),
+    ('freespaces', ListType(int32)),
+    ('tempVectors', ListType(float32[:])),
+    ('tempColors', ListType(float32[:])),
+    ('tempNormals', ListType(float32[:])),
+    ('current_size', int32),
+    ('capacity', int32),
+    ('color_current_size', int32),
+    ('color_capacity', int32),
+    ('normal_current_size', int32),
+    ('normal_capacity', int32)
+])
 class TriangleArray:
-    vectors: float32[:]
-    colors: float32[:]
-    normals: float32[:]
-    freespaces: ListType(int32)
-    tempVectors: ListType(float32[:])
-    tempColors: ListType(float32[:])
-    tempNormals: ListType(float32[:])
 
-    def __init__(self):
-        self.vectors = np.empty(0, dtype=np.float32)
-        self.colors = np.empty(0, dtype=np.float32)
-        self.normals = np.empty(0, dtype=np.float32)
+    def __init__(self, initial_capacity=10000):
+        # Pre-allocate arrays with initial capacity
+        self.capacity = initial_capacity * 3  # 3 coordinates per vertex
+        self.color_capacity = initial_capacity * 4  # 4 components per color (RGBA)
+        self.normal_capacity = initial_capacity * 3  # 3 components per normal
+        
+        self.vectors = np.zeros(self.capacity, dtype=np.float32)
+        self.colors = np.zeros(self.color_capacity, dtype=np.float32)
+        self.normals = np.zeros(self.normal_capacity, dtype=np.float32)
+        
+        self.current_size = 0
+        self.color_current_size = 0
+        self.normal_current_size = 0
         
         self.freespaces = List.empty_list(int32)
 
@@ -79,49 +98,57 @@ class TriangleArray:
     #     self.tempNormals.clear()
 
     def finalizeAppend(self):
-        # Flatten tempVectors into one array
+        # Check if we need to expand capacity
         n = len(self.tempVectors)
-        new_vector_data = np.empty(self.vectors.size + 3 * n, dtype=np.float32)
-
-        for i in range(self.vectors.size):
-            new_vector_data[i] = self.vectors[i]
-
+        c = len(self.tempColors)
+        m = len(self.tempNormals)
+        
+        needed_vector_size = self.current_size + 3 * n
+        needed_color_size = self.color_current_size + 4 * c
+        needed_normal_size = self.normal_current_size + 3 * m
+        
+        # Expand arrays if needed (double capacity)
+        if needed_vector_size > self.capacity:
+            new_capacity = max(needed_vector_size, self.capacity * 2)
+            new_vectors = np.zeros(new_capacity, dtype=np.float32)
+            new_vectors[:self.current_size] = self.vectors[:self.current_size]
+            self.vectors = new_vectors
+            self.capacity = new_capacity
+            
+        if needed_color_size > self.color_capacity:
+            new_color_capacity = max(needed_color_size, self.color_capacity * 2)
+            new_colors = np.zeros(new_color_capacity, dtype=np.float32)
+            new_colors[:self.color_current_size] = self.colors[:self.color_current_size]
+            self.colors = new_colors
+            self.color_capacity = new_color_capacity
+            
+        if needed_normal_size > self.normal_capacity:
+            new_normal_capacity = max(needed_normal_size, self.normal_capacity * 2)
+            new_normals = np.zeros(new_normal_capacity, dtype=np.float32)
+            new_normals[:self.normal_current_size] = self.normals[:self.normal_current_size]
+            self.normals = new_normals
+            self.normal_capacity = new_normal_capacity
+        
+        # Efficiently append temp data directly into pre-allocated arrays
         for i in range(n):
             vec = self.tempVectors[i]
             for j in range(3):
-                new_vector_data[self.vectors.size + i * 3 + j] = vec[j]
-
-        self.vectors = new_vector_data
-
-        # Flatten tempColors
-        c = len(self.tempColors)
-        new_color_data = np.empty(self.colors.size + 4 * c, dtype=np.float32)
-
-        for i in range(self.colors.size):
-            new_color_data[i] = self.colors[i]
-
+                self.vectors[self.current_size + i * 3 + j] = vec[j]
+        self.current_size += 3 * n
+        
         for i in range(c):
             col = self.tempColors[i]
             for j in range(4):
-                new_color_data[self.colors.size + i * 4 + j] = col[j]
-
-        self.colors = new_color_data
-
-        # Flatten tempNormals
-        m = len(self.tempNormals)
-        new_normal_data = np.empty(self.normals.size + 3 * m, dtype=np.float32)
-
-        for i in range(self.normals.size):
-            new_normal_data[i] = self.normals[i]
-
+                self.colors[self.color_current_size + i * 4 + j] = col[j]
+        self.color_current_size += 4 * c
+        
         for i in range(m):
             norm = self.tempNormals[i]
             for j in range(3):
-                new_normal_data[self.normals.size + i * 3 + j] = norm[j]
-
-        self.normals = new_normal_data
-
-        # Clear lists manually using pop()
+                self.normals[self.normal_current_size + i * 3 + j] = norm[j]
+        self.normal_current_size += 3 * m
+        
+        # Clear temp lists
         self.tempVectors.clear()
         self.tempColors.clear()
         self.tempNormals.clear()
@@ -258,7 +285,7 @@ def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
         obj.pointer.pos = freepos
 
     else:
-        obj.pointer.pos = len(tri.vectors) + len(tri.tempVectors) * 3
+        obj.pointer.pos = tri.current_size + len(tri.tempVectors) * 3
         
         color = color.astype(np.float32)
         normal = normal.astype(np.float32)
@@ -314,7 +341,7 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
 
         # Cylinder parameters
         radius = obj.width / MAX_WIDTH_HEIGHT
-        segments = 12  # Increase for smoother cylinder
+        segments = 24  # Increase for smoother cylinder
 
         # Generate circle points at both ends
         circle1 = []
@@ -334,7 +361,6 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
             v11 = circle2[next_i]
             # Two triangles per segment
             
-            # FIXME : virker ikke endnu
             tri = Triangle3DNumba(v00, v01, v10, obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
             obj._triangles.append(tri.pointer)
@@ -360,7 +386,7 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
 
         center = obj.pos
         radius = 2* obj.radius / MAX_WIDTH_HEIGHT
-        segments = 4
+        segments = 8
 
         # Draw a flat circle in the XY plane
         for i in range(segments):
@@ -496,6 +522,7 @@ class OpenGLRender:
 
         self.last_time = time.time()
         self.frames = 0
+        self.totalframes = 0
         self.overlayFunction = None
 
         self.triLight = TriangleArray()
@@ -505,6 +532,9 @@ class OpenGLRender:
         self.memimage = Image.new('RGBA', (0, 0))
 
         self.objects3d = dict()
+        
+        # Initialize profiler for performance measurements
+        self.profiler = Profiler("OpenGLRender")
 
 
 
@@ -531,28 +561,29 @@ class OpenGLRender:
         return obj
 
     def loop(self):
-                
+        self.profiler.start("inner_loop")
+        
         self.O = np.array((self.width//2, self.height//2)) # offset
 
-        overlayImage = self.overlayFunction(rotation)
+        with self.profiler.measure("overlay_function"):
+            overlayImage = self.overlayFunction(rotation) # 24 ms
 
-        now = time.time()
-        self.refresh()
-        print(time.time() - now, 's to refresh')
+        with self.profiler.measure("refresh"):
+            self.refresh()
 
+        self.profiler.start("fps_calculation")
         self.frames += 1
+        self.totalframes += 1
         current_time = time.time()
         if current_time - self.last_time >= 1.0:
             
             self.fpsimage = fondi.MathText("\\text{FPS:}" + f" {self.frames}", 32, (255,0,0,255)).image
-            self.fpsimage = self.fpsimage.transpose(Image.Transpose.ROTATE_270)
 
             process = psutil.Process(os.getpid())
             mem_info = process.memory_info()
             mem_in_mb = mem_info.rss / 1024 / 1024  # rss = Resident Set Size
 
             self.memimage = fondi.MathText("\\text{Memory:}"+ f" {mem_in_mb:.2f}"+ "\\text{MB}", 32, (255,0,0,255)).image
-            self.memimage = self.memimage.transpose(Image.Transpose.ROTATE_270)
 
             self.frames = 0
             self.last_time = current_time
@@ -560,95 +591,120 @@ class OpenGLRender:
         if self.debugDrawOverlay:
             margin = 10
             overlayImage.paste(self.fpsimage, (margin, margin))
-            overlayImage.paste(self.memimage, (self.fpsimage.width+margin, margin))
+            overlayImage.paste(self.memimage, (margin, self.fpsimage.height+margin))
+        self.profiler.end("fps_calculation")
 
-        display(self.triLight, self.triNoLight)
+        with self.profiler.measure("display_render"):
+            display(self.triLight, self.triNoLight)
 
-        if overlayImage is not None:
 
-            # Convert Pillow image to RGBA and numpy array
-            overlayImage = overlayImage.transpose(Image.Transpose.ROTATE_90)
+        if overlayImage is not None: # 30 ms
             
-            # Resize Pillow Image
-            overlayImage = overlayImage.resize((self.guiWidth, self.guiHeight), Image.LANCZOS)
+            with self.profiler.measure("overlay_processing"):
+                with self.profiler.measure("numpy_conversion"):
+                    # Use numpy for fast resizing and rotation
+                    overlay_np = to_numpy(overlayImage)
 
-            overlay_np = np.array(overlayImage.convert("RGBA"))
+                with self.profiler.measure("opencv_resize"):
+                    # Resize using OpenCV (much faster than PIL)
+                    overlay_np = cv2.resize(overlay_np, (self.guiWidth, self.guiHeight), interpolation=cv2.INTER_LINEAR)
 
-            # overlay_np = np.transpose(overlay_np)
-            h, w = overlay_np.shape[:2]
-            # Flip vertically for OpenGL coordinates
-            overlay_np = np.flipud(overlay_np)
-            
-            # Resize the image to match the OpenGL viewport
+                with self.profiler.measure("numpy_transform"):
+                    # Rotate using numpy (transpose + flip)
+                    #overlay_np = np.rot90(overlay_np, k=1)
 
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.guiWidth, 0, self.guiHeight, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glDisable(GL_DEPTH_TEST)
-            glRasterPos2i(0, 0)
-            glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, overlay_np)
-            glEnable(GL_DEPTH_TEST)
-            glDisable(GL_BLEND)
-            glPopMatrix()
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
+                    h, w = overlay_np.shape[:2]
+                    # Flip vertically for OpenGL coordinates
+                    overlay_np = np.flipud(overlay_np)
 
+                with self.profiler.measure("opengl_overlay"):
+                    glMatrixMode(GL_PROJECTION)
+                    x_offset = (self.guiWidth - w) // 2
+                    y_offset = (self.guiHeight - h) // 2
+
+                    glMatrixMode(GL_PROJECTION)
+                    glPushMatrix()
+                    glLoadIdentity()
+                    glOrtho(0, self.guiWidth, 0, self.guiHeight, -1, 1)
+                    glMatrixMode(GL_MODELVIEW)
+                    glPushMatrix()
+                    glLoadIdentity()
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+                    glDisable(GL_DEPTH_TEST)
+                    glRasterPos2i(x_offset, y_offset)
+                    glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, overlay_np)
+                    glEnable(GL_DEPTH_TEST)
+                    glDisable(GL_BLEND)
+                    glPopMatrix()
+                    glMatrixMode(GL_PROJECTION)
+                    glPopMatrix()
+                    glMatrixMode(GL_MODELVIEW)
+
+
+        self.profiler.end("inner_loop")    
+        
+        
 
     def refresh(self):
 
-        self.count += 1
-        if self.skipObjectUpdate:
+        with self.profiler.measure("clear_triangles"):
+            self.count += 1
+            if self.skipObjectUpdate:
+                self.objects3d.clear()
+                return
+
+            # remove triangles
+            # Remove triangles whose indices are in self.removedObjects3d
+            for obj, pos in self.removedObjects3d:
+                # Convert to set for faster lookup
+                # if pos == None:
+                #     obj.hidden = True
+                #     continue
+
+                if obj.ableToUseLight:
+                    self.triLight.remove(pos)
+                else:
+                    self.triNoLight.remove(pos)
+
+            self.removedObjects3d.clear()
+
+        with self.profiler.measure('retrieve_and_append'):
+            # Retrieve and append triangles from all 3D objects
+
+            scale = self.SCL
+
+            kwargs = {}
+            for key in typesRegistry:
+                kwargs[key] = self.objects3d.get(key, List.empty_list(typesRegistry[key].class_type.instance_type))
+
+            retrieveAndAppendTriangles(**kwargs,
+                scale=scale * self.guiRatio, 
+                width=self.width, 
+                height=self.height, 
+                triLight=self.triLight, 
+                triNoLight=self.triNoLight
+            )
+
+        with self.profiler.measure("clear_objects"):
             self.objects3d.clear()
-            return
-
-        # remove triangles
-        # Remove triangles whose indices are in self.removedObjects3d
-        for obj, pos in self.removedObjects3d:
-            # Convert to set for faster lookup
-            # if pos == None:
-            #     obj.hidden = True
-            #     continue
-
-            if obj.ableToUseLight:
-                self.triLight.remove(pos)
-            else:
-                self.triNoLight.remove(pos)
-
-        self.removedObjects3d.clear()
-
-        # add triangles
-
-        scale = self.SCL
-
-        kwargs = {}
-        for key in typesRegistry:
-            kwargs[key] = self.objects3d.get(key, List.empty_list(typesRegistry[key].class_type.instance_type))
-
-        retrieveAndAppendTriangles(**kwargs,
-            scale=scale * self.guiRatio, 
-            width=self.width, 
-            height=self.height, 
-            triLight=self.triLight, 
-            triNoLight=self.triNoLight
-        )
-
-        self.objects3d.clear()
         
-        self.triLight.finalizeAppend()
-        self.triNoLight.finalizeAppend()
+        
+        with self.profiler.measure("finalize_append"):
+            self.triLight.finalizeAppend()
+            self.triNoLight.finalizeAppend()
+        
+        # Reset arrays for next frame (keep capacity but reset size)
+        # Note: Comment this out if you want to accumulate triangles across frames
+        # self.triLight.reset()
+        # self.triNoLight.reset()
 
 
     def quit(self, gl_context, window):
         sdl2.SDL_GL_DeleteContext(gl_context)
         sdl2.SDL_DestroyWindow(window)
         sdl2.SDL_Quit()
+
 
     def gui(self, overlay):
         global dragging, last_mouse
@@ -694,6 +750,9 @@ class OpenGLRender:
         comma_rotation = 0
 
         while running:
+            
+            self.profiler.start("main_loop")
+
             dt = (time.time() - lasttime) * 1000
             lasttime = time.time()
             while sdl2.SDL_PollEvent(event):
@@ -762,8 +821,31 @@ class OpenGLRender:
                 reshape(self.guiWidth, self.guiHeight)
                 self.loop()
 
-            sdl2.SDL_GL_SwapWindow(window)
+            self.profiler.end("main_loop")
 
+            sdl2.SDL_GL_SwapWindow(window)
+            
+            # Print profiler report every 60 frames for performance analysis
+            if self.totalframes % 120 == 0 and self.totalframes > 0:
+                print(self.profiler.get_report(sort_by='average'))
+                print("=" * 50)
+                self.profiler.reset()  # Reset to start fresh measurements
+            
+
+            
+
+
+    def get_performance_report(self, sort_by: str = 'duration') -> str:
+        """Get a detailed performance report from the profiler."""
+        return self.profiler.get_report(sort_by=sort_by)
+    
+    def export_performance_data(self, filename: str) -> None:
+        """Export profiler data to CSV file."""
+        self.profiler.export_csv(filename)
+    
+    def reset_profiler(self) -> None:
+        """Reset profiler measurements."""
+        self.profiler.reset()
 
     def __setIcon__(self, window):
         file = loadFile("logo-small.png")

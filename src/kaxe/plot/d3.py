@@ -20,6 +20,7 @@ from ..core.d3.objects.triangle import Triangle
 # other
 import math
 import numpy as np
+import random
 from PIL import Image
 from typing import Union
 from numba import njit
@@ -929,7 +930,7 @@ class Plot3D(Window):
         self.__before__()
 
         # self.render.SCL -= 300
-        self.render.SCL -= 100
+        self.render.SCL -= 200
 
         self.__addInnerContent__()
         
@@ -940,6 +941,8 @@ class Plot3D(Window):
 
         def overlay(rotation=self.rotation):
             
+            self.render.profiler.start('overlay_init')
+
             self.setAttr('width', self.render.width)
             self.setAttr('height', self.render.height)
             self.width = self.getAttr('width')
@@ -959,25 +962,33 @@ class Plot3D(Window):
 
             self.render.camera.satelite(math.radians(self.rotation[0]), math.radians(self.rotation[1]))
 
-            self.__after__()
-            # print((time.time() - now)*1000) # ca 10 sek
+            self.render.profiler.end('overlay_init')
+
+
+            with self.render.profiler.measure('overlay_after'):
+                self.__after__()
             # self.__addOuterContent__()
 
             # include all elements
-            self.__includeAllAgain__()
+            with self.render.profiler.measure('overlay_include'):
+                self.__includeAllAgain__()
 
-            self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
+                self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
 
             # add style padding
             # self.addPaddingCondition(*self.getAttr('outerPadding'))
 
-            self.attrmap.setAttr('backgroundColor', (0,0,0,0))
-            surface = self.__pillowPaint__()
+            with self.render.profiler.measure('overlay_paint'):
+                self.attrmap.setAttr('backgroundColor', (0,0,0,0))
+                surface = self.__pillowPaint__()
 
-            surface = surface.crop([0,0,self.render.width, self.render.height])
+            with self.render.profiler.measure('overlay_crop'):
+                surface = surface.crop([0,0,self.render.width, self.render.height])
 
-            surface = surface.transpose(Image.Transpose.ROTATE_270)
-            
+                # DANGER: ONLY USE FOR DEBUGGING
+                # if random.random() < 0.01:
+                #     surface.show()
+
             return surface
 
         return overlay

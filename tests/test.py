@@ -2047,7 +2047,7 @@ if __name__ == '__main__':
     # Test.testHistogram()
     # Test.argument()
 
-    Test.testPrettyContour2DIn3D()
+    # Test.testPrettyContour2DIn3D()
     # Test.test3DCoordinateSystem()
     # Test.testSolidofRevolution()
     # Test.testVectorField3D()
