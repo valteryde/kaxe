@@ -226,23 +226,25 @@ class Plot(Window):
         sel_bottom = min(py0, py1)
         sel_top = max(py0, py1)
 
+        # Zoom overlay: draw on top of everything (z=1000)
+        Z_ZOOM = 1000
         # Zoom image (y is bottom in plot coords)
-        self.addDrawingFunction(shapes.Image(zoom_surface, int(inset_x), int(inset_y)), z=10)
+        self.addDrawingFunction(shapes.Image(zoom_surface, int(inset_x), int(inset_y)), z=Z_ZOOM)
 
         # Inset border (frame)
         border = zoom.selectionBoxColor
-        self.addDrawingFunction(shapes.Line(inset_x, inset_y, inset_x + surf_w, inset_y, color=border, width=2), z=11)
-        self.addDrawingFunction(shapes.Line(inset_x + surf_w, inset_y, inset_x + surf_w, inset_y + surf_h, color=border, width=2), z=11)
-        self.addDrawingFunction(shapes.Line(inset_x + surf_w, inset_y + surf_h, inset_x, inset_y + surf_h, color=border, width=2), z=11)
-        self.addDrawingFunction(shapes.Line(inset_x, inset_y + surf_h, inset_x, inset_y, color=border, width=2), z=11)
+        self.addDrawingFunction(shapes.Line(inset_x, inset_y, inset_x + surf_w, inset_y, color=border, width=2), z=Z_ZOOM + 1)
+        self.addDrawingFunction(shapes.Line(inset_x + surf_w, inset_y, inset_x + surf_w, inset_y + surf_h, color=border, width=2), z=Z_ZOOM + 1)
+        self.addDrawingFunction(shapes.Line(inset_x + surf_w, inset_y + surf_h, inset_x, inset_y + surf_h, color=border, width=2), z=Z_ZOOM + 1)
+        self.addDrawingFunction(shapes.Line(inset_x, inset_y + surf_h, inset_x, inset_y, color=border, width=2), z=Z_ZOOM + 1)
 
         # Selection box outline
         w = zoom.selectionBoxWidth
         c = zoom.selectionBoxColor
-        self.addDrawingFunction(shapes.Line(sel_left, sel_bottom, sel_right, sel_bottom, color=c, width=w), z=11)
-        self.addDrawingFunction(shapes.Line(sel_right, sel_bottom, sel_right, sel_top, color=c, width=w), z=11)
-        self.addDrawingFunction(shapes.Line(sel_right, sel_top, sel_left, sel_top, color=c, width=w), z=11)
-        self.addDrawingFunction(shapes.Line(sel_left, sel_top, sel_left, sel_bottom, color=c, width=w), z=11)
+        self.addDrawingFunction(shapes.Line(sel_left, sel_bottom, sel_right, sel_bottom, color=c, width=w), z=Z_ZOOM + 1)
+        self.addDrawingFunction(shapes.Line(sel_right, sel_bottom, sel_right, sel_top, color=c, width=w), z=Z_ZOOM + 1)
+        self.addDrawingFunction(shapes.Line(sel_right, sel_top, sel_left, sel_top, color=c, width=w), z=Z_ZOOM + 1)
+        self.addDrawingFunction(shapes.Line(sel_left, sel_top, sel_left, sel_bottom, color=c, width=w), z=Z_ZOOM + 1)
 
         # Connector lines: 2 lines - connect the edge of selection that faces the inset
         # to the corresponding edge of the inset. Use connectorCorners to override: "left-right",
@@ -266,35 +268,35 @@ class Plot(Window):
                 )
                 if mode == "right":
                     # Inset to the right: top right-right, bottom left-left (avoids crossing)
-                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=11)
-                    self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                    self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=Z_ZOOM + 1)
                     corners = None  # already drawn
                 elif mode == "left":
                     # Inset to the left: top right-left, bottom right-left (avoids crossing)
-                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
-                    self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                    self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=Z_ZOOM + 1)
                     corners = None  # already drawn
                 elif mode == "vertical":
                     # Inset above or below: connect corresponding corners (top-to-top, bottom-to-bottom)
-                    self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
-                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=11)
-                    self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
-                    self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_br[0], ins_br[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                    self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                    self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_br[0], ins_br[1], color=lc, width=lw), z=Z_ZOOM + 1)
                     corners = None  # already drawn
                 else:
                     corners = "left-right"  # mode == "left-right"
             if corners == "right-left":
-                self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
-                self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
+                self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=Z_ZOOM + 1)
             elif corners == "left-right":
-                self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=11)
-                self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_br[0], ins_br[1], color=lc, width=lw), z=11)
+                self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_br[0], ins_br[1], color=lc, width=lw), z=Z_ZOOM + 1)
             elif corners == "left-left":
-                self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
-                self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
+                self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=Z_ZOOM + 1)
             elif corners == "right-right":
-                self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=11)
-                self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_br[0], ins_br[1], color=lc, width=lw), z=11)
+                self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=Z_ZOOM + 1)
+                self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_br[0], ins_br[1], color=lc, width=lw), z=Z_ZOOM + 1)
 
     def zoom(
         self,
