@@ -65,8 +65,18 @@ class BoxPlot(Window):
             leftbox = np.quantile(data, 0.25)
             rightbox = np.quantile(data, 0.75)
             IQR = rightbox - leftbox
-            leftwhisker = leftbox - 3/2*IQR
-            rightwhisker = rightbox + 3/2*IQR
+            lower_fence = leftbox - 1.5 * IQR
+            upper_fence = rightbox + 1.5 * IQR
+
+            # Whiskers extend to min/max data within fence (Tukey convention)
+            data_arr = np.array(data)
+            within_fence = data_arr[(data_arr >= lower_fence) & (data_arr <= upper_fence)]
+            if len(within_fence) > 0:
+                leftwhisker = float(np.min(within_fence))
+                rightwhisker = float(np.max(within_fence))
+            else:
+                leftwhisker = lower_fence
+                rightwhisker = upper_fence
 
             min_ = min(min_, *boxplot["data"], leftwhisker, rightwhisker)
             max_ = max(max_, *boxplot["data"], leftwhisker, rightwhisker)
@@ -153,8 +163,8 @@ class BoxPlot(Window):
             shapes.Line(wxr, y0, wxr, y1, width=lineWidth, batch=self.boxbatch, color=lineColor)
             
             for i in data:
-                
-                if not(leftwhisker < i < rightwhisker):
+                # Outliers: points outside the whisker range (beyond fence)
+                if i < leftwhisker or i > rightwhisker:
                     height = self.getAttr('symbolHeight')
                     symbol = makeSymbolShapes(boxplot["symbol"], height, color=boxplot["color"], batch=self.boxbatch)
                     symbol.x = self.axis.get(i)[0]
