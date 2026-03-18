@@ -151,11 +151,26 @@ class Plot(Window):
     def __bakeZoomInset__(self, zoom):
         """Bake zoom plot and return rendered surface. Finalizes main objects with zoom view when includeMain."""
         from .empty import EmptyWindow, EmptyPlot
+        import math
 
         inset_w, inset_h = zoom.size
         x0, x1, y0, y1 = zoom.windowAxis
+        zoom_x_range = x1 - x0
+        zoom_y_range = y1 - y0
+        main_x_range = self.windowAxis[1] - self.windowAxis[0]
+        main_y_range = self.windowAxis[3] - self.windowAxis[2]
+
+        # Magnification: zoom has more pixels per data unit → scale up points/lines
+        zoom_ppu_x = inset_w / zoom_x_range if zoom_x_range else 1
+        zoom_ppu_y = inset_h / zoom_y_range if zoom_y_range else 1
+        main_ppu_x = self.width / main_x_range if main_x_range else 1
+        main_ppu_y = self.height / main_y_range if main_y_range else 1
+        scale_x = zoom_ppu_x / main_ppu_x
+        scale_y = zoom_ppu_y / main_ppu_y
+        zoom_plot_render_scale = math.sqrt(scale_x * scale_y)
 
         zoom_plot = EmptyPlot(zoom.windowAxis) if zoom.showAxes else EmptyWindow(zoom.windowAxis)
+        zoom_plot.renderScale = max(1.0, zoom_plot_render_scale)
         zoom_plot.showProgressBar = False
         zoom_plot.printDebugInfo = False
         zoom_plot.showLegend = False

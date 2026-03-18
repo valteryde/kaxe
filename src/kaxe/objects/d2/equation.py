@@ -133,7 +133,7 @@ class Equation:
                     dpy, 
                     color=self.color, 
                     batch=self.batch,
-                    radius=self.width)
+                    radius=self._effectiveWidth)
                 )
 
             # shapes.Rectangle(px, py, delta, delta, (255,0,0,100), batch=self.batch)
@@ -183,7 +183,7 @@ class Equation:
                     *a,
                     *b,
                     batch=self.batch,
-                    width=self.width*2,
+                    width=self._effectiveWidth*2,
                     color=self.color
                 )
 
@@ -192,6 +192,8 @@ class Equation:
         # Translate to 3D plot
         if parent == identities.XYZPLOT:
             parent = getEquivalent2DPlot(parent)
+        scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
+        self._effectiveWidth = max(1, int(self.width * scale))
         box = parent.windowBox
         box = [
             box[0] - self.computePadding, box[2] + self.computePadding, 

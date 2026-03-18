@@ -176,11 +176,13 @@ class Function2D:
                 self.__setPoint__(angle, parent)
 
         # piece together linesegments
+        scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
+        width = max(1, int(self.thickness * scale))
         for segment in self.lineSegments:
             shapes.LineSegment(
                 segment, 
                 color=self.color, 
-                width=self.thickness, 
+                width=width, 
                 batch=self.batch, 
                 dotted=self.dotted > 0,
                 dashed=self.dashed > 0,

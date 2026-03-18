@@ -77,6 +77,8 @@ class Points2D:
         
         # set style 
         if self.size is None: self.size = round(parent.getAttr('fontSize') / 3)
+        scale = parent.getVisualScale()
+        size = max(1, round(self.size * scale))
 
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)
@@ -87,8 +89,8 @@ class Points2D:
             # symbol
             if self.symbol:
                 
-                #shapes.Circle(x,y, self.size, color=self.color, batch=self.batch)
-                symbol = makeSymbolShapes(self.symbol, self.size, self.color, batch=self.batch)
+                #shapes.Circle(x,y, size, color=self.color, batch=self.batch)
+                symbol = makeSymbolShapes(self.symbol, size, self.color, batch=self.batch)
                 symbol.x = x
                 symbol.y = y
                 if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
@@ -100,7 +102,7 @@ class Points2D:
             # lollipop (lagt til lines)
             if self.lollipop:
                 _, y0 = parent.pixel(x, min(max(0, parent.windowAxis[2]), parent.windowAxis[3]))
-                line = shapes.Line(x, y, x, y0, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
+                line = shapes.Line(x, y, x, y0, color=self.color, width=max(1, int(size*.5)), batch=self.batch, center=True)
                 self.lines.append(line)
 
             # connect
@@ -111,13 +113,13 @@ class Points2D:
             if x1 is None or y1 is None or x is None or y is None:
                 continue
             
-            if (vlen(vdiff((x1, y1), (x,y))) < self.size) and self.symbol:
+            if (vlen(vdiff((x1, y1), (x,y))) < size) and self.symbol:
                 continue
 
             if not parent.inside(x1, y1):
                 continue
 
-            line = shapes.Line(x,y, x1, y1, color=self.color, width=int(self.size*.5), batch=self.batch, center=True)
+            line = shapes.Line(x,y, x1, y1, color=self.color, width=max(1, int(size*.5)), batch=self.batch, center=True)
             self.lines.append(line)
         
     
