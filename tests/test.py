@@ -144,6 +144,23 @@ class Test:
 
         plot.save('tests/images/function.png')
 
+    def testZoomInset():
+        """Test zoom inset (magnifying glass) feature with main plot + inset-only points."""
+        plot = kaxe.Plot([0, 800, 1, 5.5])
+
+        def f(x):
+            if x < 600:
+                return 1 + 0.01 * x
+            return 4 + 0.5 * math.sin((x - 600) * 0.5) + 0.3 * math.sin((x - 600) * 0.2)
+
+        plot.add(kaxe.Function2D(f))
+
+        zoom = plot.zoom(620, 740, 4.4, 5.2)
+        zoom.add(kaxe.Points2D([650, 680, 710], [4.6, 5.0, 4.5], symbol=kaxe.symbol.CIRCLE, color=(255, 0, 0, 255)))
+        zoom.add(kaxe.Points2D([665, 695], [4.8, 4.7], symbol=kaxe.symbol.CROSS, color=(0, 128, 0, 255)))
+
+        plot.save('tests/images/zoom_inset.png')
+
     
     def testInverseProportional():
         plot = kaxe.Plot()
