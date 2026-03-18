@@ -158,6 +158,7 @@ class Plot(Window):
         zoom_plot = EmptyPlot(zoom.windowAxis) if zoom.showAxes else EmptyWindow(zoom.windowAxis)
         zoom_plot.showProgressBar = False
         zoom_plot.printDebugInfo = False
+        zoom_plot.showLegend = False
         zoom_plot.style({
             'axis.showArrow': False,
             'marker.showLine': True,

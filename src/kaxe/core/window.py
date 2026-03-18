@@ -400,9 +400,10 @@ class Window(AttrObject):
 
     def __addOuterContent__(self):
         
-        # legend
-        self.legendbox.setObjects(self.objects)
-        self.legendbox.finalize(self)
+        # legend (skip when showLegend is False, e.g. for zoom insets)
+        if getattr(self, 'showLegend', True):
+            self.legendbox.setObjects(self.objects)
+            self.legendbox.finalize(self)
 
 
     # enables this code to be manipulated with in other subclasses
