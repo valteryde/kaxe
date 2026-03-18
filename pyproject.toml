@@ -20,9 +20,7 @@ dependencies = [
   "openpyxl",
   "tqdm",
   "numba",
-  "imagehash",
-  "python-dotenv",
-  "openai"
+  "python-dotenv"
 ]
 
 [project.urls]

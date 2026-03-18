@@ -42,3 +42,16 @@ def test_zoom_inset_scaling():
         )
     )
     return plot
+
+
+@smoke()
+@sanity()
+def test_zoom_inset_bottom_center():
+    """
+    Zoom inset at bottom center (like user's damped oscillation plot).
+    Connector lines should connect corresponding corners (top-to-top, bottom-to-bottom).
+    """
+    plot = kaxe.Plot([0, 145, 0, 75])
+    plot.add(kaxe.Function2D(lambda x: 60 * np.exp(-0.02 * x) * np.sin(0.3 * x)))
+    zoom = plot.zoom(60, 85, 50, 70, position=(70, 10), includeMain=True)
+    return plot

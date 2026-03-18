@@ -3,6 +3,7 @@
 from ..core.helper import *
 import logging
 from ..core.axis import *
+from ..plot.zoom_connector import compute_boxplot_whiskers
 from ..core.styles import getRandomColor, isLightOrDark
 from ..core.symbol import symbol as symbols
 from ..core.symbol import makeSymbolShapes
@@ -64,19 +65,7 @@ class BoxPlot(Window):
 
             leftbox = np.quantile(data, 0.25)
             rightbox = np.quantile(data, 0.75)
-            IQR = rightbox - leftbox
-            lower_fence = leftbox - 1.5 * IQR
-            upper_fence = rightbox + 1.5 * IQR
-
-            # Whiskers extend to min/max data within fence (Tukey convention)
-            data_arr = np.array(data)
-            within_fence = data_arr[(data_arr >= lower_fence) & (data_arr <= upper_fence)]
-            if len(within_fence) > 0:
-                leftwhisker = float(np.min(within_fence))
-                rightwhisker = float(np.max(within_fence))
-            else:
-                leftwhisker = lower_fence
-                rightwhisker = upper_fence
+            leftwhisker, rightwhisker = compute_boxplot_whiskers(data)
 
             min_ = min(min_, *boxplot["data"], leftwhisker, rightwhisker)
             max_ = max(max_, *boxplot["data"], leftwhisker, rightwhisker)

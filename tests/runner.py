@@ -42,6 +42,7 @@ REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
 # Attribute name for registered assertions
 _ASSERTIONS_ATTR = "_kaxe_assertions"
 _TEST_NAME_ATTR = "_kaxe_test_name"
+_UNIT_ATTR = "_kaxe_unit_test"
 
 
 def _ensure_assertions(fn: Callable) -> list:
@@ -122,6 +123,31 @@ def idempotent() -> Callable:
 def stability(runs: int = 3) -> Callable:
     """Run N times; assert all outputs identical."""
     return _decorator("stability", runs=runs)
+
+
+def unit() -> Callable:
+    """Mark as unit test: no plot required, just run and assert. Use assert or return False/str to fail."""
+    def decorator(fn: Callable) -> Callable:
+        setattr(fn, _UNIT_ATTR, True)
+        _ensure_assertions(fn)
+        return fn
+    return decorator
+
+
+def _run_unit_test(fn: Callable, test_name: str) -> tuple[bool, list[str]]:
+    """Run a unit test. Returns (passed, list of error messages)."""
+    try:
+        with _suppress_prints():
+            result = fn()
+        if result is False:
+            return False, ["Unit test returned False"]
+        if isinstance(result, str):
+            return False, [result]
+        return True, []
+    except AssertionError as e:
+        return False, [str(e)]
+    except Exception as e:
+        return False, [f"{type(e).__name__}: {e}"]
 
 
 def _run_assertion(
@@ -212,6 +238,10 @@ def _run_test(
     update_refs: bool,
 ) -> tuple[bool, list[str]]:
     """Run a single test. Returns (passed, list of error messages)."""
+    # Unit tests: no plot, just run and check
+    if getattr(fn, _UNIT_ATTR, False):
+        return _run_unit_test(fn, test_name)
+
     assertions = getattr(fn, _ASSERTIONS_ATTR, None)
     if not assertions:
         return False, ["No assertions registered"]
@@ -335,7 +365,7 @@ def discover_tests(cases_dir: Path | None = None) -> dict[str, Callable]:
         spec.loader.exec_module(mod)
         for name in dir(mod):
             obj = getattr(mod, name)
-            if callable(obj) and hasattr(obj, _ASSERTIONS_ATTR):
+            if callable(obj) and (hasattr(obj, _ASSERTIONS_ATTR) or getattr(obj, _UNIT_ATTR, False)):
                 test_name = name
                 tests[test_name] = obj
 
@@ -352,6 +382,7 @@ def main() -> None:
     parser.add_argument("--collect", action="store_true", help="Report all failures, don't fail fast")
     parser.add_argument("--update-refs", action="store_true", help="Copy actuals to reference dir")
     parser.add_argument("--cases-dir", type=Path, default=None, help="Path to test cases directory")
+    parser.add_argument("--unit", action="store_true", help="Run only unit tests (no plot generation)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show kaxe/log output")
     args = parser.parse_args()
 
@@ -369,6 +400,11 @@ def main() -> None:
         print("No tests found. Add test cases to tests/cases/")
         sys.exit(0)
 
+    if args.unit:
+        tests = {n: fn for n, fn in tests.items() if getattr(fn, _UNIT_ATTR, False)}
+        if not tests:
+            print("No unit tests found.")
+            sys.exit(0)
     if args.test:
         if args.test not in tests:
             print(f"Test not found: {args.test}")

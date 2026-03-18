@@ -10,6 +10,7 @@ from PIL import Image
 import logging
 from ..core.axis import *
 from .zoom import ZoomInset
+from .zoom_connector import connector_placement, compute_render_scale
 
 XYPLOT = 'xy'
 
@@ -151,7 +152,6 @@ class Plot(Window):
     def __bakeZoomInset__(self, zoom):
         """Bake zoom plot and return rendered surface. Finalizes main objects with zoom view when includeMain."""
         from .empty import EmptyWindow, EmptyPlot
-        import math
 
         inset_w, inset_h = zoom.size
         x0, x1, y0, y1 = zoom.windowAxis
@@ -160,17 +160,13 @@ class Plot(Window):
         main_x_range = self.windowAxis[1] - self.windowAxis[0]
         main_y_range = self.windowAxis[3] - self.windowAxis[2]
 
-        # Magnification: zoom has more pixels per data unit → scale up points/lines
-        zoom_ppu_x = inset_w / zoom_x_range if zoom_x_range else 1
-        zoom_ppu_y = inset_h / zoom_y_range if zoom_y_range else 1
-        main_ppu_x = self.width / main_x_range if main_x_range else 1
-        main_ppu_y = self.height / main_y_range if main_y_range else 1
-        scale_x = zoom_ppu_x / main_ppu_x
-        scale_y = zoom_ppu_y / main_ppu_y
-        zoom_plot_render_scale = math.sqrt(scale_x * scale_y)
+        zoom_plot_render_scale = compute_render_scale(
+            self.width, self.height, main_x_range, main_y_range,
+            inset_w, inset_h, zoom_x_range, zoom_y_range,
+        )
 
         zoom_plot = EmptyPlot(zoom.windowAxis) if zoom.showAxes else EmptyWindow(zoom.windowAxis)
-        zoom_plot.renderScale = max(1.0, zoom_plot_render_scale)
+        zoom_plot.renderScale = zoom_plot_render_scale
         zoom_plot.showProgressBar = False
         zoom_plot.printDebugInfo = False
         zoom_plot.showLegend = False
@@ -264,17 +260,29 @@ class Plot(Window):
             ins_tl = (inset_x, inset_y + surf_h)
             corners = zoom.connectorCorners
             if corners == "auto":
-                if isinstance(pos, (tuple, list)) and len(pos) >= 2:
-                    inset_right_of_sel = inset_x > sel_right
-                else:
-                    inset_right_of_sel = pos in ('top-right', 'bottom-right')
-                if inset_right_of_sel:
-                    # Top: right-right, Bottom: left-left (avoids crossing)
+                mode = connector_placement(
+                    inset_x, inset_y, surf_w, surf_h,
+                    sel_left, sel_right, sel_bottom, sel_top, pos
+                )
+                if mode == "right":
+                    # Inset to the right: top right-right, bottom left-left (avoids crossing)
                     self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=11)
                     self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
                     corners = None  # already drawn
+                elif mode == "left":
+                    # Inset to the left: top right-left, bottom right-left (avoids crossing)
+                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
+                    corners = None  # already drawn
+                elif mode == "vertical":
+                    # Inset above or below: connect corresponding corners (top-to-top, bottom-to-bottom)
+                    self.addDrawingFunction(shapes.Line(sel_tl[0], sel_tl[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tr[0], ins_tr[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_bl[0], sel_bl[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
+                    self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_br[0], ins_br[1], color=lc, width=lw), z=11)
+                    corners = None  # already drawn
                 else:
-                    corners = "left-right"
+                    corners = "left-right"  # mode == "left-right"
             if corners == "right-left":
                 self.addDrawingFunction(shapes.Line(sel_tr[0], sel_tr[1], ins_tl[0], ins_tl[1], color=lc, width=lw), z=11)
                 self.addDrawingFunction(shapes.Line(sel_br[0], sel_br[1], ins_bl[0], ins_bl[1], color=lc, width=lw), z=11)
