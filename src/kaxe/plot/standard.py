@@ -167,7 +167,7 @@ class Plot(Window):
         zoom_plot.attrmap.setAttr('width', inset_w)
         zoom_plot.attrmap.setAttr('height', inset_h)
         zoom_plot.attrmap.setAttr('outerPadding', (0, 0, 0, 0))
-        zoom_plot.attrmap.setAttr('fontSize', self.getAttr('fontSize') * 0.6)
+        zoom_plot.attrmap.setAttr('fontSize', max(1, int(self.getAttr('fontSize') * 0.6)))
         zoom_plot.attrmap.setAttr('backgroundColor', self.getAttr('backgroundColor'))
         zoom_plot.attrmap.setAttr('color', self.getAttr('color'))
 
