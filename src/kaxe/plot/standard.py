@@ -71,6 +71,137 @@ class Plot(Window):
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
 
+        self._axis_pad_x = 0.0
+        self._axis_pad_y = 0.0
+        self._last_applied_pad_x = 0.0
+        self._last_applied_pad_y = 0.0
+
+        self._axis_pad_rel_x = 0.0
+        self._axis_pad_rel_y = 0.0
+        self._last_rel_x = 0.0
+        self._last_rel_ya = 0.0
+        self._last_rel_yb = 0.0
+
+    def pad(self, x=0, y=None, *, relative=False, percent=False):
+        """
+        Expand the data window symmetrically on each axis (after bounds are resolved).
+
+        Default is **absolute** padding in the same units as the axes. With ``relative=True``,
+        ``x`` and ``y`` are fractions of each axis span: the amount added on the low and high
+        side is ``fraction * (max - min)``, so ``pad(0.1, relative=True)`` widens x by 20% of
+        the original x span (10% on each side). With ``percent=True``, the same rule applies
+        but ``x``/``y`` are percents (``pad(10, percent=True)`` equals ``pad(0.1, relative=True)``).
+
+        Relative padding is applied first, then absolute, if you set both.
+
+        For :class:`~kaxe.DoubleAxisPlot`, ``y`` uses each y scale's own span when ``relative``.
+
+        Parameters
+        ----------
+        x : float, optional
+            Padding for x (absolute units, span fraction, or percent). Default 0.
+        y : float, optional
+            Padding for y (and both y scales on a double-axis plot). If omitted, uses ``x``.
+        relative : bool, optional
+            If True, ``x``/``y`` are fractions of the axis span(s). Default False.
+        percent : bool, optional
+            If True, ``x``/``y`` are percents of the span (implies ``relative``). Default False.
+
+        Examples
+        --------
+        >>> plt.pad(0.05)
+        >>> plt.pad(0.1, relative=True)
+        >>> plt.pad(5, percent=True)
+        """
+        if y is None:
+            y = x
+        if percent:
+            relative = True
+            x, y = x / 100.0, y / 100.0
+        if relative:
+            self._axis_pad_rel_x = float(x)
+            self._axis_pad_rel_y = float(y)
+        else:
+            self._axis_pad_x = float(x)
+            self._axis_pad_y = float(y)
+
+    def _reverse_relative_padding(self):
+        lrx, lrya, lryb = self._last_rel_x, self._last_rel_ya, self._last_rel_yb
+        if lrx == 0 and lrya == 0 and lryb == 0:
+            return
+        wa = self.windowAxis
+        wa[0] += lrx
+        wa[1] -= lrx
+        wa[2] += lrya
+        wa[3] -= lrya
+        if len(wa) >= 6:
+            wa[4] += lryb
+            wa[5] -= lryb
+
+    def _reverse_absolute_padding(self):
+        lax, lay = self._last_applied_pad_x, self._last_applied_pad_y
+        if lax == 0 and lay == 0:
+            return
+        wa = self.windowAxis
+        wa[0] += lax
+        wa[1] -= lax
+        wa[2] += lay
+        wa[3] -= lay
+        if len(wa) >= 6:
+            wa[4] += lay
+            wa[5] -= lay
+
+    def _reverse_axis_padding(self):
+        self._reverse_absolute_padding()
+        self._reverse_relative_padding()
+
+    def _apply_relative_padding(self):
+        wa = self.windowAxis
+        rx_f, ry_f = self._axis_pad_rel_x, self._axis_pad_rel_y
+
+        rx = rx_f * (wa[1] - wa[0]) if rx_f else 0.0
+        rya = ry_f * (wa[3] - wa[2]) if ry_f else 0.0
+        ryb = ry_f * (wa[5] - wa[4]) if ry_f and len(wa) >= 6 else 0.0
+
+        if rx:
+            wa[0] -= rx
+            wa[1] += rx
+        if rya:
+            wa[2] -= rya
+            wa[3] += rya
+        if ryb:
+            wa[4] -= ryb
+            wa[5] += ryb
+
+        self._last_rel_x = rx
+        self._last_rel_ya = rya
+        self._last_rel_yb = ryb
+
+    def _apply_absolute_padding(self):
+        px, py = self._axis_pad_x, self._axis_pad_y
+        if px == 0 and py == 0:
+            self._last_applied_pad_x = 0.0
+            self._last_applied_pad_y = 0.0
+            return
+        wa = self.windowAxis
+        wa[0] -= px
+        wa[1] += px
+        wa[2] -= py
+        wa[3] += py
+        if len(wa) >= 6:
+            wa[4] -= py
+            wa[5] += py
+        self._last_applied_pad_x = px
+        self._last_applied_pad_y = py
+
+    def _apply_axis_padding(self):
+        self._apply_relative_padding()
+        self._apply_absolute_padding()
+
+    def __calculateWindowBorders__(self):
+        self._reverse_axis_padding()
+        super().__calculateWindowBorders__()
+        self._apply_axis_padding()
 
     def __setAxisPos__(self):
         self.firstAxis.addStartAndEnd(self.windowAxis[0], self.windowAxis[1])
