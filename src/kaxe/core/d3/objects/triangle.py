@@ -1,22 +1,18 @@
 
 import math
 from numpy import array, sqrt, dot, uint8, cross
-from numba import njit
 from ..helper import clamp, formatColor
 from .color import addColorToBuffers
-from numba import float64, int32
 import numpy as np
-from numba.experimental import jitclass
 from .pointer import Pointer
 
-@njit(cache=True)
+
 def sign(p1, p2, p3):
     return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
 
 
-@njit(cache=True)
-def barycentricWeights(a,b,c,p):
-    bottom = sign(a,b,c)
+def barycentricWeights(a, b, c, p):
+    bottom = sign(a, b, c)
 
     if bottom == 0:
         return -1, -1, -1
@@ -27,14 +23,13 @@ def barycentricWeights(a,b,c,p):
     return w1, w2, 1 - w1 - w2
 
 
-@njit(cache=True)
-def drawTriangle(zbuffer, 
-                 colorbuffer, 
-                 R, 
-                 w, 
-                 p1, 
-                 p2, 
-                 p3, 
+def drawTriangle(zbuffer,
+                 colorbuffer,
+                 R,
+                 w,
+                 p1,
+                 p2,
+                 p3,
                  p1_proj,
                  p2_proj,
                  p3_proj,
@@ -50,19 +45,15 @@ def drawTriangle(zbuffer,
     if useLight:
         v1, v2 = rp2 - rp1, rp3 - rp1
 
-        # Compute and normalize the normal vector
         normal = cross(v1, v2)
         normal = normal / sqrt(dot(normal, normal))
 
-        # Compute view direction
         view_dir = array([0,0, w]) - rp1
         view_dir = view_dir / sqrt(dot(view_dir, view_dir))
 
-        # Return the normal that faces the camera
-         
         if dot(normal, view_dir) < 0:
             normal = -normal
-        
+
         intensity = dot(normal, lightDirection)
         intensity = 2.559523810*intensity**3 - 5.232142857*intensity**2 + 3.672619048*intensity
         intensity = clamp(intensity, 0, 1)
@@ -83,16 +74,12 @@ def drawTriangle(zbuffer,
     for x in range(min_[0], max_[0]):
 
         for y in range(min_[1], max_[1]):
-                
+
             k1, k2, k3 = barycentricWeights(p1_proj, p2_proj, p3_proj, (x,y))
 
             if k1 < 0 or k2 < 0 or k3 < 0:
                 continue
 
-            # skal være afstand fra kamera til position
-            # påfør rotationsmatrix på positionen
-            # self.__calcRotatedVector__()
-            
             z = rp1[2] * k1 + rp2[2] * k2 + rp3[2] * k3
 
             z = w - z
@@ -100,17 +87,7 @@ def drawTriangle(zbuffer,
             addColorToBuffers(zbuffer, colorbuffer, y, x, z, color)
 
 
-@jitclass
-class Triangle3DNumba:
-    p1: float64[:]
-    p2: float64[:]
-    p3: float64[:]
-    color: int32[:]
-    ableToUseLight: bool
-    hidden: bool
-    tp: str
-    pointer: Pointer
-
+class Triangle3D:
     def __init__(self, p1, p2, p3, color, ableToUseLight):
         self.p1 = array([float(i) for i in p1])
         self.p2 = array([float(i) for i in p2])
@@ -121,7 +98,6 @@ class Triangle3DNumba:
         self.tp = "triangle3d"
         self.pointer = Pointer()
 
-
     def getRemovableTriangles(self):
         return [self.pointer.pos]
 
@@ -130,53 +106,4 @@ def Triangle(p1, p2, p3, color=(0,0,0,255), ableToUseLight=True):
     """
     Create a 3D triangle object
     """
-    return Triangle3DNumba(p1, p2, p3, formatColor(color), ableToUseLight)
-
-
-
-# class Triangle:
-#     def __init__(self, p1, p2, p3, color=(0,0,0,255), ableToUseLight=True):
-#         self.p1 = array([float(i) for i in p1])
-#         self.p2 = array([float(i) for i in p2])
-#         self.p3 = array([float(i) for i in p3])
-#         self.color = formatColor(color)
-#         self.ableToUseLight = ableToUseLight
-#         self.hidden = False
-#         self._pos = None
-#         self.tp = "triangle3d"
-
-
-#     def hide(self):
-#         self.hidden = True
-
-#     def show(self):
-#         self.hidden = False
-
-
-#     def getZ(self, R):
-#         return ((R @ self.p1)[2] + (R @ self.p2)[2] + (R @ self.p3)[2]) / 3
-
-#     def draw(self, render):
-#         if self.__hidden__: return
-
-#         self.p1_proj = render.pixel(*self.p1)
-#         self.p2_proj = render.pixel(*self.p2)
-#         self.p3_proj = render.pixel(*self.p3)
-#         drawTriangle(
-#             zbuffer        = render.zbuffer,
-#             colorbuffer    = render.image,
-#             R              = render.camera.R,
-#             w              = render.camera.w,
-#             p1             = self.p1,
-#             p2             = self.p2,
-#             p3             = self.p3,
-#             p1_proj        = self.p1_proj,
-#             p2_proj        = self.p2_proj,
-#             p3_proj        = self.p3_proj,
-#             color          = self.color,
-#             lightDirection = render.lightDirection,
-#             useLight       = render.useLight and self.ableToUseLight
-#         )
-    
-#     def getRemovableTriangles(self):
-#         yield self._pos
+    return Triangle3D(p1, p2, p3, formatColor(color), ableToUseLight)

@@ -12,13 +12,11 @@ from ...core.color import Colormaps, Colormap
 import numpy as np
 import math
 import numbers
-from numba import njit
 import time
 
 
 
 ### OPTIMIZING
-@njit(cache=True)
 def getTriangleNormal(p1, p2, p3):
 
     Ax, Ay, Az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
@@ -30,7 +28,6 @@ def getTriangleNormal(p1, p2, p3):
 
     return (Nx, Ny, Nz)
 
-@njit(cache=True)
 def isHorizontalTriangle(dependantVariable, p1, p2, p3):
     normal = getTriangleNormal(p1, p2, p3)
 
@@ -201,12 +198,96 @@ class Function3D(Base3DObject):
         frac = (x - x0)[..., np.newaxis]
         return ((1.0 - frac) * steps[x0] + frac * steps[x1]) / 255.0
 
+    def _maybe_tick_loading(self, render, counter, stride=32):
+        if counter & (stride - 1) == 0:
+            render.tick_loading()
+
+    def _sample_z_dependent_grid(self, render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint, loading):
+        z_lo = parent.window[4]
+        z_hi = parent.window[5]
+
+        def sample_loop():
+            for xn, x in enumerate(xs):
+                if loading:
+                    self._maybe_tick_loading(render, xn)
+                for yn, y in enumerate(ys):
+                    try:
+                        z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
+                    except Exception:
+                        continue
+                    if not isinstance(z, numbers.Number):
+                        continue
+                    if z > z_hi:
+                        z = z_hi
+                        realpoint[xn, yn] = False
+                    if z < z_lo:
+                        z = z_lo
+                        realpoint[xn, yn] = False
+                    z_grid[xn, yn] = z
+
+        with render.profiler.measure('finalize_sample'):
+            try:
+                z_vals = np.asarray(
+                    self.f(x_grid, y_grid, *self.otherArgs, **self.otherKwargs),
+                    dtype=np.float64,
+                )
+            except Exception:
+                sample_loop()
+                return
+
+            if z_vals.shape != x_grid.shape or not np.issubdtype(z_vals.dtype, np.floating):
+                sample_loop()
+                return
+
+            if loading:
+                render.tick_loading()
+
+            z_vals = z_vals.copy()
+            over = z_vals > z_hi
+            under = z_vals < z_lo
+            realpoint[:] = ~(over | under)
+            np.clip(z_vals, z_lo, z_hi, out=z_vals)
+            z_grid[:] = z_vals
+
+    def _coords_from_grid(self, parent, x_grid, y_grid, z_grid):
+        size = parent.size
+        offset = parent.offset
+        wl = parent.windowAxisLength
+        coords = np.stack([
+            size[0] * (x_grid - parent.window[0]) / wl[0] + offset[0],
+            size[1] * (y_grid - parent.window[2]) / wl[1] + offset[1],
+            size[2] * (z_grid - parent.window[4]) / wl[2] + offset[2],
+        ], axis=-1)
+        coords[np.isnan(z_grid)] = np.nan
+        return coords
+
+    def _build_fill_mesh_arrays(self, coords, realpoint, color_grid, n):
+        valid = ~np.isnan(coords[:n, :n, 0])
+        if not np.any(valid):
+            return None
+
+        flat = valid.ravel()
+        c00 = coords[:n, :n].reshape(-1, 3)[flat]
+        c10 = coords[1:n + 1, :n].reshape(-1, 3)[flat]
+        c01 = coords[:n, 1:n + 1].reshape(-1, 3)[flat]
+        c11 = coords[1:n + 1, 1:n + 1].reshape(-1, 3)[flat]
+        cell_colors = color_grid[:n, :n].reshape(-1, 4)[flat]
+        cell_real = realpoint[:n, :n].ravel()[flat]
+
+        p1s = np.concatenate([c00, c10])
+        p2s = np.concatenate([c10, c11])
+        p3s = np.concatenate([c01, c01])
+        colors = np.concatenate([cell_colors, cell_colors])
+        realpoint_flags = np.concatenate([cell_real, cell_real])
+        return p1s, p2s, p3s, colors, realpoint_flags
+
 
     def finalize(self, parent):
 
         render = parent.render
         n = self.numPoints
         dep_var = {"z": 0, "y": 1, "x": 2}[self.dependantVariable]
+        loading = render.loading_screen_active
 
         xlen = parent.window[1] - parent.window[0]
         ylen = parent.window[3] - parent.window[2]
@@ -219,28 +300,17 @@ class Function3D(Base3DObject):
         if self.dependantVariable == "z":
             xs = xlen * (np.arange(n + 1) / n) + parent.window[0]
             ys = ylen * (np.arange(n + 1) / n) + parent.window[2]
-            for xn, x in enumerate(xs):
-                render.tick_loading()
-                for yn, y in enumerate(ys):
-                    try:
-                        z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
-                    except Exception:
-                        continue
-                    if not isinstance(z, numbers.Number):
-                        continue
-                    if z > parent.window[5]:
-                        z = parent.window[5]
-                        realpoint[xn, yn] = False
-                    if z < parent.window[4]:
-                        z = parent.window[4]
-                        realpoint[xn, yn] = False
-                    coords[xn, yn] = parent.pixel(x, y, z)
-                    zmap[xn, yn] = z
+            x_grid, y_grid = np.meshgrid(xs, ys, indexing="ij")
+            z_grid = np.full_like(x_grid, np.nan, dtype=np.float64)
+            self._sample_z_dependent_grid(render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint, loading)
+            zmap = np.where(np.isnan(z_grid), -math.inf, z_grid)
+            coords = self._coords_from_grid(parent, x_grid, y_grid, z_grid)
         elif self.dependantVariable == "y":
             xs = xlen * (np.arange(n + 1) / n) + parent.window[0]
             ys = zlen * (np.arange(n + 1) / n) + parent.window[4]
             for xn, x in enumerate(xs):
-                render.tick_loading()
+                if loading:
+                    self._maybe_tick_loading(render, xn)
                 for yn, y in enumerate(ys):
                     try:
                         z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
@@ -260,7 +330,8 @@ class Function3D(Base3DObject):
             z_coords = zlen * (np.arange(n + 1) / n) + parent.window[4]
             y_coords = ylen * (np.arange(n + 1) / n) + parent.window[2]
             for xn, z_coord in enumerate(z_coords):
-                render.tick_loading()
+                if loading:
+                    self._maybe_tick_loading(render, xn)
                 for yn, y_coord in enumerate(y_coords):
                     try:
                         x_val = self.f(z_coord, y_coord, *self.otherArgs, **self.otherKwargs)
@@ -278,47 +349,28 @@ class Function3D(Base3DObject):
                     zmap[xn, yn] = x_val
 
         if self.fill:
-            max_tris = 2 * n * n
-            p1s = np.empty((max_tris, 3), dtype=np.float32)
-            p2s = np.empty((max_tris, 3), dtype=np.float32)
-            p3s = np.empty((max_tris, 3), dtype=np.float32)
-            colors = np.empty((max_tris, 4), dtype=np.float32)
-            realpoint_flags = np.empty(max_tris, dtype=np.bool_)
             zmin = parent.windowAxis[4]
             zmax = parent.windowAxis[5]
-            color_grid = self._color_grid(zmap, zmin, zmax)
-            render.tick_loading()
-            idx = 0
-
-            for xn in range(n):
+            with render.profiler.measure('finalize_color'):
+                color_grid = self._color_grid(zmap, zmin, zmax)
+            if loading:
                 render.tick_loading()
-                for yn in range(n):
-                    if np.isnan(coords[xn, yn, 0]):
-                        continue
-                    color = color_grid[xn, yn]
-                    triangles = (
-                        (coords[xn, yn], coords[xn + 1, yn], coords[xn, yn + 1], realpoint[xn, yn]),
-                        (coords[xn + 1, yn], coords[xn + 1, yn + 1], coords[xn, yn + 1], realpoint[xn, yn]),
+            with render.profiler.measure('finalize_mesh'):
+                mesh = self._build_fill_mesh_arrays(coords, realpoint, color_grid, n)
+            if mesh is not None:
+                if loading:
+                    render.tick_loading()
+                p1s, p2s, p3s, colors, realpoint_flags = mesh
+                with render.profiler.measure('finalize_upload'):
+                    render.addMeshTriangles(
+                        p1s,
+                        p2s,
+                        p3s,
+                        colors,
+                        dep_var,
+                        realpoint_flags,
+                        use_light=not self.excludeLight,
                     )
-                    for p1, p2, p3, is_real in triangles:
-                        p1s[idx] = p1
-                        p2s[idx] = p2
-                        p3s[idx] = p3
-                        colors[idx] = color
-                        realpoint_flags[idx] = is_real
-                        idx += 1
-
-            if idx:
-                render.tick_loading()
-                render.addMeshTriangles(
-                    p1s[:idx],
-                    p2s[:idx],
-                    p3s[:idx],
-                    colors[:idx],
-                    dep_var,
-                    realpoint_flags[:idx],
-                    use_light=not self.excludeLight,
-                )
             return
 
         for xn in range(n):

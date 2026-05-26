@@ -28,7 +28,6 @@ from typing import Union
 # Third-party imports
 import numpy as np
 from PIL import Image
-from numba import njit
 
 # Core Kaxe imports - Window and UI components
 from ..core.helper import insideBox, getbbox
@@ -50,10 +49,9 @@ from ..core.d3.helper import formatColor
 XYZPLOT = 'xyz'  # Plot type identifier for 3D XYZ coordinate system
 
 # ============================================================================
-# Geometric Utility Functions (Numba-optimized for performance)
+# Geometric Utility Functions
 # ============================================================================
 
-@njit(cache=True)
 def sign(p, p1, p2):
     """
     Calculate the signed area of a triangle formed by three points.
@@ -76,7 +74,6 @@ def sign(p, p1, p2):
     return (p[0] - p2[0]) * (p1[1] - p2[1]) - (p1[0] - p2[0]) * (p[1] - p2[1])
 
 
-@njit(cache=True)
 def isPointInTriangle(p, p1, p2, p3, tol=-1):
     """
     Test if a point lies inside a triangle using the sign method.
@@ -505,11 +502,21 @@ class Plot3D(Window):
         return self.render.pixel(x, y, z) * scale
 
     def __updateSkipObjectUpdate__(self):
-        if time.time() - self.lastRender < 0.1:
+        rot = (self.rotation[0], self.rotation[1])
+        prev = getattr(self, '_last_axis_rotation', None)
+        now = time.time()
+
+        if prev is not None and rot == prev:
             self.render.skipObjectUpdate = True
-        else:
-            self.lastRender = time.time()
-            self.render.skipObjectUpdate = False
+            return
+
+        if prev is not None and now - self.lastRender < 0.1:
+            self.render.skipObjectUpdate = True
+            return
+
+        self._last_axis_rotation = rot
+        self.lastRender = now
+        self.render.skipObjectUpdate = False
 
     def __setupGuiOverlayFrame__(self, rotation):
         self._gui_overlay_scale = self.render.guiWidth / self.render.width
@@ -1163,13 +1170,16 @@ class Plot3D(Window):
 
     def __addInnerContent__(self):
         loading = getattr(self, 'render', None) is not None and self.render.loading_screen_active
-        for obj in self.objects:
-            if loading:
-                self.render.tick_loading()
-            self.__callFinalizeObject__(obj)
-            self.addDrawingFunction(obj)
-            if loading:
-                self.render.tick_loading()
+        prof = self.render.profiler
+        with prof.measure('finalize_objects'):
+            for obj in self.objects:
+                if loading:
+                    self.render.tick_loading()
+                with prof.measure('finalize_object'):
+                    self.__callFinalizeObject__(obj)
+                self.addDrawingFunction(obj)
+                if loading:
+                    self.render.tick_loading()
 
     def __finish_start_setup__(self):
         self.originalShapes = self.shapes.copy()

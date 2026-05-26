@@ -10,24 +10,18 @@ from math import radians, sin, cos, pi
 from typing import Union
 from .camera import Camera
 from PIL import Image
-from .objects.triangle import Triangle, Triangle3DNumba
-from .objects.line import Line3D, FlatLine3D, Line3DNumba, FlatLine3DNumba
-from .objects.point import Point3D, Point3DNumba
+from .objects.triangle import Triangle, Triangle3D
+from .objects.line import Line3D, FlatLine3D, Line3DObject, FlatLine3DObject
+from .objects.point import Point3D, Point3DObject
 import psutil
 process = psutil.Process()
 import fondi
 import sys
-import threading
 import sdl2
 import sdl2.ext
 import sdl2.video
 import ctypes
 from ..fileloader import loadFile
-from numba import jit, njit
-from numba.experimental import jitclass
-from numba import int32, float64, float32
-from numba.types import ListType
-from numba.typed import List
 from typing import DefaultDict
 import cv2
 from ..styles import colors as kaxe_colors
@@ -42,21 +36,6 @@ N_0_1_0 = np.array([0, 1, 0], dtype=np.int32)
 fN_0_0_1 = np.array([0.0, 0.0, 1.0], dtype=np.float64)
 
 
-@jitclass([
-    ('vectors', float32[:]),
-    ('colors', float32[:]),
-    ('normals', float32[:]),
-    ('freespaces', ListType(int32)),
-    ('tempVectors', ListType(float32[:])),
-    ('tempColors', ListType(float32[:])),
-    ('tempNormals', ListType(float32[:])),
-    ('current_size', int32),
-    ('capacity', int32),
-    ('color_current_size', int32),
-    ('color_capacity', int32),
-    ('normal_current_size', int32),
-    ('normal_capacity', int32)
-])
 class TriangleArray:
 
     def __init__(self, initial_capacity=10000):
@@ -64,20 +43,19 @@ class TriangleArray:
         self.capacity = initial_capacity * 3  # 3 coordinates per vertex
         self.color_capacity = initial_capacity * 4  # 4 components per color (RGBA)
         self.normal_capacity = initial_capacity * 3  # 3 components per normal
-        
+
         self.vectors = np.zeros(self.capacity, dtype=np.float32)
         self.colors = np.zeros(self.color_capacity, dtype=np.float32)
         self.normals = np.zeros(self.normal_capacity, dtype=np.float32)
-        
+
         self.current_size = 0
         self.color_current_size = 0
         self.normal_current_size = 0
-        
-        self.freespaces = List.empty_list(int32)
 
-        self.tempVectors = List.empty_list(float32[:])
-        self.tempColors = List.empty_list(float32[:])
-        self.tempNormals = List.empty_list(float32[:])
+        self.freespaces = []
+        self.tempVectors = []
+        self.tempColors = []
+        self.tempNormals = []
 
     
     def remove(self, pos):
@@ -130,26 +108,24 @@ class TriangleArray:
             self.normals = new_normals
             self.normal_capacity = new_normal_capacity
         
-        # Efficiently append temp data directly into pre-allocated arrays
-        for i in range(n):
-            vec = self.tempVectors[i]
-            for j in range(3):
-                self.vectors[self.current_size + i * 3 + j] = vec[j]
-        self.current_size += 3 * n
-        
-        for i in range(c):
-            col = self.tempColors[i]
-            for j in range(4):
-                self.colors[self.color_current_size + i * 4 + j] = col[j]
-        self.color_current_size += 4 * c
-        
-        for i in range(m):
-            norm = self.tempNormals[i]
-            for j in range(3):
-                self.normals[self.normal_current_size + i * 3 + j] = norm[j]
-        self.normal_current_size += 3 * m
-        
-        # Clear temp lists
+        if n:
+            flat_vectors = np.concatenate(self.tempVectors).astype(np.float32, copy=False)
+            end = self.current_size + flat_vectors.size
+            self.vectors[self.current_size:end] = flat_vectors
+            self.current_size = end
+
+        if c:
+            flat_colors = np.stack(self.tempColors).astype(np.float32, copy=False).reshape(-1)
+            end = self.color_current_size + flat_colors.size
+            self.colors[self.color_current_size:end] = flat_colors
+            self.color_current_size = end
+
+        if m:
+            flat_normals = np.stack(self.tempNormals).astype(np.float32, copy=False).reshape(-1)
+            end = self.normal_current_size + flat_normals.size
+            self.normals[self.normal_current_size:end] = flat_normals
+            self.normal_current_size = end
+
         self.tempVectors.clear()
         self.tempColors.clear()
         self.tempNormals.clear()
@@ -265,57 +241,47 @@ def set_rotation_from_diff(dx, dy):
         else:
             rotation[0] = rotation[0] - 1
 
-@jit(cache=True)
-def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
+def appendTriangle(p1, p2, p3, color, normal, obj, tri: TriangleArray):
 
-    if len(tri.freespaces) > 0:
+    if tri.freespaces:
         freepos = tri.freespaces.pop()
-        for i in range(3):
-            tri.vectors[freepos + i + 0] = p1[i]
-            tri.vectors[freepos + i + 3] = p2[i]
-            tri.vectors[freepos + i + 6] = p3[i]
-        
-        colorfreepos = int(freepos*4/3)
+        tri.vectors[freepos:freepos + 3] = p1
+        tri.vectors[freepos + 3:freepos + 6] = p2
+        tri.vectors[freepos + 6:freepos + 9] = p3
 
-        # manual unroll måske 
-        for i in range(3):  # Repeat color 3 times
-            for j in range(4):  # Each color has 4 components (e.g. RGBA)
-                tri.colors[colorfreepos + i * 4 + j] = color[j]
-        
+        colorfreepos = int(freepos * 4 / 3)
         for i in range(3):
-            tri.normals[freepos + i + 0] = normal[i]
-            tri.normals[freepos + i + 3] = normal[i]
-            tri.normals[freepos + i + 6] = normal[i]
-        
+            tri.colors[colorfreepos + i * 4:colorfreepos + i * 4 + 4] = color
+
+        for i in range(3):
+            tri.normals[freepos + i:freepos + i + 3] = normal
+            tri.normals[freepos + 3 + i:freepos + 6 + i] = normal
+            tri.normals[freepos + 6 + i:freepos + 9 + i] = normal
+
         obj.pointer.pos = freepos
 
     else:
         obj.pointer.pos = tri.current_size + len(tri.tempVectors) * 3
-        
-        color = color.astype(np.float32)
-        normal = normal.astype(np.float32)
 
-        tri.tempVectors.append(p1.astype(np.float32))
-        tri.tempVectors.append(p2.astype(np.float32))
-        tri.tempVectors.append(p3.astype(np.float32))
-        for i in range(3):
+        color = np.asarray(color, dtype=np.float32)
+        normal = np.asarray(normal, dtype=np.float32)
+
+        tri.tempVectors.append(np.asarray(p1, dtype=np.float32))
+        tri.tempVectors.append(np.asarray(p2, dtype=np.float32))
+        tri.tempVectors.append(np.asarray(p3, dtype=np.float32))
+        for _ in range(3):
             tri.tempColors.append(color)
-
-        for i in range(3):
             tri.tempNormals.append(normal)
 
-@njit(cache=True)
-def is_close_vec(a, b, tol=1e-8):
-    for i in range(len(a)):
-        if abs(a[i] - b[i]) > tol:
-            return False
-    return True
 
-@njit(cache=True)
+def is_close_vec(a, b, tol=1e-8):
+    return np.all(np.abs(np.asarray(a) - np.asarray(b)) <= tol)
+
+
 def norm2(vec):
     return np.sqrt(np.sum(vec * vec))
 
-@njit(cache=True)
+
 def _mesh_normal_is_horizontal(dep_var, p1, p2, p3):
     nx = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p3[0] - p1[0]) * (p2[1] - p1[1])
     ny = (p2[1] - p1[1]) * (p3[2] - p1[2]) - (p3[1] - p1[1]) * (p2[2] - p1[2])
@@ -326,83 +292,116 @@ def _mesh_normal_is_horizontal(dep_var, p1, p2, p3):
         return abs(nx) < 1e-8 and (not abs(ny) < 1e-8) and abs(nz) < 1e-8
     return (not abs(nx) < 1e-8) and abs(ny) < 1e-8 and abs(nz) < 1e-8
 
-@njit(cache=True)
-def append_surface_mesh(tri, scale, p1s, p2s, p3s, colors, dep_var, realpoint_flags):
-    n_tris = 0
-    for i in range(p1s.shape[0]):
-        if not realpoint_flags[i] and _mesh_normal_is_horizontal(dep_var, p1s[i], p2s[i], p3s[i]):
-            continue
-        n_tris += 1
 
-    if n_tris == 0:
+def _mesh_normal_is_horizontal_mask(dep_var, p1s, p2s, p3s):
+    nx = (p2s[:, 0] - p1s[:, 0]) * (p3s[:, 1] - p1s[:, 1]) - (p3s[:, 0] - p1s[:, 0]) * (p2s[:, 1] - p1s[:, 1])
+    ny = (p2s[:, 1] - p1s[:, 1]) * (p3s[:, 2] - p1s[:, 2]) - (p3s[:, 1] - p1s[:, 1]) * (p2s[:, 2] - p1s[:, 2])
+    nz = (p2s[:, 0] - p1s[:, 0]) * (p3s[:, 2] - p1s[:, 2]) - (p3s[:, 0] - p1s[:, 0]) * (p2s[:, 2] - p1s[:, 2])
+    eps = 1e-8
+    if dep_var == 0:
+        return (np.abs(nx) < eps) & (np.abs(ny) < eps) & (np.abs(nz) >= eps)
+    if dep_var == 1:
+        return (np.abs(nx) < eps) & (np.abs(ny) >= eps) & (np.abs(nz) < eps)
+    return (np.abs(nx) >= eps) & (np.abs(ny) < eps) & (np.abs(nz) < eps)
+
+
+def _grow_array(array, current_size, needed_size, current_capacity):
+    if needed_size <= current_capacity:
+        return array, current_capacity
+    new_capacity = max(needed_size, current_capacity * 2)
+    new_array = np.zeros(new_capacity, dtype=array.dtype)
+    new_array[:current_size] = array[:current_size]
+    return new_array, new_capacity
+
+
+def append_surface_mesh(tri, scale, p1s, p2s, p3s, colors, dep_var, realpoint_flags):
+    if p1s.shape[0] == 0:
         return
 
-    needed_vector = tri.current_size + 9 * n_tris
-    needed_color = tri.color_current_size + 12 * n_tris
-    needed_normal = tri.normal_current_size + 9 * n_tris
+    horizontal = _mesh_normal_is_horizontal_mask(dep_var, p1s, p2s, p3s)
+    keep = realpoint_flags | ~horizontal
+    if not np.any(keep):
+        return
 
-    if needed_vector > tri.capacity:
-        new_capacity = max(needed_vector, tri.capacity * 2)
-        new_vectors = np.zeros(new_capacity, dtype=np.float32)
-        new_vectors[:tri.current_size] = tri.vectors[:tri.current_size]
-        tri.vectors = new_vectors
-        tri.capacity = new_capacity
+    p1 = (p1s[keep] * scale).astype(np.float32, copy=False)
+    p2 = (p2s[keep] * scale).astype(np.float32, copy=False)
+    p3 = (p3s[keep] * scale).astype(np.float32, copy=False)
+    colors = colors[keep]
 
-    if needed_color > tri.color_capacity:
-        new_color_capacity = max(needed_color, tri.color_capacity * 2)
-        new_colors = np.zeros(new_color_capacity, dtype=np.float32)
-        new_colors[:tri.color_current_size] = tri.colors[:tri.color_current_size]
-        tri.colors = new_colors
-        tri.color_capacity = new_color_capacity
+    normals = np.cross(p2 - p1, p3 - p1)
+    lens = np.linalg.norm(normals, axis=1, keepdims=True)
+    np.divide(normals, lens, out=normals, where=lens != 0)
+    normals = normals.astype(np.float32)
 
-    if needed_normal > tri.normal_capacity:
-        new_normal_capacity = max(needed_normal, tri.normal_capacity * 2)
-        new_normals = np.zeros(new_normal_capacity, dtype=np.float32)
-        new_normals[:tri.normal_current_size] = tri.normals[:tri.normal_current_size]
-        tri.normals = new_normals
-        tri.normal_capacity = new_normal_capacity
+    vert_flat = np.column_stack([p1, p2, p3]).reshape(-1)
+    color_flat = np.repeat(colors, 3, axis=0).reshape(-1)
+    normal_flat = np.repeat(normals, 3, axis=0).reshape(-1)
 
-    vpos = tri.current_size
-    cpos = tri.color_current_size
-    npos = tri.normal_current_size
+    needed_vector = tri.current_size + vert_flat.size
+    needed_color = tri.color_current_size + color_flat.size
+    needed_normal = tri.normal_current_size + normal_flat.size
 
-    for i in range(p1s.shape[0]):
-        if not realpoint_flags[i] and _mesh_normal_is_horizontal(dep_var, p1s[i], p2s[i], p3s[i]):
-            continue
+    tri.vectors, tri.capacity = _grow_array(tri.vectors, tri.current_size, needed_vector, tri.capacity)
+    tri.colors, tri.color_capacity = _grow_array(tri.colors, tri.color_current_size, needed_color, tri.color_capacity)
+    tri.normals, tri.normal_capacity = _grow_array(tri.normals, tri.normal_current_size, needed_normal, tri.normal_capacity)
 
-        p1 = p1s[i] * scale
-        p2 = p2s[i] * scale
-        p3 = p3s[i] * scale
-        color = colors[i]
-        normal = np.cross(p2 - p1, p3 - p1)
-        nlen = norm2(normal)
-        if nlen != 0.0:
-            normal = normal / nlen
-        normal = normal.astype(np.float32)
+    end_v = tri.current_size + vert_flat.size
+    tri.vectors[tri.current_size:end_v] = vert_flat
+    tri.current_size = end_v
 
-        for j in range(3):
-            tri.vectors[vpos + j] = p1[j]
-            tri.vectors[vpos + 3 + j] = p2[j]
-            tri.vectors[vpos + 6 + j] = p3[j]
-        vpos += 9
+    end_c = tri.color_current_size + color_flat.size
+    tri.colors[tri.color_current_size:end_c] = color_flat
+    tri.color_current_size = end_c
 
-        for rep in range(3):
-            base = cpos + rep * 4
-            for j in range(4):
-                tri.colors[base + j] = color[j]
-        cpos += 12
+    end_n = tri.normal_current_size + normal_flat.size
+    tri.normals[tri.normal_current_size:end_n] = normal_flat
+    tri.normal_current_size = end_n
 
-        for rep in range(3):
-            base = npos + rep * 3
-            for j in range(3):
-                tri.normals[base + j] = normal[j]
-        npos += 9
 
-    tri.current_size = vpos
-    tri.color_current_size = cpos
-    tri.normal_current_size = npos
+def append_colored_triangles(tri, scale, p1s, p2s, p3s, colors, objs=None):
+    if p1s.shape[0] == 0:
+        return
 
-@njit(cache=True)
+    p1 = (p1s * scale).astype(np.float32, copy=False)
+    p2 = (p2s * scale).astype(np.float32, copy=False)
+    p3 = (p3s * scale).astype(np.float32, copy=False)
+    colors = np.asarray(colors, dtype=np.float32)
+
+    normals = np.cross(p2 - p1, p3 - p1)
+    lens = np.linalg.norm(normals, axis=1, keepdims=True)
+    np.divide(normals, lens, out=normals, where=lens != 0)
+    normals = normals.astype(np.float32)
+
+    vert_flat = np.column_stack([p1, p2, p3]).reshape(-1)
+    color_flat = np.repeat(colors, 3, axis=0).reshape(-1)
+    normal_flat = np.repeat(normals, 3, axis=0).reshape(-1)
+
+    needed_vector = tri.current_size + vert_flat.size
+    needed_color = tri.color_current_size + color_flat.size
+    needed_normal = tri.normal_current_size + normal_flat.size
+
+    tri.vectors, tri.capacity = _grow_array(tri.vectors, tri.current_size, needed_vector, tri.capacity)
+    tri.colors, tri.color_capacity = _grow_array(tri.colors, tri.color_current_size, needed_color, tri.color_capacity)
+    tri.normals, tri.normal_capacity = _grow_array(tri.normals, tri.normal_current_size, needed_normal, tri.normal_capacity)
+
+    start_pos = tri.current_size
+    end_v = start_pos + vert_flat.size
+    tri.vectors[start_pos:end_v] = vert_flat
+    tri.current_size = end_v
+
+    end_c = tri.color_current_size + color_flat.size
+    tri.colors[tri.color_current_size:end_c] = color_flat
+    tri.color_current_size = end_c
+
+    end_n = tri.normal_current_size + normal_flat.size
+    tri.normals[tri.normal_current_size:end_n] = normal_flat
+    tri.normal_current_size = end_n
+
+    if objs is not None:
+        for i, obj in enumerate(objs):
+            obj.pointer.pos = start_pos + i * 9
+
+
 def build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, height):
 
     MAX_WIDTH_HEIGHT = np.max(np.array([width, height]))
@@ -453,21 +452,21 @@ def build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, 
             v11 = circle2[next_i]
             # Two triangles per segment
             
-            tri = Triangle3DNumba(v00, v01, v10, obj.color, obj.ableToUseLight)
+            tri = Triangle3D(v00, v01, v10, obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
             obj._triangles.append(tri.pointer)
-            tri = Triangle3DNumba(v10, v01, v11, obj.color, obj.ableToUseLight)
+            tri = Triangle3D(v10, v01, v11, obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
             obj._triangles.append(tri.pointer)
 
 
         # Optionally, cap the ends (disks)
         for i in range(1, segments - 1):
-            tri = Triangle3DNumba(circle1[0], circle1[i], circle1[i + 1], obj.color, obj.ableToUseLight)
+            tri = Triangle3D(circle1[0], circle1[i], circle1[i + 1], obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
             obj._triangles.append(tri.pointer)
-            
-            tri = Triangle3DNumba(circle2[0], circle2[i + 1], circle2[i], obj.color, obj.ableToUseLight)
+
+            tri = Triangle3D(circle2[0], circle2[i + 1], circle2[i], obj.color, obj.ableToUseLight)
             triangle3d.append(tri)
             obj._triangles.append(tri.pointer)
 
@@ -489,7 +488,7 @@ def build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, 
             v2 = center + radius * np.array([np.cos(angle1), np.sin(angle1), 0])
             v3 = center + radius * np.array([np.cos(angle2), np.sin(angle2), 0])
 
-            tri = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
+            tri = Triangle3D(v1, v2, v3, obj.color, obj.ableToUseLight)
             obj._triangles.append(tri.pointer)
             triangle3d.append(tri)
 
@@ -520,40 +519,47 @@ def build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, 
         v4 = p2 - offset
 
         # Two triangles for the rectangle
-        tri1 = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
+        tri1 = Triangle3D(v1, v2, v3, obj.color, obj.ableToUseLight)
         triangle3d.append(tri1)
         obj._triangles.append(tri1.pointer)
-        tri2 = Triangle3DNumba(v3, v2, v4, obj.color, obj.ableToUseLight)
+        tri2 = Triangle3D(v3, v2, v4, obj.color, obj.ableToUseLight)
         triangle3d.append(tri2)
         obj._triangles.append(tri2.pointer)
 
 
-@njit(cache=True)
 def append_triangle3d_objects(triangle3d, scale, triLight, triNoLight, start_idx, end_idx):
+    if start_idx >= end_idx:
+        return
 
-    for idx in range(start_idx, end_idx):
-        obj = triangle3d[idx]
+    batch = triangle3d[start_idx:end_idx]
+    p1s = np.stack([obj.p1 for obj in batch]).astype(np.float32, copy=False)
+    p2s = np.stack([obj.p2 for obj in batch]).astype(np.float32, copy=False)
+    p3s = np.stack([obj.p3 for obj in batch]).astype(np.float32, copy=False)
+    colors = np.stack([obj.color[:4] / 255.0 for obj in batch]).astype(np.float32, copy=False)
+    light_mask = np.fromiter((obj.ableToUseLight for obj in batch), dtype=np.bool_, count=len(batch))
 
-        # Add each vertex separately to ensure a flat array
-        p1 = obj.p1 * scale
-        p2 = obj.p2 * scale
-        p3 = obj.p3 * scale
-        # Add color for each vertex
-        color = obj.color[:4] / 255
-        
-        # Calculate the normal vector for the triangle
-        normal = np.cross(p2 - p1, p3 - p1)
-        normal = normal / norm2(normal) if norm2(normal) != 0 else normal
-        normal = normal.astype(np.float32)
-        
-        if obj.ableToUseLight:
-            appendTriangle(p1, p2, p3, color, normal, obj, triLight)
-        else:
-            appendTriangle(p1, p2, p3, color, normal, obj, triNoLight)
+    for mask, target in ((True, triLight), (False, triNoLight)):
+        sel = light_mask == mask
+        if not np.any(sel):
+            continue
+        idxs = np.nonzero(sel)[0]
+        objs = [batch[i] for i in idxs]
+        append_colored_triangles(
+            target,
+            scale,
+            p1s[sel],
+            p2s[sel],
+            p3s[sel],
+            colors[sel],
+            objs,
+        )
 
 
-@njit(cache=True)
-def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=TriangleArray(), triNoLight=TriangleArray()):
+def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=None, triNoLight=None):
+    if triLight is None:
+        triLight = TriangleArray()
+    if triNoLight is None:
+        triNoLight = TriangleArray()
 
     build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, height)
     append_triangle3d_objects(triangle3d, scale, triLight, triNoLight, 0, len(triangle3d))
@@ -580,50 +586,11 @@ def idle():
 
 
 typesRegistry = {
-    "point3d": Point3DNumba,
-    "triangle3d": Triangle3DNumba,
-    "line3d": Line3DNumba,
-    "flatline3d": FlatLine3DNumba,
+    "point3d": Point3DObject,
+    "triangle3d": Triangle3D,
+    "line3d": Line3DObject,
+    "flatline3d": FlatLine3DObject,
 }
-
-_numba_kernels_compiled = False
-
-
-def _compile_numba_kernels():
-    global _numba_kernels_compiled
-    if _numba_kernels_compiled:
-        return
-
-    kwargs = {}
-    for key in typesRegistry:
-        kwargs[key] = List.empty_list(typesRegistry[key].class_type.instance_type)
-
-    build_triangle3d_primitives(
-        kwargs["line3d"],
-        kwargs["point3d"],
-        kwargs["flatline3d"],
-        kwargs["triangle3d"],
-        100,
-        100,
-    )
-    append_triangle3d_objects(
-        kwargs["triangle3d"],
-        1.0,
-        TriangleArray(),
-        TriangleArray(),
-        0,
-        0,
-    )
-
-    tri = TriangleArray()
-    p1s = np.zeros((1, 3), dtype=np.float32)
-    p2s = np.zeros((1, 3), dtype=np.float32)
-    p3s = np.zeros((1, 3), dtype=np.float32)
-    colors = np.ones((1, 4), dtype=np.float32)
-    flags = np.ones(1, dtype=np.bool_)
-    append_surface_mesh(tri, 1.0, p1s, p2s, p3s, colors, 0, flags)
-
-    _numba_kernels_compiled = True
 
 
 class OpenGLRender:
@@ -773,31 +740,7 @@ class OpenGLRender:
         self.tick_loading(fps=fps)
 
     def warmup_render_kernels(self):
-        if _numba_kernels_compiled:
-            self.tick_loading()
-            return
-        if self._gui_window is None:
-            _compile_numba_kernels()
-            return
-
-        error = [None]
-        done = [False]
-
-        def worker():
-            try:
-                _compile_numba_kernels()
-            except Exception as exc:
-                error[0] = exc
-            finally:
-                done[0] = True
-
-        thread = threading.Thread(target=worker, daemon=True)
-        thread.start()
-        while not done[0]:
-            self.tick_loading()
-            time.sleep(0.003)
-        if error[0] is not None:
-            raise error[0]
+        self.tick_loading()
 
     def showLoadingScreen(self):
         self._draw_loading_frame()
@@ -810,31 +753,46 @@ class OpenGLRender:
     def addMeshTriangles(self, p1s, p2s, p3s, colors, dep_var, realpoint_flags, use_light=True):
         scale = self.SCL * self.guiRatio
         target = self.triLight if use_light else self.triNoLight
-        chunk_size = 10000
-        n = p1s.shape[0]
-        for start in range(0, n, chunk_size):
-            end = min(start + chunk_size, n)
+        p1s = np.asarray(p1s, dtype=np.float32)
+        p2s = np.asarray(p2s, dtype=np.float32)
+        p3s = np.asarray(p3s, dtype=np.float32)
+        colors = np.asarray(colors, dtype=np.float32)
+        realpoint_flags = np.asarray(realpoint_flags, dtype=np.bool_)
+
+        if self._loading_bootstrap:
+            chunk_size = 150000
+            for start in range(0, p1s.shape[0], chunk_size):
+                end = min(start + chunk_size, p1s.shape[0])
+                append_surface_mesh(
+                    target,
+                    scale,
+                    p1s[start:end],
+                    p2s[start:end],
+                    p3s[start:end],
+                    colors[start:end],
+                    dep_var,
+                    realpoint_flags[start:end],
+                )
+                self.tick_loading()
+        else:
             append_surface_mesh(
                 target,
                 scale,
-                p1s[start:end].astype(np.float32),
-                p2s[start:end].astype(np.float32),
-                p3s[start:end].astype(np.float32),
-                colors[start:end].astype(np.float32),
+                p1s,
+                p2s,
+                p3s,
+                colors,
                 dep_var,
-                realpoint_flags[start:end].astype(np.bool_),
+                realpoint_flags,
             )
-            self.tick_loading()
 
     def add3DObject(self, obj):
 
         obj.hidden = True
         
-        if self.objects3d.get(obj.tp) is None:
-            self.objects3d[obj.tp] = List.empty_list(typesRegistry[obj.tp].class_type.instance_type)
-            self.objects3d[obj.tp].append(obj)
-        else:
-            self.objects3d[obj.tp].append(obj)
+        if obj.tp not in self.objects3d:
+            self.objects3d[obj.tp] = []
+        self.objects3d[obj.tp].append(obj)
 
         return obj
 
@@ -976,47 +934,58 @@ class OpenGLRender:
             self.removedObjects3d.clear()
 
         with self.profiler.measure('retrieve_and_append'):
-            # Retrieve and append triangles from all 3D objects
-
             scale = self.SCL * self.guiRatio
 
             kwargs = {}
             for key in typesRegistry:
-                kwargs[key] = self.objects3d.get(key, List.empty_list(typesRegistry[key].class_type.instance_type))
+                kwargs[key] = self.objects3d.get(key, [])
 
             if self._loading_bootstrap:
                 self.tick_loading()
-                build_triangle3d_primitives(
-                    kwargs["line3d"],
-                    kwargs["point3d"],
-                    kwargs["flatline3d"],
-                    kwargs["triangle3d"],
-                    self.width,
-                    self.height,
-                )
+                with self.profiler.measure('build_primitives'):
+                    build_triangle3d_primitives(
+                        kwargs["line3d"],
+                        kwargs["point3d"],
+                        kwargs["flatline3d"],
+                        kwargs["triangle3d"],
+                        self.width,
+                        self.height,
+                    )
                 self.tick_loading()
                 triangle_count = len(kwargs["triangle3d"])
-                batch_size = 100
-                for start in range(0, triangle_count, batch_size):
-                    end = min(start + batch_size, triangle_count)
+                batch_size = 2000
+                with self.profiler.measure('append_triangles'):
+                    for start in range(0, triangle_count, batch_size):
+                        end = min(start + batch_size, triangle_count)
+                        append_triangle3d_objects(
+                            kwargs["triangle3d"],
+                            scale,
+                            self.triLight,
+                            self.triNoLight,
+                            start,
+                            end,
+                        )
+                        if start == 0:
+                            self.tick_loading()
+            else:
+                with self.profiler.measure('build_primitives'):
+                    build_triangle3d_primitives(
+                        kwargs["line3d"],
+                        kwargs["point3d"],
+                        kwargs["flatline3d"],
+                        kwargs["triangle3d"],
+                        self.width,
+                        self.height,
+                    )
+                with self.profiler.measure('append_triangles'):
                     append_triangle3d_objects(
                         kwargs["triangle3d"],
                         scale,
                         self.triLight,
                         self.triNoLight,
-                        start,
-                        end,
+                        0,
+                        len(kwargs["triangle3d"]),
                     )
-                    self.tick_loading()
-            else:
-                retrieveAndAppendTriangles(
-                    **kwargs,
-                    scale=scale,
-                    width=self.width,
-                    height=self.height,
-                    triLight=self.triLight,
-                    triNoLight=self.triNoLight,
-                )
 
         with self.profiler.measure("clear_objects"):
             self.objects3d.clear()

@@ -3,7 +3,6 @@ import math
 import numbers
 import time
 import numpy as np
-from numba import njit, jit
 from PIL import Image
 
 # math

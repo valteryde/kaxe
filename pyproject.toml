@@ -18,8 +18,7 @@ dependencies = [
   "sympy",
   "scipy",
   "openpyxl",
-  "tqdm",
-  "numba"
+  "tqdm"
 ]
 
 [project.urls]
