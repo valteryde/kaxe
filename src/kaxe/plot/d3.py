@@ -441,8 +441,8 @@ class Plot3D(Window):
         # justere for at marker skubbes fra den forrige axis (ved include)
         offset = np.array((self.image.x, self.image.y))
 
-        center = self.render.pixel(0,0,0) + offset
-        a, b = self.render.pixel(*line.p1) + offset, self.render.pixel(*line.p2) + offset
+        center = self._scaledPixel(0,0,0) + offset
+        a, b = self._scaledPixel(*line.p1) + offset, self._scaledPixel(*line.p2) + offset
         v = b - a
         
         vc = center - (a + b) / 2
@@ -500,6 +500,37 @@ class Plot3D(Window):
         
         return axis
 
+    def _scaledPixel(self, x, y, z):
+        scale = getattr(self, '_gui_overlay_scale', 1.0)
+        return self.render.pixel(x, y, z) * scale
+
+    def __updateSkipObjectUpdate__(self):
+        if time.time() - self.lastRender < 0.1:
+            self.render.skipObjectUpdate = True
+        else:
+            self.lastRender = time.time()
+            self.render.skipObjectUpdate = False
+
+    def __setupGuiOverlayFrame__(self, rotation):
+        self._gui_overlay_scale = self.render.guiWidth / self.render.width
+        self.width = self.render.guiWidth
+        self.height = self.render.guiHeight
+        self.attrmap.setAttr('width', self.width)
+        self.attrmap.setAttr('height', self.height)
+        self.attrmap.setAttr(
+            'fontSize',
+            max(round(self._overlay_font_size * self._gui_overlay_scale), 12),
+        )
+        self.windowBox = [0, 0, self.width, self.height]
+        self.rotation = rotation
+        self.__setRotation__(rotation)
+        self.render.camera.satelite(math.radians(self.rotation[0]), math.radians(self.rotation[1]))
+        self.__updateSkipObjectUpdate__()
+
+    def __prepareGuiOverlayRebuild__(self):
+        self.padding = [0, 0, 0, 0]
+        self.__included__.clear()
+        self.shapes = list(self.originalShapes)
 
     def __scaleRender__(self):
         
@@ -897,48 +928,43 @@ class Plot3D(Window):
         runs in real-time during interactive manipulation.
         """
         
-        # ===== PERFORMANCE OPTIMIZATION =====
-        # Skip expensive computations if rendering too frequently (>10 FPS)
-        if time.time() - self.lastRender < 0.1:
-            self.render.skipObjectUpdate = True
-        else:
-            self.lastRender = time.time()
-            self.render.skipObjectUpdate = False
+        skip3d = self.render.skipObjectUpdate and self.__cachedAxis__ is not None
 
         # ===== CLEANUP PREVIOUS FRAME =====
-        # Remove all temporary objects from previous render
-        for tri in self.backgroundTriangles:
-            self.render.remove3DObject(tri)
-        self.backgroundTriangles.clear()
+        if not skip3d:
+            for tri in self.backgroundTriangles:
+                self.render.remove3DObject(tri)
+            self.backgroundTriangles.clear()
 
-        for line in self.__lines__:
-            self.render.remove3DObject(line)
-        self.__lines__.clear()
+            for line in self.__lines__:
+                self.render.remove3DObject(line)
+            self.__lines__.clear()
 
         # ===== 2D IMAGE SETUP =====
         # Create the canvas for final 2D composition
         self.image = ImageShape(Image.new('RGBA', (self.width, self.height)), 0, 0)
         self.addDrawingFunction(self.image)
 
+        needs_axis_update = not self.render.skipObjectUpdate or not self.__cachedAxis__
+
         # ===== FACE PROJECTION CALCULATION =====
-        # Project all 6 cube faces to 2D screen coordinates for collision detection
-        # This enables proper axis positioning and background rendering
-        self.projectedFaceNormals = [
-            (
-                self.render.pixel(*p1),  # Project 3D vertex to 2D screen
-                self.render.pixel(*p2),
-                self.render.pixel(*p3),        
-                self.render.pixel(*p4)
-            )
-            for (p1, p2, p3, p4, *_) in self.faceNormals  # Unpack face geometry
-        ]
+        if self.__boxed__ and needs_axis_update:
+            self.projectedFaceNormals = [
+                (
+                    self.render.pixel(*p1),
+                    self.render.pixel(*p2),
+                    self.render.pixel(*p3),
+                    self.render.pixel(*p4)
+                )
+                for (p1, p2, p3, p4, *_) in self.faceNormals
+            ]
 
 
         # ===== BOXED PLOT RENDERING =====
         if self.__boxed__:
             
             # Use cached axis positions if available and not updating objects
-            if (not self.render.skipObjectUpdate or not self.__cachedAxis__):
+            if needs_axis_update:
 
                 # ===== VISIBLE FACE DETECTION =====
                 # Determine which cube faces are visible to camera for background rendering
@@ -1048,10 +1074,17 @@ class Plot3D(Window):
                 axis = self.__cachedAxis__
                 xyz = self.__cachedXYZ__
 
-            if self.__frame__:
-                for line in axis:
-                    self.render.add3DObject(line)
-                    self.__lines__.add(line)
+            if not skip3d:
+                if self.__frame__:
+                    for line in axis:
+                        if line is not None:
+                            self.render.add3DObject(line)
+                            self.__lines__.add(line)
+                elif self.__boxed__:
+                    for axis_lines in self.lines:
+                        for line in axis_lines:
+                            self.render.add3DObject(line)
+                            self.__lines__.add(line)
 
             ## create axis
             # createAxis * 3 = 5.5 ms (old)
@@ -1065,8 +1098,7 @@ class Plot3D(Window):
             self.__checkAxisCrossover__() # 0.2 ms
             
             #### Add grid lines
-            # loop: 0.2 ms
-            if self.__isBackgroundDrawn__:
+            if self.__isBackgroundDrawn__ and not skip3d:
                 self.__drawGridLines__(axisx, axisy, axisz, xyz)
         
         # AXIS IN THE MIDDLE
@@ -1154,59 +1186,29 @@ class Plot3D(Window):
         self.__addInnerContent__()
         
         self.originalShapes = self.shapes.copy()
-
-        # GUI Loop
-        originalPadding = self.padding.copy()
+        self._overlay_font_size = self.getAttr('fontSize')
+        self.lastRender = 0
 
         def overlay(rotation=self.rotation):
-            
-            self.render.profiler.start('overlay_init')
 
-            self.setAttr('width', self.render.width)
-            self.setAttr('height', self.render.height)
-            self.width = self.getAttr('width')
-            self.height = self.getAttr('height')
-
-            self.windowBox = [0, 0, self.width, self.height]
-
-            self.padding = originalPadding.copy()
-            self.__included__.clear()
-
-            self.shapes = self.originalShapes.copy()
-            self.rotation = rotation
-            self.__setRotation__(rotation)
-
-            # self.render.camera.angle[0] += 0.01/2
-            # self.render.camera.angle[2] += 0.02/2
-
-            self.render.camera.satelite(math.radians(self.rotation[0]), math.radians(self.rotation[1]))
-
-            self.render.profiler.end('overlay_init')
-
+            with self.render.profiler.measure('overlay_init'):
+                self.__setupGuiOverlayFrame__(rotation)
 
             with self.render.profiler.measure('overlay_after'):
+                self.__prepareGuiOverlayRebuild__()
                 self.__after__()
-            # self.__addOuterContent__()
 
-            # include all elements
             with self.render.profiler.measure('overlay_include'):
                 self.__includeAllAgain__()
-
-                self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
-
-            # add style padding
-            # self.addPaddingCondition(*self.getAttr('outerPadding'))
+                sorted_shapes = sorted(
+                    self.shapes,
+                    key=lambda x: x[1] if isinstance(x, tuple) else 0,
+                )
+                self.shapes = [x[0] if isinstance(x, tuple) else x for x in sorted_shapes]
 
             with self.render.profiler.measure('overlay_paint'):
-                self.attrmap.setAttr('backgroundColor', (0,0,0,0))
+                self.attrmap.setAttr('backgroundColor', (0, 0, 0, 0))
                 surface = self.__pillowPaint__()
-
-            with self.render.profiler.measure('overlay_crop'):
-                surface = surface.crop([0,0,self.render.width, self.render.height])
-
-                # DANGER: ONLY USE FOR DEBUGGING
-                # if random.random() < 0.01:
-                #     surface.show()
 
             return surface
 

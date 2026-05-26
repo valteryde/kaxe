@@ -470,6 +470,88 @@ class Axis(AttrObject):
 
         self.finalized = True
 
+    def _rebuildArrows(self, parent):
+        self.arrowBatch = shapes.Batch()
+
+        if not self.getAttr('showArrow'):
+            return
+
+        v = vdiff(self.endPos, self.startPos)
+        v = vectorScalar(v, 1 / vlen(v))
+        n = (-v[1], v[0])
+        arrowSize = self.getAttr('arrowSize') / 2
+        arrowDownHeight = arrowSize
+
+        p1 = (self.startPos[0] + 2 * arrowSize * v[0], self.startPos[1] + 2 * arrowSize * v[1])
+        p2 = (self.startPos[0] + arrowSize * n[0] - arrowDownHeight * v[0], self.startPos[1] + arrowSize * n[1] - arrowDownHeight * v[1])
+        p3 = (self.startPos[0] - arrowSize * n[0] - arrowDownHeight * v[0], self.startPos[1] - arrowSize * n[1] - arrowDownHeight * v[1])
+
+        shapes.Triangle(p1, p2, self.startPos, color=self.getAttr('color'), batch=self.arrowBatch)
+        shapes.Triangle(p1, p3, self.startPos, color=self.getAttr('color'), batch=self.arrowBatch)
+
+        p4 = (self.endPos[0] - 2 * arrowSize * v[0], self.endPos[1] - 2 * arrowSize * v[1])
+        p5 = (self.endPos[0] + arrowSize * n[0] + arrowDownHeight * v[0], self.endPos[1] + arrowSize * n[1] + arrowDownHeight * v[1])
+        p6 = (self.endPos[0] - arrowSize * n[0] + arrowDownHeight * v[0], self.endPos[1] - arrowSize * n[1] + arrowDownHeight * v[1])
+
+        shapes.Triangle(p4, p5, self.endPos, color=self.getAttr('color'), batch=self.arrowBatch)
+        shapes.Triangle(p4, p6, self.endPos, color=self.getAttr('color'), batch=self.arrowBatch)
+
+    def reposition(self, parent, startPos, endPos, titleNormal):
+        self.startPos = np.array(startPos, dtype=float)
+        self.endPos = np.array(endPos, dtype=float)
+        self.titleNormal = titleNormal
+
+        diff = vdiff(self.startPos, self.endPos)
+        self.vLen = vlen(diff)
+        if self.vLen < 0.1:
+            self.__allowOverLappingCheck__ = False
+            self.__noMarkers__ = True
+        else:
+            self.__allowOverLappingCheck__ = True
+            self.__noMarkers__ = False
+            self.v = (diff[0] / self.vLen, diff[1] / self.vLen)
+            self.n = (-self.v[1], self.v[0])
+
+        self.shapeLine.setEndpoints(
+            self.startPos[0], self.startPos[1],
+            self.endPos[0], self.endPos[1],
+        )
+
+        if self.getAttr('showArrow'):
+            self._rebuildArrows(parent)
+
+        if hasattr(self, 'title') and self.title is not None:
+            self.repositionTitle(parent)
+
+        for marker in self.markers:
+            marker.reposition(parent)
+
+    def _titleCenterPos(self, parent, title=None):
+        diff = vdiff(self.startPos, self.endPos)
+        v = vectorScalar(diff, 1 / 2)
+        axisPos = addVector(self.startPos, v)
+
+        nscaled = (-diff[1], diff[0])
+        nscaledlength = vlen(nscaled)
+        nscaled = (nscaled[0] / nscaledlength, nscaled[1] / nscaledlength)
+
+        maxDist = [distPointLine(nscaled, self.startPos, marker.pos()) for marker in self.markers if hasattr(marker, 'textLabel')]
+        maxDist = max(maxDist) if maxDist else 0
+
+        if title is None and hasattr(self, 'title'):
+            title = self.title.text
+        textDimension = getTextDimension(title, self.getAttr('fontSize'))
+        v = vectorScalar(self.titleNormal, (textDimension[1] / 2 + maxDist))
+        return axisPos[0] + v[0], axisPos[1] + v[1]
+
+    def repositionTitle(self, parent):
+        if not hasattr(self, 'title') or self.title is None:
+            return
+
+        pos_x, pos_y = self._titleCenterPos(parent)
+        nudge = vectorScalar(self.titleNormal, self.getAttr('titleGap'))
+        self.title.setCenterPos(pos_x + nudge[0], pos_y + nudge[1])
+
     
     def __boxOverlays__(self, aCenterPos, aSize, bCenterPos, bSize):
         #https://code.tutsplus.com/collision-detection-using-the-separating-axis-theorem--gamedev-169t

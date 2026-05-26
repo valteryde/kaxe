@@ -29,7 +29,6 @@ from numba.types import ListType
 from numba.typed import List
 from typing import DefaultDict
 import cv2
-import numpy as np
 from ..profiler import Profiler
 from ..helper import to_numpy
 
@@ -154,28 +153,31 @@ class TriangleArray:
         self.tempNormals.clear()
 
 
-def display(triLight:TriangleArray, triNoLight:TriangleArray):
+_display_initialized = False
 
-    glClearColor(1.0, 1.0, 1.0, 1.0); #RGBA
+def set_clear_color(backgroundColor=(255, 255, 255, 255)):
+    r, g, b, a = (c / 255.0 for c in backgroundColor[:4])
+    glClearColor(r, g, b, a)
 
-    # Set light color
+def init_display_state(backgroundColor=(255, 255, 255, 255)):
+    global _display_initialized
+
+    set_clear_color(backgroundColor)
+    if _display_initialized:
+        return
+
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
-
-    # glLightfv(GL_LIGHT0, GL_POSITION, spot_position)
-    # glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spot_direction)
-    # glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, spot_cutoff)
     glShadeModel(GL_SMOOTH)
-    # glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, spot_exponent)
-
-    # Dim the light by reducing the intensity of ambient, diffuse, and specular
     glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
     glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.6, 0.6, 0.6, 1.0])
     glLightfv(GL_LIGHT0, GL_SPECULAR, [0.1, 0.1, 0.1, 1.0])
-
     glEnable(GL_COLOR_MATERIAL)
-    # glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+    _display_initialized = True
 
+
+def display(triLight:TriangleArray, triNoLight:TriangleArray, backgroundColor=(255, 255, 255, 255)):
+    set_clear_color(backgroundColor)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
@@ -183,46 +185,47 @@ def display(triLight:TriangleArray, triNoLight:TriangleArray):
     glRotatef(rotation[0], 0, 0, 1)
     
     ###### Lightning ######
-    glEnable(GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    light_count = triLight.current_size // 3
+    if light_count:
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_COLOR_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
 
-    glEnableClientState(GL_VERTEX_ARRAY)
-    glEnableClientState(GL_COLOR_ARRAY)
-    glEnableClientState(GL_NORMAL_ARRAY)
+        vertices = triLight.vectors[:triLight.current_size].reshape(-1, 3)
+        colors = triLight.colors[:triLight.color_current_size].reshape(-1, 4)
+        normals = triLight.normals[:triLight.normal_current_size].reshape(-1, 3)
 
-    vertices = triLight.vectors.reshape(-1, 3)#.astype(np.float32)
-    colors = triLight.colors.reshape(-1, 4)#.astype(np.float32)  # Use 4 channels for RGBA
-    normals = triLight.normals.reshape(-1, 3)#.astype(np.float32)
+        glVertexPointer(3, GL_FLOAT, 0, vertices)
+        glColorPointer(4, GL_FLOAT, 0, colors)
+        glNormalPointer(GL_FLOAT, 0, normals)
+        glDrawArrays(GL_TRIANGLES, 0, light_count)
 
-    glVertexPointer(3, GL_FLOAT, 0, vertices)
-    glColorPointer(4, GL_FLOAT, 0, colors)  # 4 for RGBA
-    glNormalPointer(GL_FLOAT, 0, normals)
-
-    glDrawArrays(GL_TRIANGLES, 0, len(vertices))
-
-    glDisableClientState(GL_NORMAL_ARRAY)
-    glDisableClientState(GL_COLOR_ARRAY)
-    glDisableClientState(GL_VERTEX_ARRAY)
-
-    glDisable(GL_BLEND)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_COLOR_ARRAY)
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisable(GL_BLEND)
 
     ###### Triangle NOT affected by lighting ######
-    glDisable(GL_LIGHTING)
-    glEnable(GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-    glEnableClientState(GL_VERTEX_ARRAY)
-    glEnableClientState(GL_COLOR_ARRAY)
+    no_light_count = triNoLight.current_size // 3
+    if no_light_count:
+        glDisable(GL_LIGHTING)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_COLOR_ARRAY)
 
-    vertices = triNoLight.vectors.reshape(-1, 3)#.astype(np.float32)
-    colors = triNoLight.colors.reshape(-1, 4)#.astype(np.float32)  # Use 4 channels for RGBA
+        vertices = triNoLight.vectors[:triNoLight.current_size].reshape(-1, 3)
+        colors = triNoLight.colors[:triNoLight.color_current_size].reshape(-1, 4)
 
-    glVertexPointer(3, GL_FLOAT, 0, vertices)
-    glColorPointer(4, GL_FLOAT, 0, colors)  # 4 for RGBA
-    glDrawArrays(GL_TRIANGLES, 0, len(vertices))
-    glDisableClientState(GL_COLOR_ARRAY)
-    glDisableClientState(GL_VERTEX_ARRAY)
-    glDisable(GL_BLEND)
-    glEnable(GL_LIGHTING)
+        glVertexPointer(3, GL_FLOAT, 0, vertices)
+        glColorPointer(4, GL_FLOAT, 0, colors)
+        glDrawArrays(GL_TRIANGLES, 0, no_light_count)
+        glDisableClientState(GL_COLOR_ARRAY)
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisable(GL_BLEND)
+        glEnable(GL_LIGHTING)
 
     
 def reshape(width, height):
@@ -560,6 +563,27 @@ class OpenGLRender:
             self.removedObjects3d.append((obj, pos))
         return obj
 
+    def _overlay_to_numpy(self, overlayImage):
+        if isinstance(overlayImage, np.ndarray):
+            overlay_np = overlayImage
+        else:
+            with self.profiler.measure("numpy_conversion"):
+                overlay_np = to_numpy(overlayImage)
+
+        with self.profiler.measure("overlay_crop"):
+            if overlay_np.shape[1] > self.width or overlay_np.shape[0] > self.height:
+                overlay_np = overlay_np[:self.height, :self.width]
+
+        with self.profiler.measure("opencv_resize"):
+            if overlay_np.shape[1] != self.guiWidth or overlay_np.shape[0] != self.guiHeight:
+                overlay_np = cv2.resize(
+                    overlay_np,
+                    (self.guiWidth, self.guiHeight),
+                    interpolation=cv2.INTER_LINEAR,
+                )
+
+        return overlay_np
+
     def loop(self):
         self.profiler.start("inner_loop")
         
@@ -590,35 +614,28 @@ class OpenGLRender:
 
         if self.debugDrawOverlay:
             margin = 10
-            overlayImage.paste(self.fpsimage, (margin, margin))
-            overlayImage.paste(self.memimage, (margin, self.fpsimage.height+margin))
+            if isinstance(overlayImage, np.ndarray):
+                fps_np = np.asarray(self.fpsimage)
+                mem_np = np.asarray(self.memimage)
+                fh, fw = fps_np.shape[:2]
+                mh, mw = mem_np.shape[:2]
+                overlayImage[margin:margin + fh, margin:margin + fw] = fps_np
+                overlayImage[margin + fh + margin:margin + fh + margin + mh, margin:margin + mw] = mem_np
+            else:
+                overlayImage.paste(self.fpsimage, (margin, margin))
+                overlayImage.paste(self.memimage, (margin, self.fpsimage.height+margin))
         self.profiler.end("fps_calculation")
 
         with self.profiler.measure("display_render"):
-            display(self.triLight, self.triNoLight)
+            display(self.triLight, self.triNoLight, self.backgroundColor)
 
 
-        if overlayImage is not None: # 30 ms
-            
+        if overlayImage is not None:
             with self.profiler.measure("overlay_processing"):
-                with self.profiler.measure("numpy_conversion"):
-                    # Use numpy for fast resizing and rotation
-                    overlay_np = to_numpy(overlayImage)
-
-                with self.profiler.measure("opencv_resize"):
-                    # Resize using OpenCV (much faster than PIL)
-                    overlay_np = cv2.resize(overlay_np, (self.guiWidth, self.guiHeight), interpolation=cv2.INTER_LINEAR)
-
-                with self.profiler.measure("numpy_transform"):
-                    # Rotate using numpy (transpose + flip)
-                    #overlay_np = np.rot90(overlay_np, k=1)
-
-                    h, w = overlay_np.shape[:2]
-                    # Flip vertically for OpenGL coordinates
-                    overlay_np = np.flipud(overlay_np)
+                overlay_np = self._overlay_to_numpy(overlayImage)
 
                 with self.profiler.measure("opengl_overlay"):
-                    glMatrixMode(GL_PROJECTION)
+                    h, w = overlay_np.shape[:2]
                     x_offset = (self.guiWidth - w) // 2
                     y_offset = (self.guiHeight - h) // 2
 
@@ -633,7 +650,7 @@ class OpenGLRender:
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glDisable(GL_DEPTH_TEST)
                     glRasterPos2i(x_offset, y_offset)
-                    glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, overlay_np)
+                    glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, np.flipud(overlay_np))
                     glEnable(GL_DEPTH_TEST)
                     glDisable(GL_BLEND)
                     glPopMatrix()
@@ -651,7 +668,6 @@ class OpenGLRender:
         with self.profiler.measure("clear_triangles"):
             self.count += 1
             if self.skipObjectUpdate:
-                self.objects3d.clear()
                 return
 
             # remove triangles
@@ -740,6 +756,7 @@ class OpenGLRender:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
+        init_display_state(self.backgroundColor)
 
         is_fullscreen = False
         running = True
@@ -889,6 +906,7 @@ class OpenGLRender:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
+        init_display_state(self.backgroundColor)
 
         # Set up a framebuffer object (FBO) for off-screen rendering
         fbo = glGenFramebuffers(1)

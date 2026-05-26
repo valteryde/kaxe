@@ -114,6 +114,20 @@ class Text(Shape):
     def getCenterPos(self):
         return self.__center__
 
+    def setCenterPos(self, x, y):
+        self.__center__ = [x, y]
+        if self.anchor_x == "center":
+            self.__leftTop__ = [x - self.width / 2, None]
+        else:
+            self.__leftTop__ = [x, None]
+            self.__center__[0] = x + self.width / 2
+
+        if self.anchor_y == "center":
+            self.__leftTop__[1] = y - self.height / 2
+        else:
+            self.__leftTop__[1] = y
+            self.__center__[1] = y + self.height / 2
+
     
     def getLeftTopPos(self):
         return self.__leftTop__
