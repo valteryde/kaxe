@@ -13,7 +13,6 @@ from .objects.line import Line3D, FlatLine3D, Line3DObject, FlatLine3DObject
 from .objects.point import Point3D, Point3DObject
 import psutil
 process = psutil.Process()
-import fondi
 import sys
 import sdl2
 import sdl2.ext
@@ -23,8 +22,11 @@ from ..fileloader import loadFile
 import cv2
 from ..profiler import Profiler
 from ..helper import to_numpy
+from .hud import ViewportHud
 
 rotation = [330, 290]
+AUTO_SPIN_MAX_SPEED = 30.0   # deg/s
+AUTO_SPIN_RAMP_TAU = 0.9     # s, exponential ease-in time constant
 
 N_0_0_1 = np.array([0, 0, 1], dtype=np.int32)
 N_0_0_M1 = np.array([0, 0, -1], dtype=np.int32)
@@ -703,7 +705,10 @@ class OpenGLRender:
 
         self.skipObjectUpdate = False
         self.count = 0
+        self.showHud = False
         self.debugDrawOverlay = False
+        self.autoRotate = False
+        self.hud = ViewportHud()
 
         self.lightDirection = np.array([float(i) for i in light])
         self.useLight = any(light)
@@ -729,8 +734,7 @@ class OpenGLRender:
         self.triLight = TriangleArray()
         self.triNoLight = TriangleArray()
 
-        self.fpsimage = Image.new('RGBA', (0, 0))
-        self.memimage = Image.new('RGBA', (0, 0))
+        self._hud_fps = 0
 
         self.objects3d = dict()
         
@@ -797,6 +801,28 @@ class OpenGLRender:
 
         return overlay_np
 
+    def _draw_screen_overlay(self, overlay_np, x, y):
+        h, w = overlay_np.shape[:2]
+
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, self.guiWidth, 0, self.guiHeight, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glDisable(GL_DEPTH_TEST)
+        glRasterPos2i(x, y)
+        glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, np.flipud(overlay_np))
+        glEnable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
     def loop(self):
         self.profiler.start("inner_loop")
         
@@ -813,30 +839,14 @@ class OpenGLRender:
         self.totalframes += 1
         current_time = time.time()
         if current_time - self.last_time >= 1.0:
-            
-            self.fpsimage = fondi.MathText("\\text{FPS:}" + f" {self.frames}", 32, (255,0,0,255)).image
-
             process = psutil.Process(os.getpid())
             mem_info = process.memory_info()
-            mem_in_mb = mem_info.rss / 1024 / 1024  # rss = Resident Set Size
-
-            self.memimage = fondi.MathText("\\text{Memory:}"+ f" {mem_in_mb:.2f}"+ "\\text{MB}", 32, (255,0,0,255)).image
-
+            mem_in_mb = mem_info.rss / 1024 / 1024
+            self._hud_fps = self.frames
+            self.hud.update_stats(self._hud_fps, mem_in_mb)
             self.frames = 0
             self.last_time = current_time
 
-        if self.debugDrawOverlay:
-            margin = 10
-            if isinstance(overlayImage, np.ndarray):
-                fps_np = np.asarray(self.fpsimage)
-                mem_np = np.asarray(self.memimage)
-                fh, fw = fps_np.shape[:2]
-                mh, mw = mem_np.shape[:2]
-                overlayImage[margin:margin + fh, margin:margin + fw] = fps_np
-                overlayImage[margin + fh + margin:margin + fh + margin + mh, margin:margin + mw] = mem_np
-            else:
-                overlayImage.paste(self.fpsimage, (margin, margin))
-                overlayImage.paste(self.memimage, (margin, self.fpsimage.height+margin))
         self.profiler.end("fps_calculation")
 
         with self.profiler.measure("display_render"):
@@ -850,25 +860,17 @@ class OpenGLRender:
                     h, w = overlay_np.shape[:2]
                     x_offset = (self.guiWidth - w) // 2
                     y_offset = (self.guiHeight - h) // 2
+                    self._draw_screen_overlay(overlay_np, x_offset, y_offset)
 
-                    glMatrixMode(GL_PROJECTION)
-                    glPushMatrix()
-                    glLoadIdentity()
-                    glOrtho(0, self.guiWidth, 0, self.guiHeight, -1, 1)
-                    glMatrixMode(GL_MODELVIEW)
-                    glPushMatrix()
-                    glLoadIdentity()
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-                    glDisable(GL_DEPTH_TEST)
-                    glRasterPos2i(x_offset, y_offset)
-                    glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, np.flipud(overlay_np))
-                    glEnable(GL_DEPTH_TEST)
-                    glDisable(GL_BLEND)
-                    glPopMatrix()
-                    glMatrixMode(GL_PROJECTION)
-                    glPopMatrix()
-                    glMatrixMode(GL_MODELVIEW)
+        if self.showHud or self.debugDrawOverlay:
+            with self.profiler.measure("hud_overlay"):
+                hud_np = self.hud.build(
+                    (rotation[0], rotation[1]),
+                    self.autoRotate,
+                    self.guiWidth,
+                    self.guiHeight,
+                )
+                self._draw_screen_overlay(hud_np, 0, 0)
 
         self.profiler.end("inner_loop")    
         
@@ -981,13 +983,13 @@ class OpenGLRender:
 
         lasttime = time.time()
         dt = 0
-        comma_rotation = 0
+        auto_spin_speed = 0.0
 
         while running:
             
             self.profiler.start("main_loop")
 
-            dt = (time.time() - lasttime) * 1000
+            dt = min((time.time() - lasttime) * 1000, 50.0)
             lasttime = time.time()
             while sdl2.SDL_PollEvent(event):
                 if event.type == sdl2.SDL_QUIT:
@@ -1021,6 +1023,7 @@ class OpenGLRender:
                     if event.button.button == sdl2.SDL_BUTTON_LEFT:
                         dragging[0] = True
                         idle = False
+                        auto_spin_speed = 0.0
                         last_mouse[:] = [event.button.x, event.button.y]
                 elif event.type == sdl2.SDL_MOUSEBUTTONUP:
                     if event.button.button == sdl2.SDL_BUTTON_LEFT:
@@ -1042,14 +1045,14 @@ class OpenGLRender:
             self.height = int(round(self.guiHeight / self.guiRatio))
 
             if idle:
-                d = dt/30
+                dt_sec = dt / 1000.0
+                blend = 1.0 - np.exp(-dt_sec / AUTO_SPIN_RAMP_TAU)
+                auto_spin_speed += (AUTO_SPIN_MAX_SPEED - auto_spin_speed) * blend
+                rotation[0] += auto_spin_speed * dt_sec
+            else:
+                auto_spin_speed = 0.0
 
-                if np.floor(d+comma_rotation) == 0:
-                    comma_rotation += d
-                
-                else:
-                    set_rotation_from_diff(np.floor(d+comma_rotation), 0)
-                    comma_rotation = 0
+            self.autoRotate = idle
 
             if running:
                 reshape(self.guiWidth, self.guiHeight)

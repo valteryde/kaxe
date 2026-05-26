@@ -2056,8 +2056,8 @@ if __name__ == '__main__':
     # Test.testSolidofRevolution()
     # Test.testVectorField3D()
     # Test.testMesh()
-    # Test.testSingleMesh()
+    Test.testSingleMesh()
     # Test.testLightning()
     
-    Test.test2DIn3D()
+    # Test.test2DIn3D()
     # Test.testTransparent3D()

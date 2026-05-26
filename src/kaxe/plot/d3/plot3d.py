@@ -500,7 +500,7 @@ class Plot3D(Plot3DAxesMixin, Window):
 
         overlay = self.__start__()
 
-        self.render.debugDrawOverlay = False
+        self.render.showHud = False
 
         image = self.render.render(overlay)
         image = image.crop(getbbox(image, self.backgroundColor))
@@ -528,7 +528,7 @@ class Plot3D(Plot3DAxesMixin, Window):
 
         if gui:
             overlay = self.__start__(for_gui=True)
-            self.render.debugDrawOverlay = True
+            self.render.showHud = True
             self.render.gui(overlay, plot=self)
         else:
             self.save(None).show()
