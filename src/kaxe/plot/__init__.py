@@ -8,6 +8,7 @@ from .empty import EmptyPlot, EmptyWindow
 from .double import DoubleAxisPlot
 from .constants import XYZPLOT
 from .grid import Grid
+from .zoom import ZoomInset
 
 __all__ = [
     'Themes', 'LogPlot', 'BoxedLogPlot', 'LOGPLOT',

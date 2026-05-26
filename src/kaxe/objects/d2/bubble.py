@@ -66,18 +66,19 @@ class Bubble:
 
     
     def finalize(self, parent):
-        
+        scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
         centerpos = parent.pixel(*self.centerPos)
 
         text = Text(self.text, *centerpos, self.fontSize)
         size = max(text.width, text.height) / 2
 
-        radius = size+2*self.lineThickness + self.padding
+        lineThickness = max(1, int(self.lineThickness * scale))
+        radius = size+2*lineThickness + self.padding
         centerpos = np.array(centerpos)
         v = np.array(parent.pixel(*self.lineEndPos)) - centerpos
         v = radius * v / np.linalg.norm(v)
 
-        self.line = shapes.Line(*(centerpos + v), *parent.pixel(*self.lineEndPos), color=self.color, batch=self.batch, width=self.lineThickness*2)
+        self.line = shapes.Line(*(centerpos + v), *parent.pixel(*self.lineEndPos), color=self.color, batch=self.batch, width=lineThickness*2)
         self.innerCircle = shapes.Circle(*centerpos, radius, color=self.backgroundColor, batch=self.batch)
         self.outerCircle = shapes.Circle(*centerpos, radius, color=self.outlineColor, fill=False, batch=self.batch)
 

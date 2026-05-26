@@ -407,11 +407,16 @@ class Window(AttrObject):
         self.__baked__ = True
 
 
+    def getVisualScale(self):
+        """Scale factor for visual elements (points, line widths). 1.0 for normal plots; >1 when zoomed in."""
+        return getattr(self, 'renderScale', 1.0)
+
     def __addOuterContent__(self):
         
-        # legend
-        self.legendbox.setObjects(self.objects)
-        self.legendbox.finalize(self)
+        # legend (skip when showLegend is False, e.g. for zoom insets)
+        if getattr(self, 'showLegend', True):
+            self.legendbox.setObjects(self.objects)
+            self.legendbox.finalize(self)
 
 
     # enables this code to be manipulated with in other subclasses

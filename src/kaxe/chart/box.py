@@ -3,6 +3,7 @@
 from ..core.helper import *
 import logging
 from ..core.axis import *
+from ..plot.zoom_connector import compute_boxplot_whiskers
 from ..core.styles import getRandomColor, isLightOrDark
 from ..core.symbol import symbol as symbols
 from ..core.symbol import makeSymbolShapes
@@ -64,9 +65,7 @@ class BoxPlot(Window):
 
             leftbox = np.quantile(data, 0.25)
             rightbox = np.quantile(data, 0.75)
-            IQR = rightbox - leftbox
-            leftwhisker = leftbox - 3/2*IQR
-            rightwhisker = rightbox + 3/2*IQR
+            leftwhisker, rightwhisker = compute_boxplot_whiskers(data)
 
             min_ = min(min_, *boxplot["data"], leftwhisker, rightwhisker)
             max_ = max(max_, *boxplot["data"], leftwhisker, rightwhisker)
@@ -153,8 +152,8 @@ class BoxPlot(Window):
             shapes.Line(wxr, y0, wxr, y1, width=lineWidth, batch=self.boxbatch, color=lineColor)
             
             for i in data:
-                
-                if not(leftwhisker < i < rightwhisker):
+                # Outliers: points outside the whisker range (beyond fence)
+                if i < leftwhisker or i > rightwhisker:
                     height = self.getAttr('symbolHeight')
                     symbol = makeSymbolShapes(boxplot["symbol"], height, color=boxplot["color"], batch=self.boxbatch)
                     symbol.x = self.axis.get(i)[0]

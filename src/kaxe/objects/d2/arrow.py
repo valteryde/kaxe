@@ -61,7 +61,7 @@ class Arrow:
 
 
     def finalize2D(self, parent):
-        
+        scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
         pixel0 = parent.pixel(*self.p0)
         pixel1 = parent.pixel(*self.p1)
     
@@ -70,8 +70,9 @@ class Arrow:
 
         n = (-v[1], v[0])
 
-        arrowSize = self.headSize * 0.75
-        arrowDownHeight = self.headSize
+        headSize = self.headSize * scale
+        arrowSize = headSize * 0.75
+        arrowDownHeight = headSize
 
         p1 = (pixel1[0] - 2 * arrowSize * v[0], pixel1[1] - 2 * arrowSize * v[1])
         p2 = (pixel1[0] + arrowSize * n[0] + arrowDownHeight * v[0], pixel1[1] + arrowSize * n[1] + arrowDownHeight * v[1])
@@ -92,7 +93,8 @@ class Arrow:
             batch=self.batch,
         )
 
-        shapes.Line(*pixel0, *pixel1, width=self.lineThickness, color=self.color, batch=self.batch)
+        lineWidth = max(1, int(self.lineThickness * scale))
+        shapes.Line(*pixel0, *pixel1, width=lineWidth, color=self.color, batch=self.batch)
 
 
     def __getOrthogonalVector__(self, v, angle:int):

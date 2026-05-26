@@ -119,13 +119,14 @@ class ParametricEquation:
             elif len(lineSegments[-1]) > 0: lineSegments.append([])
 
         if parent == identities.XYPLOT:
-                
+            scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
+            width = max(1, int(self.thickness * scale))
             # piece together linesegments
             for ls in lineSegments:
                 shapes.LineSegment(
                     [(i[0], i[1]) for i in ls], 
                     color=self.color, 
-                    width=self.thickness, 
+                    width=width, 
                     batch=self.batch, 
                     dotted=self.dotted > 0,
                     dashed=self.dashed > 0,
