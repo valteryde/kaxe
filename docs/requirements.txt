@@ -8,3 +8,6 @@ numba
 markdown-it-py
 myst-parser
 sphinx_rtd_theme
+numpy-stl
+pyopengl
+PySDL2

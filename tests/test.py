@@ -1498,9 +1498,7 @@ class Test:
         plt.add(kaxe.Function3D( func ))
         plt.add(kaxe.Contour( func, a=0 ))
 
-        plt2d = kaxe.Plot([-3, 3, -3, 3])
-        plt2d.add(kaxe.Equation( func, lambda x,y: 3 ))
-        plt.show()
+        plt.show(gui=True)
         plt.save('tests/images/f2din3d.png')
 
 
@@ -2042,6 +2040,8 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    # Test.run()
+
     # Test.testBubbles()
     # Test.testDobuleAxisPlot()
     # Test.testHistogram()
@@ -2054,3 +2054,5 @@ if __name__ == '__main__':
     # Test.testMesh()
     # Test.testSingleMesh()
     # Test.testLightning()
+    
+    Test.test2DIn3D()

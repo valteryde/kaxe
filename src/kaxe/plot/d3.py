@@ -1,8 +1,36 @@
 
-# window
-from random import randint
+"""
+Kaxe 3D Plotting Module
+
+This module provides 3D plotting functionality with OpenGL-accelerated rendering.
+It includes classes for creating 3D plots with various visual styles (boxed, frame, center, empty)
+and supports rotation, lighting, axis rendering, and interactive GUI display.
+
+Key Features:
+- OpenGL-accelerated 3D rendering pipeline
+- Multiple plot styles (Plot3D, PlotCenter3D, PlotFrame3D, PlotEmpty3D)
+- Camera rotation and perspective projection
+- Automatic axis positioning and wireframe generation
+- Interactive GUI with real-time manipulation
+- Export to image formats
+
+Architecture:
+The rendering pipeline follows: Setup → Wireframe → Axis Calculation → Object Addition → Rendering
+"""
+
+# Standard library imports
+import math
 import sys
 import time
+from io import BytesIO
+from typing import Union
+
+# Third-party imports
+import numpy as np
+from PIL import Image
+from numba import njit
+
+# Core Kaxe imports - Window and UI components
 from ..core.helper import insideBox, getbbox
 from ..core.window import Window, settings
 from ..core.shapes import ImageShape
@@ -10,32 +38,72 @@ from ..core.axis import Axis
 from ..core.marker import Marker
 from ..core.styles import ComputedAttribute
 
-# 3d 
+# 3D rendering engine imports
 from ..core.d3.render import Render
 from ..core.d3.openglrender import OpenGLRender
 from ..core.d3.objects.line import Line3D, FlatLine3D
 from ..core.d3.objects.point import Point3D
 from ..core.d3.objects.triangle import Triangle
-
-# other
-import math
-import numpy as np
-import random
-from PIL import Image
-from typing import Union
-from numba import njit
-from io import BytesIO
 from ..core.d3.helper import formatColor
 
-XYZPLOT = 'xyz'
+# Constants
+XYZPLOT = 'xyz'  # Plot type identifier for 3D XYZ coordinate system
+
+# ============================================================================
+# Geometric Utility Functions (Numba-optimized for performance)
+# ============================================================================
 
 @njit
 def sign(p, p1, p2):
+    """
+    Calculate the signed area of a triangle formed by three points.
+    
+    This function computes twice the signed area of the triangle (p1, p2, p).
+    Used in point-in-triangle tests to determine which side of a line a point lies on.
+    
+    Parameters
+    ----------
+    p : array-like
+        Test point [x, y]
+    p1, p2 : array-like
+        Line segment endpoints [x, y]
+        
+    Returns
+    -------
+    float
+        Positive if p is on left side of line p1->p2, negative if on right side
+    """
     return (p[0] - p2[0]) * (p1[1] - p2[1]) - (p1[0] - p2[0]) * (p[1] - p2[1])
+
 
 @njit
 def isPointInTriangle(p, p1, p2, p3, tol=-1):
+    """
+    Test if a point lies inside a triangle using the sign method.
     
+    Uses three signed area calculations to determine if a point is inside
+    a triangle. A point is inside if all three signs are the same (all positive
+    or all negative), indicating the point is on the same side of all three edges.
+    
+    Parameters
+    ----------
+    p : array-like
+        Test point coordinates [x, y]
+    p1, p2, p3 : array-like
+        Triangle vertex coordinates [x, y]
+    tol : float, optional
+        Tolerance for boundary cases (default: -1, meaning strict inside test)
+        
+    Returns
+    -------
+    bool
+        True if point is inside triangle, False otherwise
+        
+    Notes
+    -----
+    This is a fast, numerically stable algorithm for point-in-triangle testing.
+    The tolerance parameter allows for fuzzy boundary detection.
+    """
     d1 = sign(p, p1, p2)
     d2 = sign(p, p2, p3)
     d3 = sign(p, p3, p1)
@@ -48,130 +116,203 @@ def isPointInTriangle(p, p1, p2, p3, tol=-1):
 
 class Plot3D(Window):
     """
-    A plotting window used to represent a boxed 3D Plot
+    A 3D plotting window with full wireframe box and automatic axis positioning.
+    
+    This class provides a complete 3D plotting environment with:
+    - Automatic wireframe box generation around the plot volume
+    - Dynamic axis positioning based on camera angle for optimal visibility
+    - OpenGL-accelerated rendering with lighting support
+    - Interactive rotation and real-time manipulation
+    - Background grid lines and face highlighting
+    
+    The coordinate system follows right-hand rule with:
+    - X-axis: left-right (red lines in debug mode)
+    - Y-axis: front-back (green lines in debug mode)  
+    - Z-axis: up-down (blue lines in debug mode)
+    
+    Rendering Pipeline:
+    1. Setup camera and 3D transformations (__before__)
+    2. Generate wireframe box geometry (__createWireframe__)
+    3. Calculate visible faces and axis positions (__after__)
+    4. Position axes on closest visible edges to camera
+    5. Add grid lines and background faces
+    6. Render all 3D objects to 2D image
         
     Attributes
     ----------
-    firstAxis : Kaxe.Axis
-        The first axis of the plot.
-    secondAxis : Kaxe.Axis
-        The second axis of the plot.
-    thirdAxis : Kaxe.Axis
-        The third axis of the plot.
+    axis : list[Axis]
+        The three axes of the plot [x_axis, y_axis, z_axis]
+    render : OpenGLRender
+        The 3D rendering engine instance
+    rotation : list[float]
+        Current camera rotation angles [alpha, beta] in degrees
+    light : list[float] 
+        Light direction vector [x, y, z]. Zero vector disables lighting
+    windowAxis : list[float]
+        Plot bounds [x_min, x_max, y_min, y_max, z_min, z_max]
 
     Parameters
     ----------
     window : list, optional
-        The window dimensions for the plot in the format [x0, x1, y0, y1, z0, z1] (default is [-10, 10, -10, 10, -10, 10]).
+        The plot bounds [x0, x1, y0, y1, z0, z1] (default: [-10, 10, -10, 10, -10, 10])
     rotation : list, optional
-        The rotation angles for the plot in degrees [alpha, beta] (default is [0, -20]).
-    drawBackground: bool, optional
-        Draw background with gridlines
+        Camera angles [alpha, beta] in degrees (default: [60, -70])
     size : list | bool | None, optional
-        if True the axis will be scaled accordingly to window. If a list is passed theese sizes will be used.
-    light : list
-        light direction. If null vector is given light will not be added.
+        Axis scaling: True for automatic, list for custom ratios, None for unit cube
+    drawBackground : bool, optional
+        Whether to draw background faces and grid lines (default: False)
+    light : list, optional
+        Light direction vector [x, y, z] (default: [0, 0, 0] = no lighting)
+    addMarkers : bool, optional
+        Whether to add tick marks and labels to axes (default: True)
+        
+    Notes
+    -----
+    The plot automatically selects the best axis positioning based on camera angle
+    to avoid overlapping lines and ensure maximum visibility. The wireframe box
+    consists of 12 edges forming a cube, with axes positioned on the 3 most
+    visible edges closest to the camera.
     """
 
 
     def __init__(self,  
-                 window:list=None, 
-                 rotation:Union[list, tuple]=[60, -70], 
-                 size:Union[bool, list, tuple]=None, 
-                 drawBackground:bool=False,
-                 light:list=[0,0,0],
-                 addMarkers:bool=True
+                 window: list = None, 
+                 rotation: Union[list, tuple] = [60, -70], 
+                 size: Union[bool, list, tuple] = None, 
+                 drawBackground: bool = False,
+                 light: list = [0, 0, 0],
+                 addMarkers: bool = True
         ):
 
         super().__init__()
 
+        # Performance tracking for render optimization
         self.lastRender = time.time()
 
+        # Adjust rotation for internal coordinate system
+        # The internal system has a different orientation than user input
         rotation = rotation.copy()
         rotation[0] -= 90
         
+        # ASCII art showing the 3D box structure:
+        # The plot creates a wireframe box with 8 vertices and 12 edges
+        # Axes are positioned on the 3 most visible edges closest to camera
         """
+        3D Wireframe Box Geometry:
         
-           +--------------+
+           p8--------------p7
           /|             /|
          / |            / |
-        *--+-----------*  |
+        p3-+----------p5  |
         |  |           |  |
         |  |           |  |
-        |  |           |  |
-        |  +-----------+--+
+        |  p4----------|--p6
         | /            | /
         |/             |/
-        *--------------*
-
+        p1--------------p2
+        
+        Edge grouping by axis:
+        X-axis edges: p1-p2, p4-p6, p7-p8, p3-p5
+        Y-axis edges: p2-p5, p6-p7, p4-p8, p1-p3  
+        Z-axis edges: p2-p6, p5-p7, p3-p8, p1-p4
         """
 
-        self.engine = "numba"
-        self.engine = "taichi"
-
+        # Rendering engine selection (currently using OpenGL)
+        # self.engine = "opengl"  # Future: could support multiple backends
+        
+        # Plot identification and configuration
         self.identity = XYZPLOT
         self.light = light
-        self.axis = [None, None, None]
-        self.__boxed__ = True
-        self.__frame__ = False
-        self.__normal__ = False
+        self.axis = [None, None, None]  # Will hold [x_axis, y_axis, z_axis]
+        
+        # Plot style flags - control which visual elements are shown
+        self.__boxed__ = True        # Show full wireframe box
+        self.__frame__ = False       # Show only axis lines (no box)  
+        self.__normal__ = False      # Show axes through center (no box)
         self.__centerAddMarkers__ = addMarkers
         self.__isBackgroundDrawn__ = drawBackground
-        self.forceWidthHeight = True # secret toggle only used by Kaxe.Grid and internal use
+        
+        # Layout control - forces image to fit exact width/height
+        self.forceWidthHeight = True  # Used by Grid class for precise sizing
 
-        self.firstAxisTitle = None
-        self.secondAxisTitle = None
-        self.thirdAxisTitle = None
+        # Axis titles (set via title() method)
+        self.firstAxisTitle = None    # X-axis title
+        self.secondAxisTitle = None   # Y-axis title  
+        self.thirdAxisTitle = None    # Z-axis title
 
+        # Size configuration for axis scaling
         self.size = size
 
-        # styles
-        self.attrmap.default('width', 2000)
-        self.attrmap.default('height', 2000)
-        self.attrmap.default('guiWidth', 1000), 
-        self.attrmap.default('guiHeight', 750), 
-        self.attrmap.default('wireframeLinewidth', ComputedAttribute(lambda m: max(round(m.getAttr('width')//300), 3)))
-        self.attrmap.default('backgroundColor', (255,255,255,255))
-        self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255))
-        self.attrmap.default('axisLineColorBackdrop', (200,200,200,255))
-        self.attrmap.default('fontSize', 100)
-        self.attrmap.setAttr('axis.drawAxis', False)
-        self.attrmap.setAttr('axis.stepSizeBand', [125, 75])
-        self.attrmap.setAttr('axis.drawMarkersAtEnd', False)
-        self.attrmap.setAttr('marker.showLine', False)
-        self.attrmap.setAttr('marker.tickWidth', ComputedAttribute(lambda m: max(round(m.getAttr('width')//300), 1)))
-        self.attrmap.setAttr('marker.tickLength', ComputedAttribute(lambda m: max(round(m.getAttr('width')//100), 10)))
-        self.attrmap.setAttr('marker.offsetTick', True)
-        self.attrmap.setAttr('arrowWidth', 0.02)
-        self.attrmap.setAttr('arrowHeight', 0.075)
-        self.attrmap.setAttr('axis.showArrow', True)
+        # ===== STYLE AND APPEARANCE CONFIGURATION =====
+        # Set up default visual attributes for the 3D plot
+        
+        # Image resolution and GUI window size
+        self.attrmap.default('width', 2000)           # Render resolution width
+        self.attrmap.default('height', 2000)          # Render resolution height  
+        self.attrmap.default('guiWidth', 1000)        # GUI window width
+        self.attrmap.default('guiHeight', 750)        # GUI window height
+        
+        # Line and wireframe styling
+        # Wireframe thickness scales with image resolution for consistent appearance
+        self.attrmap.default('wireframeLinewidth', 
+            ComputedAttribute(lambda m: max(round(m.getAttr('width')//300), 3)))
+        
+        # Color scheme
+        self.attrmap.default('backgroundColor', (255, 255, 255, 255))        # White background
+        self.attrmap.default('backgroundColorBackdrop', (240, 240, 240, 255)) # Light gray faces
+        self.attrmap.default('axisLineColorBackdrop', (200, 200, 200, 255))   # Grid line color
+        self.attrmap.default('fontSize', 100)         # Axis label font size
+        
+        # Axis configuration
+        self.attrmap.setAttr('axis.drawAxis', False)           # Don't draw 2D-style axis lines
+        self.attrmap.setAttr('axis.stepSizeBand', [125, 75])   # Tick spacing range
+        self.attrmap.setAttr('axis.drawMarkersAtEnd', False)   # No end markers on axes
+        
+        # Tick mark styling  
+        self.attrmap.setAttr('marker.showLine', False)         # No connecting lines to ticks
+        self.attrmap.setAttr('marker.tickWidth', 
+            ComputedAttribute(lambda m: max(round(m.getAttr('width')//300), 1)))
+        self.attrmap.setAttr('marker.tickLength', 
+            ComputedAttribute(lambda m: max(round(m.getAttr('width')//100), 10)))
+        self.attrmap.setAttr('marker.offsetTick', True)        # Offset ticks from axis line
+        
+        # Arrow styling for axis endpoints
+        self.attrmap.setAttr('arrowWidth', 0.02)       # Arrow head width in 3D units
+        self.attrmap.setAttr('arrowHeight', 0.075)     # Arrow head length in 3D units  
+        self.attrmap.setAttr('axis.showArrow', True)   # Show directional arrows
 
+        # Custom tick mark positions (None = automatic)
         self.attrmap.default(attr='xNumbers', value=None)
         self.attrmap.default(attr='yNumbers', value=None)
         self.attrmap.default(attr='zNumbers', value=None)
 
-        self.backgroundTriangles = []
+        # ===== INTERNAL STATE VARIABLES =====
+        # Runtime containers for geometry and caching
+        self.backgroundTriangles = []    # Background face triangles (rebuilt each frame)
+        self.__cachedAxis__ = None       # Cached axis positions for performance
+        self.__cachedXYZ__ = None        # Cached coordinate mapping
 
-        self.__cachedAxis__ = None
-        self.__cachedXYZ__ = None
-
-        """
-        window:tuple [x0, x1, y0, y1, z0, z1] axis
-        """
+        # ===== COORDINATE SYSTEM SETUP =====
+        # Configure the 3D coordinate system and plot bounds
+        # window format: [x_min, x_max, y_min, y_max, z_min, z_max]
         
-        self.attrmap.submit(Axis)
-        self.attrmap.submit(Marker)
+        # Register style classes for inheritance
+        self.attrmap.submit(Axis)   # Inherit axis styling
+        self.attrmap.submit(Marker) # Inherit marker styling
 
+        # 3D cube half-size (creates cube from -0.5 to +0.5 in each dimension)
         self.h = 1/2
         
+        # Set camera rotation angles (handles angle normalization)
         self.__setRotation__(rotation)
 
-        self.windowAxis = window
-        if window is None:
-            self.windowAxis = []
+        # Set plot bounds (default to empty, will be set during rendering)
+        self.windowAxis = window if window is not None else []
 
-        self.__triangleFaces__ = dict()
-        self.__lines__ = set()
+        # ===== RENDERING COLLECTIONS =====
+        # Containers for managing 3D objects during rendering
+        self.__triangleFaces__ = dict()  # Face triangle mapping for collision detection
+        self.__lines__ = set()           # Set of all line objects for efficient management
 
     def __setRotation__(self, rotation):
         if rotation[0] < 0:
@@ -191,49 +332,78 @@ class Plot3D(Window):
 
 
     def __createWireframe__(self):
-        # bottom frame
-        h = self.h
-        self.p1 = np.array((-h, -h, -h)) * self.size
-        self.p2 = np.array((h, -h, -h)) * self.size
-        self.p3 = np.array((-h, h, -h)) * self.size
-        self.p4 = np.array((-h, -h, h)) * self.size
-        self.p5 = np.array((h, h, -h)) * self.size
-        self.p6 = np.array((h, -h, h)) * self.size
-        self.p7 = np.array((h, h, h)) * self.size
-        self.p8 = np.array((-h, h, h)) * self.size
+        """
+        Generate the 3D wireframe box geometry with 8 vertices and 12 edges.
+        
+        Creates a cube structure that serves as the foundation for axis positioning
+        and background rendering. The cube is scaled according to self.size and
+        organized into edge groups by axis direction for efficient axis selection.
+        
+        Vertex Layout (right-hand coordinate system):
+        - Bottom face: p1(-,-,-), p2(+,-,-), p3(-,+,-), p5(+,+,-)  
+        - Top face:    p4(-,-,+), p6(+,-,+), p8(-,+,+), p7(+,+,+)
+        
+        Edge Organization:
+        - X-direction: 4 edges parallel to X-axis  
+        - Y-direction: 4 edges parallel to Y-axis
+        - Z-direction: 4 edges parallel to Z-axis
+        """
+        
+        h = self.h  # Half-size of the normalized cube
+        
+        # ===== VERTEX GENERATION =====
+        # Generate 8 vertices of the cube, scaled by axis proportions
+        self.p1 = np.array((-h, -h, -h)) * self.size  # Bottom-left-back
+        self.p2 = np.array((h, -h, -h)) * self.size   # Bottom-right-back  
+        self.p3 = np.array((-h, h, -h)) * self.size   # Bottom-left-front
+        self.p4 = np.array((-h, -h, h)) * self.size   # Top-left-back
+        self.p5 = np.array((h, h, -h)) * self.size    # Bottom-right-front
+        self.p6 = np.array((h, -h, h)) * self.size    # Top-right-back
+        self.p7 = np.array((h, h, h)) * self.size     # Top-right-front  
+        self.p8 = np.array((-h, h, h)) * self.size    # Top-left-front
 
-        # x : 1, 9, 10, 12
-        # y : 2, 5, 6, 11
-        # z : 3, 4, 7, 8
+        # Edge indices by axis direction for axis positioning:
+        # X-axis edges: l1, l9, l10, l12 (4 edges parallel to X)
+        # Y-axis edges: l2, l5, l6, l11  (4 edges parallel to Y) 
+        # Z-axis edges: l3, l4, l7, l8   (4 edges parallel to Z)
     
-        # debugging tools
-        BLUE = (0,0,0,255)
-        GREEN = (0,0,0,255)
-        RED = (0,0,0,255)
+        # Color coding for debug visualization (currently all black)
+        BLUE = (0, 0, 0, 255)   # Could be used for X-axis edges
+        GREEN = (0, 0, 0, 255)  # Could be used for Y-axis edges  
+        RED = (0, 0, 0, 255)    # Could be used for Z-axis edges
 
-        self.l1 = self.__createAxisBoxLine__(self.p1, self.p2, 'x', color=BLUE) #1 x
-        self.l2 = self.__createAxisBoxLine__(self.p2, self.p5, 'y', color=BLUE) #2 y
-        self.l3 = self.__createAxisBoxLine__(self.p2, self.p6, 'z', color=BLUE) #3 z    
-
-        self.l9 = self.__createAxisBoxLine__(self.p4, self.p6, 'x', color=GREEN) #9 x
-        self.l5 = self.__createAxisBoxLine__(self.p6, self.p7, 'y', color=GREEN) #5 y
-        self.l4 = self.__createAxisBoxLine__(self.p5, self.p7, 'z', color=GREEN) #4 z
+        # ===== EDGE CREATION =====
+        # Create 12 wireframe edges connecting the 8 vertices
+        # Each edge is tagged with its axis direction for selection algorithm
         
-        self.l10 = self.__createAxisBoxLine__(self.p7, self.p8, 'x', color=RED) #10 x
-        self.l6 = self.__createAxisBoxLine__(self.p1, self.p3, 'y', color=RED) #6 y
-        self.l7 = self.__createAxisBoxLine__(self.p3, self.p8, 'z', color=RED) #7 z
+        # X-direction edges (4 edges parallel to X-axis)
+        self.l1 = self.__createAxisBoxLine__(self.p1, self.p2, 'x', color=BLUE)   # Bottom-back edge
+        self.l9 = self.__createAxisBoxLine__(self.p4, self.p6, 'x', color=GREEN)  # Top-back edge
+        self.l10 = self.__createAxisBoxLine__(self.p7, self.p8, 'x', color=RED)   # Top-front edge
+        self.l12 = self.__createAxisBoxLine__(self.p3, self.p5, 'x')              # Bottom-front edge
         
-        self.l12 = self.__createAxisBoxLine__(self.p3, self.p5, 'x') #12 x
-        self.l11 = self.__createAxisBoxLine__(self.p4, self.p8, 'y') #11 y
-        self.l8 = self.__createAxisBoxLine__(self.p1, self.p4, 'z') #8 z 
+        # Y-direction edges (4 edges parallel to Y-axis)  
+        self.l2 = self.__createAxisBoxLine__(self.p2, self.p5, 'y', color=BLUE)   # Bottom-right edge
+        self.l5 = self.__createAxisBoxLine__(self.p6, self.p7, 'y', color=GREEN)  # Top-right edge
+        self.l6 = self.__createAxisBoxLine__(self.p1, self.p3, 'y', color=RED)    # Bottom-left edge
+        self.l11 = self.__createAxisBoxLine__(self.p4, self.p8, 'y')              # Top-left edge
+        
+        # Z-direction edges (4 edges parallel to Z-axis)
+        self.l3 = self.__createAxisBoxLine__(self.p2, self.p6, 'z', color=BLUE)   # Right-back edge
+        self.l4 = self.__createAxisBoxLine__(self.p5, self.p7, 'z', color=GREEN)  # Right-front edge  
+        self.l7 = self.__createAxisBoxLine__(self.p3, self.p8, 'z', color=RED)    # Left-front edge
+        self.l8 = self.__createAxisBoxLine__(self.p1, self.p4, 'z')               # Left-back edge
 
+        # ===== EDGE ORGANIZATION =====
+        # Group edges by axis direction for efficient axis positioning
         self.lines = [
-            [self.l1, self.l9, self.l10, self.l12],
-            [self.l2, self.l6, self.l11, self.l5],
-            [self.l3, self.l4, self.l7, self.l8]
+            [self.l1, self.l9, self.l10, self.l12],    # X-axis candidates
+            [self.l2, self.l6, self.l11, self.l5],     # Y-axis candidates  
+            [self.l3, self.l4, self.l7, self.l8]       # Z-axis candidates
         ]
 
-        self.axisLines = [None, None, None]
+        # Storage for the final selected axis lines
+        self.axisLines = [None, None, None]  # Will hold chosen [X, Y, Z] axis lines
 
         # p1=rød
         # p2=grøn
@@ -367,71 +537,86 @@ class Plot3D(Window):
                 break
 
     def __before__(self):
-        # assert self.__normal__ != self.__boxed__
-
-        # finish making plot
-        # fit "plot" into window
-
-        # create render
-        # add frame
+        """
+        Initialize the 3D rendering environment and setup the plot geometry.
+        
+        This method is called during plot setup and handles:
+        1. Coordinate system normalization and scaling
+        2. 3D render engine initialization 
+        3. Wireframe box generation
+        4. Camera positioning and scaling
+        5. Visual style application
+        
+        The method transforms the user's plot bounds into a normalized 3D space
+        and sets up the OpenGL rendering pipeline with proper camera angles.
+        """
+        
+        # Set the working coordinate bounds from user input
         self.window = self.windowAxis
 
-        # create sizes
+        # ===== COORDINATE SYSTEM NORMALIZATION =====
+        # Transform plot bounds to normalized cube [-0.5, 0.5] in each dimension
         if self.size is None:
+            # Default: unit cube (all axes equal length)
             self.size = np.array([1, 1, 1])
         elif type(self.size) in [list, tuple]:
+            # Custom proportions: normalize to largest dimension
             self.size = np.array(self.size) / max(self.size)
-        else: # accurate sizes
+        else:
+            # Proportional to actual data ranges
             self.size = np.array([
-                self.window[1] - self.window[0],
-                self.window[3] - self.window[2],
-                self.window[5] - self.window[4],
+                self.window[1] - self.window[0],  # X range
+                self.window[3] - self.window[2],  # Y range  
+                self.window[5] - self.window[4],  # Z range
             ])
             self.size = self.size / max(self.size)
 
-        self.offset = np.array((-self.h,-self.h,-self.h)) * self.size
+        # Calculate offset to center the cube at origin
+        self.offset = np.array((-self.h, -self.h, -self.h)) * self.size
 
+        # ===== 3D RENDERING ENGINE SETUP =====
         self.backgroundColor = self.getAttr("backgroundColor")
-        self.render = Render(
-            width=self.getAttr('width'), 
-            height=self.getAttr('height'),
-            cameraAngle=[math.radians(self.rotation[0]), 
-                         math.radians(self.rotation[1])],
-            light=self.light,
-            backgroundColor=self.backgroundColor
-        )
+        
+        # Initialize OpenGL-accelerated renderer
+        # Note: camera angle adjustment (+90 degrees) for coordinate system alignment
         self.render = OpenGLRender(
             width=self.getAttr('width'), 
             height=self.getAttr('height'),
-            cameraAngle=[math.radians(self.rotation[0]+90), 
-                         math.radians(self.rotation[1])],
+            cameraAngle=[
+                math.radians(self.rotation[0] + 90),  # Azimuth angle (horizontal rotation)
+                math.radians(self.rotation[1])        # Elevation angle (vertical tilt)
+            ],
             light=self.light,
             backgroundColor=self.backgroundColor
         )
     
-        self.__createWireframe__()
-        self.__scaleRender__()
+        # ===== GEOMETRY GENERATION =====
+        self.__createWireframe__()  # Generate the 12-edge box structure
+        self.__scaleRender__()      # Fit the box within the viewport
         
-        # add color to wireframe
+        # ===== VISUAL STYLING =====
+        # Apply wireframe colors based on plot style
         lineBoxColor = self.getAttr('Axis.axisColor')
         if self.__boxed__ or self.__frame__:
-            for i in self.lines:
-                for line in i:
+            # Show wireframe lines with axis color
+            for axis_lines in self.lines:
+                for line in axis_lines:
                     line.color = formatColor(lineBoxColor)
         else:
-            for i in self.lines:
-                for line in i:
+            # Hide wireframe for center/empty plot styles
+            for axis_lines in self.lines:
+                for line in axis_lines:
                     line.hide()
 
-        # set scale beforehand so axis dosent compute automatically
-
-        # compute windowAxisLength
+        # ===== PRECOMPUTE AXIS METRICS =====
+        # Calculate axis lengths in user coordinates for marker spacing
         self.windowAxisLength = [
-            self.window[1] - self.window[0],
-            self.window[3] - self.window[2],
-            self.window[5] - self.window[4],
+            self.window[1] - self.window[0],  # X-axis length
+            self.window[3] - self.window[2],  # Y-axis length  
+            self.window[5] - self.window[4],  # Z-axis length
         ]
 
+        # Optional: Enable debug visualization
         # self.__drawDebug__()
 
     def __drawDebug__(self):
@@ -698,16 +883,30 @@ class Plot3D(Window):
 
 
     def __after__(self):
-        # add to window
+        """
+        Execute the main rendering pipeline after all 3D objects have been added.
         
+        This is the core of the 3D rendering system and handles:
+        1. Performance optimization through frame rate control
+        2. Dynamic axis positioning based on camera view
+        3. Background face and grid line generation  
+        4. Collision detection and axis overlap resolution
+        5. Final image composition and 2D overlay positioning
+        
+        The method is called every frame and must be highly optimized since it
+        runs in real-time during interactive manipulation.
+        """
+        
+        # ===== PERFORMANCE OPTIMIZATION =====
+        # Skip expensive computations if rendering too frequently (>10 FPS)
         if time.time() - self.lastRender < 0.1:
             self.render.skipObjectUpdate = True
         else:
             self.lastRender = time.time()
             self.render.skipObjectUpdate = False
 
-        # self.render.skipObjectUpdate = self.render.count % 30 != 0
-
+        # ===== CLEANUP PREVIOUS FRAME =====
+        # Remove all temporary objects from previous render
         for tri in self.backgroundTriangles:
             self.render.remove3DObject(tri)
         self.backgroundTriangles.clear()
@@ -716,114 +915,134 @@ class Plot3D(Window):
             self.render.remove3DObject(line)
         self.__lines__.clear()
 
-        self.image = ImageShape(Image.new('RGBA', (self.width, self.height)), 0, 0) # 0.5-1 ms
+        # ===== 2D IMAGE SETUP =====
+        # Create the canvas for final 2D composition
+        self.image = ImageShape(Image.new('RGBA', (self.width, self.height)), 0, 0)
         self.addDrawingFunction(self.image)
 
-        # Update projectedFaceNormals
+        # ===== FACE PROJECTION CALCULATION =====
+        # Project all 6 cube faces to 2D screen coordinates for collision detection
+        # This enables proper axis positioning and background rendering
         self.projectedFaceNormals = [
             (
-                self.render.pixel(*p1),
+                self.render.pixel(*p1),  # Project 3D vertex to 2D screen
                 self.render.pixel(*p2),
                 self.render.pixel(*p3),        
                 self.render.pixel(*p4)
             )
-            for (p1, p2, p3, p4, *_) in self.faceNormals
+            for (p1, p2, p3, p4, *_) in self.faceNormals  # Unpack face geometry
         ]
 
 
-        # BOXED AND FRAMED
+        # ===== BOXED PLOT RENDERING =====
         if self.__boxed__:
             
+            # Use cached axis positions if available and not updating objects
             if (not self.render.skipObjectUpdate or not self.__cachedAxis__):
 
-                #### Add axis to correct line 
-                # Calculate faces facing camera
-                xyz = {}
+                # ===== VISIBLE FACE DETECTION =====
+                # Determine which cube faces are visible to camera for background rendering
+                xyz = {}  # Will store coordinates for background positioning
                 
-                # loop : 0.3 ms
+                # Check each of the 6 cube faces for visibility (optimized: ~0.3ms)
                 for i, (p1, p2, p3, p4, v1, v2) in enumerate(self.faceNormals):
 
+                    # Calculate face normal vector using cross product
                     n = np.cross(v1, v2)
-                    x,y,z = self.render.camera.R @ n
                     
+                    # Transform normal to camera coordinate system
+                    x, y, z = self.render.camera.R @ n
+                    
+                    # Apply coordinate system correction for Y-axis
                     n = np.array([n[0], n[1], -n[2]])
-                    x,y,z = self.render.camera.R @ n
+                    x, y, z = self.render.camera.R @ n
                     
-                    # TODO: 
-                    #   Understand why this works
-                    # [180; 270]
-                    specialcase = (180 < self.rotation[1] < 270)
-                    over90 = self.rotation[1] > 90
+                    # ===== FACE CULLING LOGIC =====
+                    # Only render faces that are facing toward the camera
+                    # This complex logic handles different rotation quadrants
+                    specialcase = (180 < self.rotation[1] < 270)  # Special angle range
+                    over90 = self.rotation[1] > 90                # Past vertical
+                    
+                    # Skip faces that are facing away from camera
                     if (y < 0 and (over90 and not specialcase)): continue
                     if (y > 0 and (not over90 or specialcase)): continue
 
+                    # Draw background face if enabled
                     if self.__isBackgroundDrawn__:
                         self.__drawBackground__(i, xyz)
                 
-                #### Get positions for axis
-                # Regler:
-                #   Akse må ikke ligge inden i firkanten altså overlappe noget
-                #   Aksen skal være tættest på kameraet som muligt.
-                #   Akser må ikke overlappe hindanden
+                # ===== OPTIMAL AXIS POSITIONING ALGORITHM =====
+                # Find the best 3 edges to place X, Y, Z axes on based on:
+                # 1. Axis must not overlap with any visible cube face (visibility constraint)
+                # 2. Axis should be as close to camera as possible (readability constraint)  
+                # 3. Axes must not overlap with each other (clarity constraint)
+                
+                # Track closest valid axis for each dimension [X, Y, Z]
                 closestAxis = [
-                    (math.inf, None), 
+                    (math.inf, None),   # (distance, Line3D object)
                     (math.inf, None), 
                     (math.inf, None)
                 ]
 
+                # Store backup options in case closest axes overlap
                 alternativeAxis = {}
                 
-                # loop : 3.5 ms (old)
-                # loop : 0.3 ms (new)
-                for i, lines in enumerate(self.lines):
+                # Test all possible axis positions (optimized: 3.5ms → 0.3ms)
+                for i, lines in enumerate(self.lines):  # i = axis dimension (0=X, 1=Y, 2=Z)
                     
-                    for possibleAxis in lines:
+                    for possibleAxis in lines:  # Test each of 4 edges for this axis
 
                         p1 = possibleAxis.p1
                         p2 = possibleAxis.p2
                         
-                        # Se note i funktionen is3DPointInsideAnyBoxFace
+                        # ===== VISIBILITY CONSTRAINT =====
+                        # Skip if axis would overlap with visible background faces
                         if self.is3DPointInsideAnyBoxFace(p1, p2):
                             continue
                         
-                        camera = np.array([0, -4*self.h, 0])
-                        p1 = self.render.camera.R @ p1 - camera
-                        p2 = self.render.camera.R @ p2 - camera
-                        p3 = self.render.camera.R @ p3 - camera
-
-                        dist = min(np.linalg.norm(p1), np.linalg.norm(p2), np.linalg.norm(p3))
+                        # ===== DISTANCE CALCULATION =====
+                        # Transform to camera coordinates and find closest distance
+                        camera = np.array([0, -4*self.h, 0])  # Camera position offset
+                        p1_cam = self.render.camera.R @ p1 - camera
+                        p2_cam = self.render.camera.R @ p2 - camera
                         
+                        # Find minimum distance from camera to axis line
+                        dist = min(np.linalg.norm(p1_cam), np.linalg.norm(p2_cam))
+                        
+                        # Update closest axis if this one is nearer
                         if dist < closestAxis[i][0]:
-
                             closestAxis[i] = (dist, possibleAxis)
                         
+                        # Store as alternative option for overlap resolution
                         if closestAxis[i][1] != possibleAxis:
                             alternativeAxis[i] = possibleAxis
             
-                # front runners
-                axis:list[Line3D] = [
-                    closestAxis[0][1],
-                    closestAxis[1][1],
-                    closestAxis[2][1],
+                # ===== EXTRACT OPTIMAL AXIS CANDIDATES =====
+                # Get the closest valid axis for each dimension
+                axis: list[Line3D] = [
+                    closestAxis[0][1],  # X-axis line
+                    closestAxis[1][1],  # Y-axis line  
+                    closestAxis[2][1],  # Z-axis line
                 ]
 
-                # loop : 0.2 ms
-                # tjek om linjerne overlapper
+                # ===== OVERLAP RESOLUTION =====
+                # Check if any axes would visually overlap and use alternatives (0.2ms)
                 for i, l1 in enumerate(axis):
+                    # Skip if no alternative available for this axis
                     if i not in alternativeAxis.keys():
                         continue
 
+                    # Check overlap with all other axes
                     for j, l2 in enumerate(axis):
+                        if i == j: continue  # Don't compare axis with itself
 
-                        if i == j: continue
-
+                        # Test for thick line overlap in 2D projection
                         overlapping = self.__thickAxisLinesOverlap__(l1, l2)
 
                         if overlapping:
-                            
+                            # Use alternative axis position to avoid overlap
                             axis[i] = alternativeAxis[i]
-
-                            break
+                            break  # Found solution, move to next axis
             
             else:
                 axis = self.__cachedAxis__
@@ -1068,15 +1287,49 @@ class Plot3D(Window):
         return self
 
 
-    def scaled3D(self, x:int, y:int, z:int) -> tuple:
+    def scaled3D(self, x: int, y: int, z: int) -> tuple:
+        """
+        Transform user coordinates to normalized 3D space.
+        
+        Converts from user data coordinates to the normalized cube space
+        used internally by the 3D renderer. Each axis is independently
+        scaled according to the plot bounds and size ratios.
+        
+        Parameters
+        ----------
+        x, y, z : int
+            Coordinates in user data space
+            
+        Returns
+        -------
+        tuple
+            Coordinates in normalized 3D space [-0.5*size, +0.5*size]
+        """
         return np.array((
             self.size[0] * (x - self.window[0]) / self.windowAxisLength[0],
             self.size[1] * (y - self.window[2]) / self.windowAxisLength[1],
             self.size[2] * (z - self.window[4]) / self.windowAxisLength[2]
         ))
 
-    def pixel(self, x:int, y:int, z:int) -> tuple:
-        return self.scaled3D(x,y,z) + self.offset
+    def pixel(self, x: int, y: int, z: int) -> tuple:
+        """
+        Transform user coordinates to final 3D render coordinates.
+        
+        This is the main coordinate transformation function used throughout
+        the plotting system. It scales user data coordinates and applies
+        the cube centering offset.
+        
+        Parameters
+        ----------
+        x, y, z : int
+            Coordinates in user data space
+            
+        Returns
+        -------
+        tuple
+            Final 3D coordinates ready for rendering
+        """
+        return self.scaled3D(x, y, z) + self.offset
 
     
     def inside3D(self, x, y, z):
