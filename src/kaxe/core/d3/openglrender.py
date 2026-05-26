@@ -6,7 +6,7 @@ import os
 from stl import mesh
 import numpy as np
 import time
-from math import radians, sin, cos
+from math import radians, sin, cos, pi
 from typing import Union
 from .camera import Camera
 from PIL import Image
@@ -17,6 +17,7 @@ import psutil
 process = psutil.Process()
 import fondi
 import sys
+import threading
 import sdl2
 import sdl2.ext
 import sdl2.video
@@ -29,6 +30,7 @@ from numba.types import ListType
 from numba.typed import List
 from typing import DefaultDict
 import cv2
+from ..styles import colors as kaxe_colors
 from ..profiler import Profiler
 from ..helper import to_numpy
 
@@ -313,8 +315,95 @@ def is_close_vec(a, b, tol=1e-8):
 def norm2(vec):
     return np.sqrt(np.sum(vec * vec))
 
-@njit
-def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=TriangleArray(), triNoLight=TriangleArray()):
+@njit(cache=True)
+def _mesh_normal_is_horizontal(dep_var, p1, p2, p3):
+    nx = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p3[0] - p1[0]) * (p2[1] - p1[1])
+    ny = (p2[1] - p1[1]) * (p3[2] - p1[2]) - (p3[1] - p1[1]) * (p2[2] - p1[2])
+    nz = (p2[0] - p1[0]) * (p3[2] - p1[2]) - (p3[0] - p1[0]) * (p2[2] - p1[2])
+    if dep_var == 0:
+        return abs(nx) < 1e-8 and abs(ny) < 1e-8 and (not abs(nz) < 1e-8)
+    if dep_var == 1:
+        return abs(nx) < 1e-8 and (not abs(ny) < 1e-8) and abs(nz) < 1e-8
+    return (not abs(nx) < 1e-8) and abs(ny) < 1e-8 and abs(nz) < 1e-8
+
+@njit(cache=True)
+def append_surface_mesh(tri, scale, p1s, p2s, p3s, colors, dep_var, realpoint_flags):
+    n_tris = 0
+    for i in range(p1s.shape[0]):
+        if not realpoint_flags[i] and _mesh_normal_is_horizontal(dep_var, p1s[i], p2s[i], p3s[i]):
+            continue
+        n_tris += 1
+
+    if n_tris == 0:
+        return
+
+    needed_vector = tri.current_size + 9 * n_tris
+    needed_color = tri.color_current_size + 12 * n_tris
+    needed_normal = tri.normal_current_size + 9 * n_tris
+
+    if needed_vector > tri.capacity:
+        new_capacity = max(needed_vector, tri.capacity * 2)
+        new_vectors = np.zeros(new_capacity, dtype=np.float32)
+        new_vectors[:tri.current_size] = tri.vectors[:tri.current_size]
+        tri.vectors = new_vectors
+        tri.capacity = new_capacity
+
+    if needed_color > tri.color_capacity:
+        new_color_capacity = max(needed_color, tri.color_capacity * 2)
+        new_colors = np.zeros(new_color_capacity, dtype=np.float32)
+        new_colors[:tri.color_current_size] = tri.colors[:tri.color_current_size]
+        tri.colors = new_colors
+        tri.color_capacity = new_color_capacity
+
+    if needed_normal > tri.normal_capacity:
+        new_normal_capacity = max(needed_normal, tri.normal_capacity * 2)
+        new_normals = np.zeros(new_normal_capacity, dtype=np.float32)
+        new_normals[:tri.normal_current_size] = tri.normals[:tri.normal_current_size]
+        tri.normals = new_normals
+        tri.normal_capacity = new_normal_capacity
+
+    vpos = tri.current_size
+    cpos = tri.color_current_size
+    npos = tri.normal_current_size
+
+    for i in range(p1s.shape[0]):
+        if not realpoint_flags[i] and _mesh_normal_is_horizontal(dep_var, p1s[i], p2s[i], p3s[i]):
+            continue
+
+        p1 = p1s[i] * scale
+        p2 = p2s[i] * scale
+        p3 = p3s[i] * scale
+        color = colors[i]
+        normal = np.cross(p2 - p1, p3 - p1)
+        nlen = norm2(normal)
+        if nlen != 0.0:
+            normal = normal / nlen
+        normal = normal.astype(np.float32)
+
+        for j in range(3):
+            tri.vectors[vpos + j] = p1[j]
+            tri.vectors[vpos + 3 + j] = p2[j]
+            tri.vectors[vpos + 6 + j] = p3[j]
+        vpos += 9
+
+        for rep in range(3):
+            base = cpos + rep * 4
+            for j in range(4):
+                tri.colors[base + j] = color[j]
+        cpos += 12
+
+        for rep in range(3):
+            base = npos + rep * 3
+            for j in range(3):
+                tri.normals[base + j] = normal[j]
+        npos += 9
+
+    tri.current_size = vpos
+    tri.color_current_size = cpos
+    tri.normal_current_size = npos
+
+@njit(cache=True)
+def build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, height):
 
     MAX_WIDTH_HEIGHT = np.max(np.array([width, height]))
 
@@ -430,9 +519,6 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
         v3 = p2 + offset
         v4 = p2 - offset
 
-        color = obj.color[:4] / 255
-        normal = n.astype(np.float32)
-
         # Two triangles for the rectangle
         tri1 = Triangle3DNumba(v1, v2, v3, obj.color, obj.ableToUseLight)
         triangle3d.append(tri1)
@@ -441,10 +527,12 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
         triangle3d.append(tri2)
         obj._triangles.append(tri2.pointer)
 
-    # Allocate spaces + use freespaces
-    # So every triangle prior to creation has a position
 
-    for obj in triangle3d:
+@njit(cache=True)
+def append_triangle3d_objects(triangle3d, scale, triLight, triNoLight, start_idx, end_idx):
+
+    for idx in range(start_idx, end_idx):
+        obj = triangle3d[idx]
 
         # Add each vertex separately to ensure a flat array
         p1 = obj.p1 * scale
@@ -462,6 +550,13 @@ def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0,
             appendTriangle(p1, p2, p3, color, normal, obj, triLight)
         else:
             appendTriangle(p1, p2, p3, color, normal, obj, triNoLight)
+
+
+@njit(cache=True)
+def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=TriangleArray(), triNoLight=TriangleArray()):
+
+    build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, height)
+    append_triangle3d_objects(triangle3d, scale, triLight, triNoLight, 0, len(triangle3d))
 
 
 
@@ -490,6 +585,46 @@ typesRegistry = {
     "line3d": Line3DNumba,
     "flatline3d": FlatLine3DNumba,
 }
+
+_numba_kernels_compiled = False
+
+
+def _compile_numba_kernels():
+    global _numba_kernels_compiled
+    if _numba_kernels_compiled:
+        return
+
+    kwargs = {}
+    for key in typesRegistry:
+        kwargs[key] = List.empty_list(typesRegistry[key].class_type.instance_type)
+
+    build_triangle3d_primitives(
+        kwargs["line3d"],
+        kwargs["point3d"],
+        kwargs["flatline3d"],
+        kwargs["triangle3d"],
+        100,
+        100,
+    )
+    append_triangle3d_objects(
+        kwargs["triangle3d"],
+        1.0,
+        TriangleArray(),
+        TriangleArray(),
+        0,
+        0,
+    )
+
+    tri = TriangleArray()
+    p1s = np.zeros((1, 3), dtype=np.float32)
+    p2s = np.zeros((1, 3), dtype=np.float32)
+    p3s = np.zeros((1, 3), dtype=np.float32)
+    colors = np.ones((1, 4), dtype=np.float32)
+    flags = np.ones(1, dtype=np.bool_)
+    append_surface_mesh(tri, 1.0, p1s, p2s, p3s, colors, 0, flags)
+
+    _numba_kernels_compiled = True
+
 
 class OpenGLRender:
     def __init__(self, width, height, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0], backgroundColor=(255,255,255,255)):
@@ -539,11 +674,157 @@ class OpenGLRender:
         # Initialize profiler for performance measurements
         self.profiler = Profiler("OpenGLRender")
 
+        self._gui_window = None
+        self._gui_gl_context = None
+        self._loading_start = time.time()
+        self._loading_last_frame = 0.0
+        self._loading_bootstrap = False
 
+    @property
+    def loading_screen_active(self):
+        return self._gui_window is not None and self._loading_bootstrap
+
+    def pumpGuiEvents(self):
+        if self._gui_window is None:
+            return
+
+        sdl2.SDL_PumpEvents()
+        event = sdl2.SDL_Event()
+        while sdl2.SDL_PollEvent(event):
+            if event.type == sdl2.SDL_QUIT:
+                self.quit(self._gui_gl_context, self._gui_window)
+                sys.exit(0)
+
+    def _draw_gl_disc(self, cx, cy, radius, color, segments=14):
+        if len(color) == 3:
+            color = (color[0], color[1], color[2], 255)
+        r, g, b, a = (color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, color[3] / 255.0)
+        glColor4f(r, g, b, a)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(cx, cy)
+        for seg in range(segments + 1):
+            angle = 2.0 * pi * seg / segments
+            glVertex2f(cx + cos(angle) * radius, cy + sin(angle) * radius)
+        glEnd()
+
+    def _draw_loading_frame(self):
+        if self._gui_window is None:
+            return
+
+        sdl2.SDL_GL_MakeCurrent(self._gui_window, self._gui_gl_context)
+        set_clear_color(self.backgroundColor)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, self.guiWidth, self.guiHeight, 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        glDisable(GL_LIGHTING)
+        glDisable(GL_DEPTH_TEST)
+
+        dot_count = min(5, len(kaxe_colors))
+        dot_radius = 7
+        dot_gap = 20
+        bounce_height = 12
+        speed = 5.5
+        t = time.time() - self._loading_start
+
+        row_width = (dot_count - 1) * dot_gap
+        start_x = (self.guiWidth - row_width) / 2.0
+        center_y = self.guiHeight / 2.0
+
+        for i in range(dot_count):
+            cx = start_x + i * dot_gap
+            cy = center_y - sin(t * speed + i * 0.85) * bounce_height
+            self._draw_gl_disc(cx, cy, dot_radius, kaxe_colors[i])
+
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_LIGHTING)
+        glFinish()
+        sdl2.SDL_GL_SwapWindow(self._gui_window)
+        sdl2.SDL_ShowWindow(self._gui_window)
+        sdl2.SDL_PumpEvents()
+
+    def begin_loading_screen(self):
+        if self._gui_window is None:
+            return
+        self._loading_bootstrap = True
+        self._loading_start = time.time()
+        self._loading_last_frame = 0.0
+        self._draw_loading_frame()
+        self.pumpGuiEvents()
+
+    def end_loading_screen(self):
+        self._loading_bootstrap = False
+
+    def tick_loading(self, fps=60):
+        if self._gui_window is None or not self._loading_bootstrap:
+            return
+        now = time.time()
+        if now - self._loading_last_frame < 1.0 / fps:
+            return
+        self._loading_last_frame = now
+        self._draw_loading_frame()
+        self.pumpGuiEvents()
+
+    def tick_loading_if_due(self, fps=60):
+        self.tick_loading(fps=fps)
+
+    def warmup_render_kernels(self):
+        if _numba_kernels_compiled:
+            self.tick_loading()
+            return
+        if self._gui_window is None:
+            _compile_numba_kernels()
+            return
+
+        error = [None]
+        done = [False]
+
+        def worker():
+            try:
+                _compile_numba_kernels()
+            except Exception as exc:
+                error[0] = exc
+            finally:
+                done[0] = True
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+        while not done[0]:
+            self.tick_loading()
+            time.sleep(0.003)
+        if error[0] is not None:
+            raise error[0]
+
+    def showLoadingScreen(self):
+        self._draw_loading_frame()
+        self.pumpGuiEvents()
 
     def pixel(self, x, y, z):
         return self.camera.project(np.array((x,y,z))*self.SCL) + self.O
 
+
+    def addMeshTriangles(self, p1s, p2s, p3s, colors, dep_var, realpoint_flags, use_light=True):
+        scale = self.SCL * self.guiRatio
+        target = self.triLight if use_light else self.triNoLight
+        chunk_size = 10000
+        n = p1s.shape[0]
+        for start in range(0, n, chunk_size):
+            end = min(start + chunk_size, n)
+            append_surface_mesh(
+                target,
+                scale,
+                p1s[start:end].astype(np.float32),
+                p2s[start:end].astype(np.float32),
+                p3s[start:end].astype(np.float32),
+                colors[start:end].astype(np.float32),
+                dep_var,
+                realpoint_flags[start:end].astype(np.bool_),
+            )
+            self.tick_loading()
 
     def add3DObject(self, obj):
 
@@ -588,12 +869,21 @@ class OpenGLRender:
         self.profiler.start("inner_loop")
         
         self.O = np.array((self.width//2, self.height//2)) # offset
+        loading = self._loading_bootstrap
+        if loading:
+            self.tick_loading()
 
         with self.profiler.measure("overlay_function"):
             overlayImage = self.overlayFunction(rotation) # 24 ms
 
+        if loading:
+            self.tick_loading()
+
         with self.profiler.measure("refresh"):
             self.refresh()
+
+        if loading:
+            self.end_loading_screen()
 
         self.profiler.start("fps_calculation")
         self.frames += 1
@@ -688,27 +978,59 @@ class OpenGLRender:
         with self.profiler.measure('retrieve_and_append'):
             # Retrieve and append triangles from all 3D objects
 
-            scale = self.SCL
+            scale = self.SCL * self.guiRatio
 
             kwargs = {}
             for key in typesRegistry:
                 kwargs[key] = self.objects3d.get(key, List.empty_list(typesRegistry[key].class_type.instance_type))
 
-            retrieveAndAppendTriangles(**kwargs,
-                scale=scale * self.guiRatio, 
-                width=self.width, 
-                height=self.height, 
-                triLight=self.triLight, 
-                triNoLight=self.triNoLight
-            )
+            if self._loading_bootstrap:
+                self.tick_loading()
+                build_triangle3d_primitives(
+                    kwargs["line3d"],
+                    kwargs["point3d"],
+                    kwargs["flatline3d"],
+                    kwargs["triangle3d"],
+                    self.width,
+                    self.height,
+                )
+                self.tick_loading()
+                triangle_count = len(kwargs["triangle3d"])
+                batch_size = 100
+                for start in range(0, triangle_count, batch_size):
+                    end = min(start + batch_size, triangle_count)
+                    append_triangle3d_objects(
+                        kwargs["triangle3d"],
+                        scale,
+                        self.triLight,
+                        self.triNoLight,
+                        start,
+                        end,
+                    )
+                    self.tick_loading()
+            else:
+                retrieveAndAppendTriangles(
+                    **kwargs,
+                    scale=scale,
+                    width=self.width,
+                    height=self.height,
+                    triLight=self.triLight,
+                    triNoLight=self.triNoLight,
+                )
 
         with self.profiler.measure("clear_objects"):
             self.objects3d.clear()
         
         
         with self.profiler.measure("finalize_append"):
+            if self._loading_bootstrap:
+                self.tick_loading()
             self.triLight.finalizeAppend()
+            if self._loading_bootstrap:
+                self.tick_loading()
             self.triNoLight.finalizeAppend()
+            if self._loading_bootstrap:
+                self.tick_loading()
         
         # Reset arrays for next frame (keep capacity but reset size)
         # Note: Comment this out if you want to accumulate triangles across frames
@@ -716,48 +1038,96 @@ class OpenGLRender:
         # self.triNoLight.reset()
 
 
-    def quit(self, gl_context, window):
-        sdl2.SDL_GL_DeleteContext(gl_context)
-        sdl2.SDL_DestroyWindow(window)
-        sdl2.SDL_Quit()
-
-
-    def gui(self, overlay):
-        global dragging, last_mouse
-
-        self.overlayFunction = overlay
-        
-        dragging = [False]
-        last_mouse = [0, 0]
+    def prepareGuiWindow(self):
+        if self._gui_window is not None:
+            return
 
         if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
-            print("SDL_Init Error:", sdl2.SDL_GetError())
-            return 1
+            raise RuntimeError("SDL_Init Error: " + str(sdl2.SDL_GetError()))
 
-        # OpenGL 2.1 context
         sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
         sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
 
-        window = sdl2.SDL_CreateWindow(b"Kaxe",
-                                    sdl2.SDL_WINDOWPOS_CENTERED,
-                                    sdl2.SDL_WINDOWPOS_CENTERED,
-                                    self.guiWidth, self.guiHeight,
-                                    sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
+        window = sdl2.SDL_CreateWindow(
+            b"Kaxe",
+            sdl2.SDL_WINDOWPOS_CENTERED,
+            sdl2.SDL_WINDOWPOS_CENTERED,
+            self.guiWidth,
+            self.guiHeight,
+            sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_HIDDEN,
+        )
+        if not window:
+            raise RuntimeError("SDL_CreateWindow Error: " + str(sdl2.SDL_GetError()))
 
         self.__setIcon__(window)
-
-        if not window:
-            print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
-            return 1
-
         gl_context = sdl2.SDL_GL_CreateContext(window)
-        idle = False
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         init_display_state(self.backgroundColor)
 
+        self._gui_window = window
+        self._gui_gl_context = gl_context
+
+    def presentGuiWindow(self):
+        self.begin_loading_screen()
+
+    def quit(self, gl_context, window):
+        sdl2.SDL_GL_DeleteContext(gl_context)
+        sdl2.SDL_DestroyWindow(window)
+        sdl2.SDL_Quit()
+
+
+    def gui(self, overlay=None, plot=None):
+        global dragging, last_mouse
+
+        if plot is not None and getattr(plot, "_defer_gui_prep", False):
+            plot.render.warmup_render_kernels()
+            plot.__complete_deferred_start__()
+            overlay = plot.__make_overlay__()
+
+        self.overlayFunction = overlay
+        
+        dragging = [False]
+        last_mouse = [0, 0]
+
+        if self._gui_window is None:
+            if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
+                print("SDL_Init Error:", sdl2.SDL_GetError())
+                return 1
+
+            sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
+            sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+
+            window = sdl2.SDL_CreateWindow(b"Kaxe",
+                                        sdl2.SDL_WINDOWPOS_CENTERED,
+                                        sdl2.SDL_WINDOWPOS_CENTERED,
+                                        self.guiWidth, self.guiHeight,
+                                        sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
+
+            self.__setIcon__(window)
+
+            if not window:
+                print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
+                return 1
+
+            gl_context = sdl2.SDL_GL_CreateContext(window)
+
+            glEnable(GL_DEPTH_TEST)
+            glEnable(GL_LIGHTING)
+            glEnable(GL_LIGHT0)
+            init_display_state(self.backgroundColor)
+        else:
+            window = self._gui_window
+            gl_context = self._gui_gl_context
+            sdl2.SDL_GL_MakeCurrent(window, gl_context)
+            sdl2.SDL_ShowWindow(window)
+
+        if self._loading_bootstrap:
+            self.tick_loading()
+
+        idle = False
         is_fullscreen = False
         running = True
         event = sdl2.SDL_Event()

@@ -1161,7 +1161,62 @@ class Plot3D(Window):
         # self.addPaddingCondition(bottom=-y+10)
 
 
-    def __start__(self):
+    def __addInnerContent__(self):
+        loading = getattr(self, 'render', None) is not None and self.render.loading_screen_active
+        for obj in self.objects:
+            if loading:
+                self.render.tick_loading()
+            self.__callFinalizeObject__(obj)
+            self.addDrawingFunction(obj)
+            if loading:
+                self.render.tick_loading()
+
+    def __finish_start_setup__(self):
+        self.originalShapes = self.shapes.copy()
+        self._overlay_font_size = self.getAttr('fontSize')
+        self.lastRender = 0
+
+    def __make_overlay__(self):
+        def overlay(rotation=self.rotation):
+            loading = self.render.loading_screen_active
+
+            with self.render.profiler.measure('overlay_init'):
+                self.__setupGuiOverlayFrame__(rotation)
+            if loading:
+                self.render.tick_loading()
+
+            with self.render.profiler.measure('overlay_after'):
+                self.__prepareGuiOverlayRebuild__()
+                self.__after__()
+            if loading:
+                self.render.tick_loading()
+
+            with self.render.profiler.measure('overlay_include'):
+                self.__includeAllAgain__()
+                sorted_shapes = sorted(
+                    self.shapes,
+                    key=lambda x: x[1] if isinstance(x, tuple) else 0,
+                )
+                self.shapes = [x[0] if isinstance(x, tuple) else x for x in sorted_shapes]
+            if loading:
+                self.render.tick_loading()
+
+            with self.render.profiler.measure('overlay_paint'):
+                self.attrmap.setAttr('backgroundColor', (0, 0, 0, 0))
+                surface = self.__pillowPaint__()
+            if loading:
+                self.render.tick_loading()
+
+            return surface
+
+        return overlay
+
+    def __complete_deferred_start__(self):
+        self.__addInnerContent__()
+        self.__finish_start_setup__()
+        self._defer_gui_prep = False
+
+    def __start__(self, prepare_window=False):
 
         self.showProgressBar = False
         self.printDebugInfo = False
@@ -1183,36 +1238,16 @@ class Plot3D(Window):
         # self.render.SCL -= 300
         self.render.SCL -= 200
 
-        self.__addInnerContent__()
-        
-        self.originalShapes = self.shapes.copy()
-        self._overlay_font_size = self.getAttr('fontSize')
-        self.lastRender = 0
+        self._defer_gui_prep = False
+        if prepare_window:
+            self.render.prepareGuiWindow()
+            self.render.begin_loading_screen()
+            self._defer_gui_prep = True
+        else:
+            self.__addInnerContent__()
+            self.__finish_start_setup__()
 
-        def overlay(rotation=self.rotation):
-
-            with self.render.profiler.measure('overlay_init'):
-                self.__setupGuiOverlayFrame__(rotation)
-
-            with self.render.profiler.measure('overlay_after'):
-                self.__prepareGuiOverlayRebuild__()
-                self.__after__()
-
-            with self.render.profiler.measure('overlay_include'):
-                self.__includeAllAgain__()
-                sorted_shapes = sorted(
-                    self.shapes,
-                    key=lambda x: x[1] if isinstance(x, tuple) else 0,
-                )
-                self.shapes = [x[0] if isinstance(x, tuple) else x for x in sorted_shapes]
-
-            with self.render.profiler.measure('overlay_paint'):
-                self.attrmap.setAttr('backgroundColor', (0, 0, 0, 0))
-                surface = self.__pillowPaint__()
-
-            return surface
-
-        return overlay
+        return self.__make_overlay__()
 
 
     def save(self, fname:Union[str, BytesIO]):
@@ -1252,9 +1287,9 @@ class Plot3D(Window):
     def show(self, gui=True):
 
         if gui:
-            overlay = self.__start__()
+            overlay = self.__start__(prepare_window=True)
             self.render.debugDrawOverlay = True
-            self.render.gui(overlay)
+            self.render.gui(overlay, plot=self)
         else:
             self.save(None).show()
 
