@@ -282,27 +282,39 @@ def norm2(vec):
     return np.sqrt(np.sum(vec * vec))
 
 
+def _triangle_cross_normals(p1s, p2s, p3s):
+    ax = p2s[:, 0] - p1s[:, 0]
+    ay = p2s[:, 1] - p1s[:, 1]
+    az = p2s[:, 2] - p1s[:, 2]
+    bx = p3s[:, 0] - p1s[:, 0]
+    by = p3s[:, 1] - p1s[:, 1]
+    bz = p3s[:, 2] - p1s[:, 2]
+    nx = ay * bz - az * by
+    ny = az * bx - ax * bz
+    nz = ax * by - ay * bx
+    return nx, ny, nz
+
+
 def _mesh_normal_is_horizontal(dep_var, p1, p2, p3):
-    nx = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p3[0] - p1[0]) * (p2[1] - p1[1])
-    ny = (p2[1] - p1[1]) * (p3[2] - p1[2]) - (p3[1] - p1[1]) * (p2[2] - p1[2])
-    nz = (p2[0] - p1[0]) * (p3[2] - p1[2]) - (p3[0] - p1[0]) * (p2[2] - p1[2])
+    ax, ay, az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
+    bx, by, bz = p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]
+    nx = ay * bz - az * by
+    ny = az * bx - ax * bz
+    nz = ax * by - ay * bx
     if dep_var == 0:
-        return abs(nx) < 1e-8 and abs(ny) < 1e-8 and (not abs(nz) < 1e-8)
+        return np.isclose(nx, 0) and np.isclose(ny, 0) and not np.isclose(nz, 0)
     if dep_var == 1:
-        return abs(nx) < 1e-8 and (not abs(ny) < 1e-8) and abs(nz) < 1e-8
-    return (not abs(nx) < 1e-8) and abs(ny) < 1e-8 and abs(nz) < 1e-8
+        return np.isclose(nx, 0) and not np.isclose(ny, 0) and np.isclose(nz, 0)
+    return not np.isclose(nx, 0) and np.isclose(ny, 0) and np.isclose(nz, 0)
 
 
 def _mesh_normal_is_horizontal_mask(dep_var, p1s, p2s, p3s):
-    nx = (p2s[:, 0] - p1s[:, 0]) * (p3s[:, 1] - p1s[:, 1]) - (p3s[:, 0] - p1s[:, 0]) * (p2s[:, 1] - p1s[:, 1])
-    ny = (p2s[:, 1] - p1s[:, 1]) * (p3s[:, 2] - p1s[:, 2]) - (p3s[:, 1] - p1s[:, 1]) * (p2s[:, 2] - p1s[:, 2])
-    nz = (p2s[:, 0] - p1s[:, 0]) * (p3s[:, 2] - p1s[:, 2]) - (p3s[:, 0] - p1s[:, 0]) * (p2s[:, 2] - p1s[:, 2])
-    eps = 1e-8
+    nx, ny, nz = _triangle_cross_normals(p1s, p2s, p3s)
     if dep_var == 0:
-        return (np.abs(nx) < eps) & (np.abs(ny) < eps) & (np.abs(nz) >= eps)
+        return np.isclose(nx, 0) & np.isclose(ny, 0) & ~np.isclose(nz, 0)
     if dep_var == 1:
-        return (np.abs(nx) < eps) & (np.abs(ny) >= eps) & (np.abs(nz) < eps)
-    return (np.abs(nx) >= eps) & (np.abs(ny) < eps) & (np.abs(nz) < eps)
+        return np.isclose(nx, 0) & ~np.isclose(ny, 0) & np.isclose(nz, 0)
+    return ~np.isclose(nx, 0) & np.isclose(ny, 0) & np.isclose(nz, 0)
 
 
 def _grow_array(array, current_size, needed_size, current_capacity):

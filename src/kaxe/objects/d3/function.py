@@ -242,7 +242,7 @@ class Function3D(Base3DObject):
             if loading:
                 render.tick_loading()
 
-            z_vals = z_vals.copy()
+            z_vals = z_vals.astype(np.float64, copy=True)
             over = z_vals > z_hi
             under = z_vals < z_lo
             realpoint[:] = ~(over | under)
@@ -262,23 +262,53 @@ class Function3D(Base3DObject):
         return coords
 
     def _build_fill_mesh_arrays(self, coords, realpoint, color_grid, n):
-        valid = ~np.isnan(coords[:n, :n, 0])
-        if not np.any(valid):
+        c00 = coords[:n, :n]
+        c10 = coords[1:n + 1, :n]
+        c01 = coords[:n, 1:n + 1]
+        c11 = coords[1:n + 1, 1:n + 1]
+
+        v00 = ~np.isnan(c00[:, :, 0])
+        v10 = ~np.isnan(c10[:, :, 0])
+        v01 = ~np.isnan(c01[:, :, 0])
+        v11 = ~np.isnan(c11[:, :, 0])
+
+        # Match legacy __fill__: skip cells whose bottom-left corner is invalid,
+        # and only emit a triangle when all three of its corners are valid.
+        cells = v00
+        tri1 = cells & v10 & v01
+        tri2 = cells & v11 & v10 & v01
+
+        if not np.any(tri1) and not np.any(tri2):
             return None
 
-        flat = valid.ravel()
-        c00 = coords[:n, :n].reshape(-1, 3)[flat]
-        c10 = coords[1:n + 1, :n].reshape(-1, 3)[flat]
-        c01 = coords[:n, 1:n + 1].reshape(-1, 3)[flat]
-        c11 = coords[1:n + 1, 1:n + 1].reshape(-1, 3)[flat]
-        cell_colors = color_grid[:n, :n].reshape(-1, 4)[flat]
-        cell_real = realpoint[:n, :n].ravel()[flat]
+        cell_colors = color_grid[:n, :n]
+        cell_real = realpoint[:n, :n]
 
-        p1s = np.concatenate([c00, c10])
-        p2s = np.concatenate([c10, c11])
-        p3s = np.concatenate([c01, c01])
-        colors = np.concatenate([cell_colors, cell_colors])
-        realpoint_flags = np.concatenate([cell_real, cell_real])
+        p1s_parts = []
+        p2s_parts = []
+        p3s_parts = []
+        color_parts = []
+        flag_parts = []
+
+        if np.any(tri1):
+            p1s_parts.append(c00[tri1])
+            p2s_parts.append(c10[tri1])
+            p3s_parts.append(c01[tri1])
+            color_parts.append(cell_colors[tri1])
+            flag_parts.append(cell_real[tri1])
+
+        if np.any(tri2):
+            p1s_parts.append(c10[tri2])
+            p2s_parts.append(c11[tri2])
+            p3s_parts.append(c01[tri2])
+            color_parts.append(cell_colors[tri2])
+            flag_parts.append(cell_real[tri2])
+
+        p1s = np.concatenate(p1s_parts)
+        p2s = np.concatenate(p2s_parts)
+        p3s = np.concatenate(p3s_parts)
+        colors = np.concatenate(color_parts)
+        realpoint_flags = np.concatenate(flag_parts)
         return p1s, p2s, p3s, colors, realpoint_flags
 
 
