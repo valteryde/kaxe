@@ -1375,7 +1375,7 @@ class Test:
         plt3d = kaxe.Plot3D(window=[-10, 10, -10, 10, -20, 20], rotation=[45+90, -70])
         plt3d.title('x', 'y')
         plt3d.style(fontSize=40)
-        plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+        plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \\, \\sin{(x)} + 4 \\, \\cos{(x)} + x^2 - y$') )
 
         grid = kaxe.Grid()
         grid.style(width=4000, height=2000)
@@ -2060,3 +2060,4 @@ if __name__ == '__main__':
     # Test.testLightning()
     
     Test.test2DIn3D()
+    # Test.testTransparent3D()

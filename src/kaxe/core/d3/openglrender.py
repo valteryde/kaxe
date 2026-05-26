@@ -1,5 +1,6 @@
 
 from OpenGL.GL import *
+from OpenGL.error import GLError
 import os
 from stl import mesh
 import numpy as np
@@ -118,6 +119,122 @@ class TriangleArray:
 
 
 _display_initialized = False
+MSAA_SAMPLES = 4
+
+
+def configure_gl_context_attributes():
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_MULTISAMPLEBUFFERS, 1)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_MULTISAMPLESAMPLES, MSAA_SAMPLES)
+
+
+def enable_multisample():
+    glEnable(GL_MULTISAMPLE)
+
+
+def gui_window_flags():
+    return (
+        sdl2.SDL_WINDOW_OPENGL
+        | sdl2.SDL_WINDOW_RESIZABLE
+        | sdl2.SDL_WINDOW_HIDDEN
+    )
+
+
+def _cleanup_offscreen_resources(resources):
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+    for kind, obj_id in reversed(resources):
+        if kind == "fbo":
+            glDeleteFramebuffers(1, [obj_id])
+        elif kind == "tex":
+            glDeleteTextures(1, [obj_id])
+        elif kind == "rbo":
+            glDeleteRenderbuffers(1, [obj_id])
+
+
+def _setup_offscreen_framebuffers(width, height):
+    resources = []
+    resolve_fbo = glGenFramebuffers(1)
+    resources.append(("fbo", resolve_fbo))
+    glBindFramebuffer(GL_FRAMEBUFFER, resolve_fbo)
+
+    tex = glGenTextures(1)
+    resources.append(("tex", tex))
+    glBindTexture(GL_TEXTURE_2D, tex)
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, None
+    )
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0
+    )
+
+    resolve_depth = glGenRenderbuffers(1)
+    resources.append(("rbo", resolve_depth))
+    glBindRenderbuffer(GL_RENDERBUFFER, resolve_depth)
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height)
+    glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, resolve_depth
+    )
+
+    if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+        _cleanup_offscreen_resources(resources)
+        raise RuntimeError("Resolve framebuffer is not complete")
+
+    draw_fbo = resolve_fbo
+
+    if MSAA_SAMPLES > 1:
+        try:
+            ms_fbo = glGenFramebuffers(1)
+            ms_color = glGenRenderbuffers(1)
+            ms_depth = glGenRenderbuffers(1)
+            ms_resources = [
+                ("fbo", ms_fbo),
+                ("rbo", ms_color),
+                ("rbo", ms_depth),
+            ]
+
+            glBindFramebuffer(GL_FRAMEBUFFER, ms_fbo)
+            glBindRenderbuffer(GL_RENDERBUFFER, ms_color)
+            glRenderbufferStorageMultisample(
+                GL_RENDERBUFFER, MSAA_SAMPLES, GL_RGBA8, width, height
+            )
+            glFramebufferRenderbuffer(
+                GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, ms_color
+            )
+            glBindRenderbuffer(GL_RENDERBUFFER, ms_depth)
+            glRenderbufferStorageMultisample(
+                GL_RENDERBUFFER, MSAA_SAMPLES, GL_DEPTH_COMPONENT, width, height
+            )
+            glFramebufferRenderbuffer(
+                GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ms_depth
+            )
+
+            if glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
+                draw_fbo = ms_fbo
+                resources.extend(ms_resources)
+        except (AttributeError, GLError):
+            glBindFramebuffer(GL_FRAMEBUFFER, resolve_fbo)
+
+    return draw_fbo, resolve_fbo, resources
+
+
+def _resolve_offscreen_framebuffer(draw_fbo, resolve_fbo, width, height):
+    if draw_fbo == resolve_fbo:
+        glBindFramebuffer(GL_FRAMEBUFFER, resolve_fbo)
+        return
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, draw_fbo)
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolve_fbo)
+    glBlitFramebuffer(
+        0, 0, width, height,
+        0, 0, width, height,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST,
+    )
+    glBindFramebuffer(GL_FRAMEBUFFER, resolve_fbo)
+
 
 def set_clear_color(backgroundColor=(255, 255, 255, 255)):
     r, g, b, a = (c / 255.0 for c in backgroundColor[:4])
@@ -824,14 +941,16 @@ class OpenGLRender:
             print("SDL_Init Error:", sdl2.SDL_GetError())
             return 1
 
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+        configure_gl_context_attributes()
 
-        window = sdl2.SDL_CreateWindow(b"Kaxe",
-                                    sdl2.SDL_WINDOWPOS_CENTERED,
-                                    sdl2.SDL_WINDOWPOS_CENTERED,
-                                    self.guiWidth, self.guiHeight,
-                                    sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_HIDDEN)
+        window = sdl2.SDL_CreateWindow(
+            b"Kaxe",
+            sdl2.SDL_WINDOWPOS_CENTERED,
+            sdl2.SDL_WINDOWPOS_CENTERED,
+            self.guiWidth,
+            self.guiHeight,
+            gui_window_flags(),
+        )
 
         self.__setIcon__(window)
 
@@ -844,6 +963,7 @@ class OpenGLRender:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
+        enable_multisample()
         init_display_state(self.backgroundColor)
 
         if plot is not None:
@@ -977,12 +1097,10 @@ class OpenGLRender:
         self.guiWidth = self.width
         self.guiHeight = self.height
 
-        # Initialize SDL2 with OpenGL context for off-screen rendering
         if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
             raise RuntimeError("SDL_Init Error: " + str(sdl2.SDL_GetError()))
 
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+        configure_gl_context_attributes()
 
         window = sdl2.SDL_CreateWindow(
             b"Kaxe Offscreen",
@@ -1003,51 +1121,24 @@ class OpenGLRender:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
+        enable_multisample()
         init_display_state(self.backgroundColor)
 
-        # Set up a framebuffer object (FBO) for off-screen rendering
-        fbo = glGenFramebuffers(1)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+        draw_fbo, resolve_fbo, resources = _setup_offscreen_framebuffers(
+            self.width, self.height
+        )
 
-        # Create a texture to render to
-        tex = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, tex)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.width, self.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
-
-        # Create a renderbuffer for depth
-        rbo = glGenRenderbuffers(1)
-        glBindRenderbuffer(GL_RENDERBUFFER, rbo)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.width, self.height)
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo)
-
-        if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
-            glBindFramebuffer(GL_FRAMEBUFFER, 0)
-            glDeleteFramebuffers(1, [fbo])
-            glDeleteTextures([tex])
-            glDeleteRenderbuffers(1, [rbo])
-            sdl2.SDL_GL_DeleteContext(gl_context)
-            sdl2.SDL_DestroyWindow(window)
-            sdl2.SDL_Quit()
-            raise RuntimeError("Framebuffer is not complete")
-
-        # Render the scene
+        glBindFramebuffer(GL_FRAMEBUFFER, draw_fbo)
         reshape(self.width, self.height)
         self.loop()
+        _resolve_offscreen_framebuffer(draw_fbo, resolve_fbo, self.width, self.height)
 
-        # Read pixels from the framebuffer
         glPixelStorei(GL_PACK_ALIGNMENT, 1)
         pixels = glReadPixels(0, 0, self.width, self.height, GL_RGBA, GL_UNSIGNED_BYTE)
         image = Image.frombytes("RGBA", (self.width, self.height), pixels)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
-        # Clean up
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        glDeleteFramebuffers(1, [fbo])
-        glDeleteTextures([tex])
-        glDeleteRenderbuffers(1, [rbo])
+        _cleanup_offscreen_resources(resources)
         sdl2.SDL_GL_DeleteContext(gl_context)
         sdl2.SDL_DestroyWindow(window)
         sdl2.SDL_Quit()
