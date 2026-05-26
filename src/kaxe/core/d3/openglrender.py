@@ -6,7 +6,6 @@ import os
 from stl import mesh
 import numpy as np
 import time
-from math import radians, sin, cos, pi
 from typing import Union
 from .camera import Camera
 from PIL import Image
@@ -24,7 +23,6 @@ import ctypes
 from ..fileloader import loadFile
 from typing import DefaultDict
 import cv2
-from ..styles import colors as kaxe_colors
 from ..profiler import Profiler
 from ..helper import to_numpy
 
@@ -653,111 +651,6 @@ class OpenGLRender:
         # Initialize profiler for performance measurements
         self.profiler = Profiler("OpenGLRender")
 
-        self._gui_window = None
-        self._gui_gl_context = None
-        self._loading_start = time.time()
-        self._loading_last_frame = 0.0
-        self._loading_bootstrap = False
-
-    @property
-    def loading_screen_active(self):
-        return self._gui_window is not None and self._loading_bootstrap
-
-    def pumpGuiEvents(self):
-        if self._gui_window is None:
-            return
-
-        sdl2.SDL_PumpEvents()
-        event = sdl2.SDL_Event()
-        while sdl2.SDL_PollEvent(event):
-            if event.type == sdl2.SDL_QUIT:
-                self.quit(self._gui_gl_context, self._gui_window)
-                sys.exit(0)
-
-    def _draw_gl_disc(self, cx, cy, radius, color, segments=14):
-        if len(color) == 3:
-            color = (color[0], color[1], color[2], 255)
-        r, g, b, a = (color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, color[3] / 255.0)
-        glColor4f(r, g, b, a)
-        glBegin(GL_TRIANGLE_FAN)
-        glVertex2f(cx, cy)
-        for seg in range(segments + 1):
-            angle = 2.0 * pi * seg / segments
-            glVertex2f(cx + cos(angle) * radius, cy + sin(angle) * radius)
-        glEnd()
-
-    def _draw_loading_frame(self):
-        if self._gui_window is None:
-            return
-
-        sdl2.SDL_GL_MakeCurrent(self._gui_window, self._gui_gl_context)
-        set_clear_color(self.backgroundColor)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0, self.guiWidth, self.guiHeight, 0, -1, 1)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-
-        glDisable(GL_LIGHTING)
-        glDisable(GL_DEPTH_TEST)
-
-        dot_count = min(5, len(kaxe_colors))
-        dot_radius = 7
-        dot_gap = 20
-        bounce_height = 12
-        speed = 5.5
-        t = time.time() - self._loading_start
-
-        row_width = (dot_count - 1) * dot_gap
-        start_x = (self.guiWidth - row_width) / 2.0
-        center_y = self.guiHeight / 2.0
-
-        for i in range(dot_count):
-            cx = start_x + i * dot_gap
-            cy = center_y - sin(t * speed + i * 0.85) * bounce_height
-            self._draw_gl_disc(cx, cy, dot_radius, kaxe_colors[i])
-
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_LIGHTING)
-        glFinish()
-        sdl2.SDL_GL_SwapWindow(self._gui_window)
-        sdl2.SDL_ShowWindow(self._gui_window)
-        sdl2.SDL_PumpEvents()
-
-    def begin_loading_screen(self):
-        if self._gui_window is None:
-            return
-        self._loading_bootstrap = True
-        self._loading_start = time.time()
-        self._loading_last_frame = 0.0
-        self._draw_loading_frame()
-        self.pumpGuiEvents()
-
-    def end_loading_screen(self):
-        self._loading_bootstrap = False
-
-    def tick_loading(self, fps=60):
-        if self._gui_window is None or not self._loading_bootstrap:
-            return
-        now = time.time()
-        if now - self._loading_last_frame < 1.0 / fps:
-            return
-        self._loading_last_frame = now
-        self._draw_loading_frame()
-        self.pumpGuiEvents()
-
-    def tick_loading_if_due(self, fps=60):
-        self.tick_loading(fps=fps)
-
-    def warmup_render_kernels(self):
-        self.tick_loading()
-
-    def showLoadingScreen(self):
-        self._draw_loading_frame()
-        self.pumpGuiEvents()
-
     def pixel(self, x, y, z):
         return self.camera.project(np.array((x,y,z))*self.SCL) + self.O
 
@@ -770,33 +663,16 @@ class OpenGLRender:
         p3s = np.asarray(p3s, dtype=np.float32)
         colors = np.asarray(colors, dtype=np.float32)
         realpoint_flags = np.asarray(realpoint_flags, dtype=np.bool_)
-
-        if self._loading_bootstrap:
-            chunk_size = 150000
-            for start in range(0, p1s.shape[0], chunk_size):
-                end = min(start + chunk_size, p1s.shape[0])
-                append_surface_mesh(
-                    target,
-                    scale,
-                    p1s[start:end],
-                    p2s[start:end],
-                    p3s[start:end],
-                    colors[start:end],
-                    dep_var,
-                    realpoint_flags[start:end],
-                )
-                self.tick_loading()
-        else:
-            append_surface_mesh(
-                target,
-                scale,
-                p1s,
-                p2s,
-                p3s,
-                colors,
-                dep_var,
-                realpoint_flags,
-            )
+        append_surface_mesh(
+            target,
+            scale,
+            p1s,
+            p2s,
+            p3s,
+            colors,
+            dep_var,
+            realpoint_flags,
+        )
 
     def add3DObject(self, obj):
 
@@ -839,21 +715,12 @@ class OpenGLRender:
         self.profiler.start("inner_loop")
         
         self.O = np.array((self.width//2, self.height//2)) # offset
-        loading = self._loading_bootstrap
-        if loading:
-            self.tick_loading()
 
         with self.profiler.measure("overlay_function"):
             overlayImage = self.overlayFunction(rotation) # 24 ms
 
-        if loading:
-            self.tick_loading()
-
         with self.profiler.measure("refresh"):
             self.refresh()
-
-        if loading:
-            self.end_loading_screen()
 
         self.profiler.start("fps_calculation")
         self.frames += 1
@@ -889,7 +756,6 @@ class OpenGLRender:
         with self.profiler.measure("display_render"):
             display(self.triLight, self.triNoLight, self.backgroundColor)
 
-
         if overlayImage is not None:
             with self.profiler.measure("overlay_processing"):
                 overlay_np = self._overlay_to_numpy(overlayImage)
@@ -917,7 +783,6 @@ class OpenGLRender:
                     glMatrixMode(GL_PROJECTION)
                     glPopMatrix()
                     glMatrixMode(GL_MODELVIEW)
-
 
         self.profiler.end("inner_loop")    
         
@@ -952,107 +817,38 @@ class OpenGLRender:
             for key in typesRegistry:
                 kwargs[key] = self.objects3d.get(key, [])
 
-            if self._loading_bootstrap:
-                self.tick_loading()
-                with self.profiler.measure('build_primitives'):
-                    build_triangle3d_primitives(
-                        kwargs["line3d"],
-                        kwargs["point3d"],
-                        kwargs["flatline3d"],
-                        kwargs["triangle3d"],
-                        self.width,
-                        self.height,
-                    )
-                self.tick_loading()
-                triangle_count = len(kwargs["triangle3d"])
-                batch_size = 2000
-                with self.profiler.measure('append_triangles'):
-                    for start in range(0, triangle_count, batch_size):
-                        end = min(start + batch_size, triangle_count)
-                        append_triangle3d_objects(
-                            kwargs["triangle3d"],
-                            scale,
-                            self.triLight,
-                            self.triNoLight,
-                            start,
-                            end,
-                        )
-                        if start == 0:
-                            self.tick_loading()
-            else:
-                with self.profiler.measure('build_primitives'):
-                    build_triangle3d_primitives(
-                        kwargs["line3d"],
-                        kwargs["point3d"],
-                        kwargs["flatline3d"],
-                        kwargs["triangle3d"],
-                        self.width,
-                        self.height,
-                    )
-                with self.profiler.measure('append_triangles'):
-                    append_triangle3d_objects(
-                        kwargs["triangle3d"],
-                        scale,
-                        self.triLight,
-                        self.triNoLight,
-                        0,
-                        len(kwargs["triangle3d"]),
-                    )
+            with self.profiler.measure('build_primitives'):
+                build_triangle3d_primitives(
+                    kwargs["line3d"],
+                    kwargs["point3d"],
+                    kwargs["flatline3d"],
+                    kwargs["triangle3d"],
+                    self.width,
+                    self.height,
+                )
+            with self.profiler.measure('append_triangles'):
+                append_triangle3d_objects(
+                    kwargs["triangle3d"],
+                    scale,
+                    self.triLight,
+                    self.triNoLight,
+                    0,
+                    len(kwargs["triangle3d"]),
+                )
 
         with self.profiler.measure("clear_objects"):
             self.objects3d.clear()
         
         
         with self.profiler.measure("finalize_append"):
-            if self._loading_bootstrap:
-                self.tick_loading()
             self.triLight.finalizeAppend()
-            if self._loading_bootstrap:
-                self.tick_loading()
             self.triNoLight.finalizeAppend()
-            if self._loading_bootstrap:
-                self.tick_loading()
         
         # Reset arrays for next frame (keep capacity but reset size)
         # Note: Comment this out if you want to accumulate triangles across frames
         # self.triLight.reset()
         # self.triNoLight.reset()
 
-
-    def prepareGuiWindow(self):
-        if self._gui_window is not None:
-            return
-
-        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
-            raise RuntimeError("SDL_Init Error: " + str(sdl2.SDL_GetError()))
-
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
-
-        window = sdl2.SDL_CreateWindow(
-            b"Kaxe",
-            sdl2.SDL_WINDOWPOS_CENTERED,
-            sdl2.SDL_WINDOWPOS_CENTERED,
-            self.guiWidth,
-            self.guiHeight,
-            sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_HIDDEN,
-        )
-        if not window:
-            raise RuntimeError("SDL_CreateWindow Error: " + str(sdl2.SDL_GetError()))
-
-        self.__setIcon__(window)
-        gl_context = sdl2.SDL_GL_CreateContext(window)
-
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_LIGHTING)
-        glEnable(GL_LIGHT0)
-        init_display_state(self.backgroundColor)
-
-        self._gui_window = window
-        self._gui_gl_context = gl_context
-
-    def presentGuiWindow(self):
-        self.begin_loading_screen()
 
     def quit(self, gl_context, window):
         sdl2.SDL_GL_DeleteContext(gl_context)
@@ -1063,50 +859,44 @@ class OpenGLRender:
     def gui(self, overlay=None, plot=None):
         global dragging, last_mouse
 
-        if plot is not None and getattr(plot, "_defer_gui_prep", False):
-            plot.render.warmup_render_kernels()
-            plot.__complete_deferred_start__()
-            overlay = plot.__make_overlay__()
-
         self.overlayFunction = overlay
         
         dragging = [False]
         last_mouse = [0, 0]
 
-        if self._gui_window is None:
-            if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
-                print("SDL_Init Error:", sdl2.SDL_GetError())
-                return 1
+        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
+            print("SDL_Init Error:", sdl2.SDL_GetError())
+            return 1
 
-            sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
-            sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
+        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
 
-            window = sdl2.SDL_CreateWindow(b"Kaxe",
-                                        sdl2.SDL_WINDOWPOS_CENTERED,
-                                        sdl2.SDL_WINDOWPOS_CENTERED,
-                                        self.guiWidth, self.guiHeight,
-                                        sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
+        window = sdl2.SDL_CreateWindow(b"Kaxe",
+                                    sdl2.SDL_WINDOWPOS_CENTERED,
+                                    sdl2.SDL_WINDOWPOS_CENTERED,
+                                    self.guiWidth, self.guiHeight,
+                                    sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_HIDDEN)
 
-            self.__setIcon__(window)
+        self.__setIcon__(window)
 
-            if not window:
-                print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
-                return 1
+        if not window:
+            print("SDL_CreateWindow Error:", sdl2.SDL_GetError())
+            return 1
 
-            gl_context = sdl2.SDL_GL_CreateContext(window)
+        gl_context = sdl2.SDL_GL_CreateContext(window)
 
-            glEnable(GL_DEPTH_TEST)
-            glEnable(GL_LIGHTING)
-            glEnable(GL_LIGHT0)
-            init_display_state(self.backgroundColor)
-        else:
-            window = self._gui_window
-            gl_context = self._gui_gl_context
-            sdl2.SDL_GL_MakeCurrent(window, gl_context)
-            sdl2.SDL_ShowWindow(window)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        init_display_state(self.backgroundColor)
 
-        if self._loading_bootstrap:
-            self.tick_loading()
+        if plot is not None:
+            plot.__complete_gui_prep__()
+
+        reshape(self.guiWidth, self.guiHeight)
+        self.loop()
+        sdl2.SDL_GL_SwapWindow(window)
+        sdl2.SDL_ShowWindow(window)
 
         idle = False
         is_fullscreen = False

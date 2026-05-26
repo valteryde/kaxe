@@ -198,18 +198,12 @@ class Function3D(Base3DObject):
         frac = (x - x0)[..., np.newaxis]
         return ((1.0 - frac) * steps[x0] + frac * steps[x1]) / 255.0
 
-    def _maybe_tick_loading(self, render, counter, stride=32):
-        if counter & (stride - 1) == 0:
-            render.tick_loading()
-
-    def _sample_z_dependent_grid(self, render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint, loading):
+    def _sample_z_dependent_grid(self, render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint):
         z_lo = parent.window[4]
         z_hi = parent.window[5]
 
         def sample_loop():
             for xn, x in enumerate(xs):
-                if loading:
-                    self._maybe_tick_loading(render, xn)
                 for yn, y in enumerate(ys):
                     try:
                         z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
@@ -238,9 +232,6 @@ class Function3D(Base3DObject):
             if z_vals.shape != x_grid.shape or not np.issubdtype(z_vals.dtype, np.floating):
                 sample_loop()
                 return
-
-            if loading:
-                render.tick_loading()
 
             z_vals = z_vals.astype(np.float64, copy=True)
             over = z_vals > z_hi
@@ -311,13 +302,11 @@ class Function3D(Base3DObject):
         realpoint_flags = np.concatenate(flag_parts)
         return p1s, p2s, p3s, colors, realpoint_flags
 
-
     def finalize(self, parent):
 
         render = parent.render
         n = self.numPoints
         dep_var = {"z": 0, "y": 1, "x": 2}[self.dependantVariable]
-        loading = render.loading_screen_active
 
         xlen = parent.window[1] - parent.window[0]
         ylen = parent.window[3] - parent.window[2]
@@ -332,15 +321,13 @@ class Function3D(Base3DObject):
             ys = ylen * (np.arange(n + 1) / n) + parent.window[2]
             x_grid, y_grid = np.meshgrid(xs, ys, indexing="ij")
             z_grid = np.full_like(x_grid, np.nan, dtype=np.float64)
-            self._sample_z_dependent_grid(render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint, loading)
+            self._sample_z_dependent_grid(render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint)
             zmap = np.where(np.isnan(z_grid), -math.inf, z_grid)
             coords = self._coords_from_grid(parent, x_grid, y_grid, z_grid)
         elif self.dependantVariable == "y":
             xs = xlen * (np.arange(n + 1) / n) + parent.window[0]
             ys = zlen * (np.arange(n + 1) / n) + parent.window[4]
             for xn, x in enumerate(xs):
-                if loading:
-                    self._maybe_tick_loading(render, xn)
                 for yn, y in enumerate(ys):
                     try:
                         z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
@@ -360,8 +347,6 @@ class Function3D(Base3DObject):
             z_coords = zlen * (np.arange(n + 1) / n) + parent.window[4]
             y_coords = ylen * (np.arange(n + 1) / n) + parent.window[2]
             for xn, z_coord in enumerate(z_coords):
-                if loading:
-                    self._maybe_tick_loading(render, xn)
                 for yn, y_coord in enumerate(y_coords):
                     try:
                         x_val = self.f(z_coord, y_coord, *self.otherArgs, **self.otherKwargs)
@@ -383,13 +368,9 @@ class Function3D(Base3DObject):
             zmax = parent.windowAxis[5]
             with render.profiler.measure('finalize_color'):
                 color_grid = self._color_grid(zmap, zmin, zmax)
-            if loading:
-                render.tick_loading()
             with render.profiler.measure('finalize_mesh'):
                 mesh = self._build_fill_mesh_arrays(coords, realpoint, color_grid, n)
             if mesh is not None:
-                if loading:
-                    render.tick_loading()
                 p1s, p2s, p3s, colors, realpoint_flags = mesh
                 with render.profiler.measure('finalize_upload'):
                     render.addMeshTriangles(

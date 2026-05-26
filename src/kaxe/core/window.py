@@ -445,8 +445,7 @@ class Window(AttrObject):
         self.render.profiler.end('window_pillow_paint_start')   
 
         self.render.profiler.start('window_paint')
-        for shape in self.shapes: # 10 ms
-            
+        for shape in self.shapes:
             shape.draw(surface)
             
             if self.showProgressBar: pbar.update()
