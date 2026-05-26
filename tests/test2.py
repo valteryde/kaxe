@@ -10,7 +10,6 @@ import kaxe
 from random import randint, random, choice
 import string
 import time
-import pylab
 import scipy.stats as stats
 import statistics
 

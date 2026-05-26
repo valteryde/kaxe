@@ -1,7 +1,5 @@
 
 from OpenGL.GL import *
-# from OpenGL.GLU import *
-from OpenGL.GLUT import *
 import os
 from stl import mesh
 import numpy as np
@@ -21,7 +19,6 @@ import sdl2.ext
 import sdl2.video
 import ctypes
 from ..fileloader import loadFile
-from typing import DefaultDict
 import cv2
 from ..profiler import Profiler
 from ..helper import to_numpy
@@ -64,15 +61,6 @@ class TriangleArray:
         for i in range(9):
             self.vectors[pos+i] = 0
 
-
-    # def finalizeAppend(self):
-    #     self.vectors = np.append(self.vectors, self.tempVectors)
-    #     self.colors = np.append(self.colors, self.tempColors)
-    #     self.normals = np.append(self.normals, self.tempNormals)
-
-    #     self.tempColors.clear()
-    #     self.tempVectors.clear()
-    #     self.tempNormals.clear()
 
     def finalizeAppend(self):
         # Check if we need to expand capacity
@@ -213,7 +201,6 @@ def reshape(width, height):
 
 
 def mouse_drag(x, y):
-    # GLUT does not provide dx, dy directly, so store last position
     global last_mouse
     if last_mouse is not None:
         dx = x - last_mouse[0]
@@ -565,35 +552,9 @@ def append_triangle3d_objects(triangle3d, scale, triLight, triNoLight, start_idx
         )
 
 
-def retrieveAndAppendTriangles(triangle3d, line3d, flatline3d, point3d, scale=0, width=0, height=0, triLight=None, triNoLight=None):
-    if triLight is None:
-        triLight = TriangleArray()
-    if triNoLight is None:
-        triNoLight = TriangleArray()
-
-    build_triangle3d_primitives(line3d, point3d, flatline3d, triangle3d, width, height)
-    append_triangle3d_objects(triangle3d, scale, triLight, triNoLight, 0, len(triangle3d))
-
-
-
-def mouse_func(button, state, x, y):
-    global dragging
-    if button == GLUT_LEFT_BUTTON:
-        if state == GLUT_DOWN:
-            dragging[0] = True
-            last_mouse[:] = [x, y]
-        else:
-            dragging[0] = False
-
 def motion_func(x, y):
     if dragging[0]:
         mouse_drag(x, y)
-
-def idle():
-    # rotation[0] += 0.5
-    # rotation[1] += 0.5
-    glutPostRedisplay()
-
 
 typesRegistry = {
     "point3d": Point3DObject,
@@ -604,11 +565,19 @@ typesRegistry = {
 
 
 class OpenGLRender:
-    def __init__(self, width, height, cameraAngle:Union[tuple, list]=(0,0), w:int=None, light=[0,0,0], backgroundColor=(255,255,255,255)):
+    def __init__(
+        self,
+        width,
+        height,
+        cameraAngle: Union[tuple, list] = (0, 0),
+        w: int = None,
+        light: list = [0, 0, 0],
+        backgroundColor=(255, 255, 255, 255),
+        guiwidth: int = 1000,
+        guiheight: int = 750,
+    ):
         self.width = width
         self.height = height
-
-        guiwidth, guiheight = 1000, 750
 
         self.guiRatio = min(guiwidth / height, guiheight / width, 1)
 
@@ -795,14 +764,7 @@ class OpenGLRender:
             if self.skipObjectUpdate:
                 return
 
-            # remove triangles
-            # Remove triangles whose indices are in self.removedObjects3d
             for obj, pos in self.removedObjects3d:
-                # Convert to set for faster lookup
-                # if pos == None:
-                #     obj.hidden = True
-                #     continue
-
                 if obj.ableToUseLight:
                     self.triLight.remove(pos)
                 else:
@@ -843,12 +805,6 @@ class OpenGLRender:
         with self.profiler.measure("finalize_append"):
             self.triLight.finalizeAppend()
             self.triNoLight.finalizeAppend()
-        
-        # Reset arrays for next frame (keep capacity but reset size)
-        # Note: Comment this out if you want to accumulate triangles across frames
-        # self.triLight.reset()
-        # self.triNoLight.reset()
-
 
     def quit(self, gl_context, window):
         sdl2.SDL_GL_DeleteContext(gl_context)

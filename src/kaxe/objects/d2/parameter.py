@@ -139,9 +139,9 @@ class ParametricEquation:
 
         elif parent == identities.XYZPLOT:
             from ...core.d3.objects import Line3D, Point3D
-            from ...core.d3.render import Render
+            from ...core.d3.backend import RenderBackend
 
-            render:Render = parent.render
+            render: RenderBackend = parent.render
 
             for ls in lineSegments:
 

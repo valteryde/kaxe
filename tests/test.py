@@ -12,7 +12,6 @@ import numpy as np
 import string
 import scipy.interpolate
 import time
-import pylab
 import scipy.stats as stats
 import statistics
 
@@ -85,6 +84,14 @@ class Test:
 
         plot.save('tests/images/normal.png')
         plot.show()
+
+    def testPlotSaveWithoutRender():
+        """2D Plot.save must not require OpenGL render on Window."""
+        from io import BytesIO
+        plot = kaxe.Plot()
+        plot.style(width=100, height=100)
+        assert not hasattr(plot, 'render')
+        plot.save(BytesIO())
 
     def testPointPlot():
         plot = kaxe.Plot()
@@ -1781,9 +1788,6 @@ class Test:
 
         plt = kaxe.QQPlot(measurements/np.max(measurements))
         plt.show()
-
-        # stats.probplot(measurements, dist="norm", plot=pylab)
-        # pylab.show()
 
 
     def testHistogram():

@@ -430,8 +430,6 @@ class Window(AttrObject):
 
 
     def __pillowPaint__(self, fname=None):
-        self.render.profiler.start('window_pillow_paint_start')
-
         startTime = time.time()
         if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
@@ -442,14 +440,10 @@ class Window(AttrObject):
             background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor')) # 10 ms
             background.draw(surface) # ? ms
 
-        self.render.profiler.end('window_pillow_paint_start')   
-
-        self.render.profiler.start('window_paint')
         for shape in self.shapes:
             shape.draw(surface)
             
             if self.showProgressBar: pbar.update()
-        self.render.profiler.end('window_paint')
 
         if fname == None:
             pass

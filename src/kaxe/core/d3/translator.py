@@ -1,5 +1,17 @@
+"""
+2D-to-3D translator bridge for hybrid plot objects.
 
-from .render import Render
+When a 2D object is added to a Plot3D, some types rasterize on a throwaway
+EmptyWindow, then lift Pillow shapes into OpenGL primitives at z=0.
+
+3D support by object:
+- Bridge (this module): Function2D, Equation; Contour via nested Equation
+- Native finalize3D: Arrow, Parameter
+- objects/d3/: Function3D, Points3D, Mesh, Potato, SolidOfRotation
+- Overlay-only / no geometry: Text, HeatMap (declare XYZ in supports but no 3D finalize)
+"""
+
+from .backend import RenderBackend
 from ..shapes import Shape, Line, Circle, Triangle, Batch, LineSegment
 
 from .objects import * # Line3D, Point3D, TextureQuad, Triangle
@@ -61,7 +73,7 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
 
     objs:list[Shape] = unpackBatch(batch)
     plt3d:Plot3D = plt2d.__3DPlotRef
-    render:Render = plt3d.render
+    render: RenderBackend = plt3d.render
 
     now = time.time()
     for shape in objs:
@@ -75,10 +87,10 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
         ### Line
         if type(shape) is Line:
             x1, y1 = plt2d.inversepixel(shape.x0, shape.y0)
-            x1, y1, z1 = plt3d.pixel(x, y, 0)
+            x1, y1, z1 = plt3d.pixel(x1, y1, 0)
 
             x2, y2 = plt2d.inversepixel(shape.x1, shape.y1)
-            x2, y2, z2 = plt3d.pixel(x, y, 0)
+            x2, y2, z2 = plt3d.pixel(x2, y2, 0)
 
             render.add3DObject( Line3D((x1, y1, z1), (x2, y2, z2), color=shape.color, width=shape.thickness) )
 
@@ -88,10 +100,10 @@ def translate2DTo3DObjects(plt2d:EmptyWindow, batch):
             
             for i in range(len(shape.points)-1):
                 x1, y1 = plt2d.inversepixel(*shape.points[i])
-                x1, y1, z1 = plt3d.pixel(x, y, 0)
+                x1, y1, z1 = plt3d.pixel(x1, y1, 0)
 
                 x2, y2 = plt2d.inversepixel(*shape.points[i+1])
-                x2, y2, z2 = plt3d.pixel(x, y, 0)
+                x2, y2, z2 = plt3d.pixel(x2, y2, 0)
             
                 render.add3DObject( Line3D((x1, y1, z1), (x2, y2, z2), color=shape.color, width=shape.thickness) )
 

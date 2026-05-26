@@ -120,6 +120,20 @@ class TimingData:
     depth: int = 0
 
 
+class NullProfiler:
+    """No-op profiler for 2D paint paths that do not use OpenGLRender."""
+
+    def start(self, label: str) -> None:
+        pass
+
+    def end(self, label: str) -> float:
+        return 0.0
+
+    @contextmanager
+    def measure(self, label: str):
+        yield
+
+
 class Profiler:
     """
     A high-performance profiler for measuring code execution times.
