@@ -6,7 +6,7 @@ from .base import Base3DObject
 
 # 3d
 from ...core.d3.objects import Triangle, Line3D, Point3D
-from ...core.d3.render import Render
+from ...core.d3.backend import RenderBackend
 from ...core.d3.helper import rc
 from ...core.color import Colormaps, Colormap
 
@@ -117,7 +117,7 @@ class Mesh(Base3DObject):
 
     def finalize(self, parent):
 
-        render:Render = parent.render
+        render: RenderBackend = parent.render
 
         for p1, p2, p3 in self.mesh.vectors:
             avgZ = (p1[2] + p2[2] + p3[2]) / 3

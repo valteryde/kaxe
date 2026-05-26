@@ -12,13 +12,11 @@ from ...core.color import Colormaps, Colormap
 import numpy as np
 import math
 import numbers
-from numba import njit
 import time
 
 
 
 ### OPTIMIZING
-@njit
 def getTriangleNormal(p1, p2, p3):
 
     Ax, Ay, Az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
@@ -30,7 +28,6 @@ def getTriangleNormal(p1, p2, p3):
 
     return (Nx, Ny, Nz)
 
-@njit
 def isHorizontalTriangle(dependantVariable, p1, p2, p3):
     normal = getTriangleNormal(p1, p2, p3)
 
@@ -180,107 +177,219 @@ class Function3D(Base3DObject):
 
 
     def __outline__(self, render, matrix, xn, yn, color, isRealpoint):
-        if all(i[0] is not None for i in [matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1]]):
+        if all(not np.isnan(i[0]) for i in [matrix[xn, yn], matrix[xn + 1, yn], matrix[xn, yn + 1]]):
 
-            self.__addTriangleOutline__(render, matrix[xn][yn], matrix[xn][yn+1],matrix[xn+1][yn], color, isRealpoint, -1, yn)
+            self.__addTriangleOutline__(render, matrix[xn, yn], matrix[xn, yn + 1], matrix[xn + 1, yn], color, isRealpoint, -1, yn)
         
-        if all(i[0] is not None for i in [matrix[xn+1][yn+1], matrix[xn+1][yn], matrix[xn][yn+1]]):
+        if all(not np.isnan(i[0]) for i in [matrix[xn + 1, yn + 1], matrix[xn + 1, yn], matrix[xn, yn + 1]]):
             
-            self.__addTriangleOutline__(render, matrix[xn][yn+1], matrix[xn+1][yn+1], matrix[xn+1][yn], color, isRealpoint, xn, -1)
+            self.__addTriangleOutline__(render, matrix[xn, yn + 1], matrix[xn + 1, yn + 1], matrix[xn + 1, yn], color, isRealpoint, xn, -1)
 
+
+    def _color_grid(self, zmap, zmin, zmax):
+        steps = np.array(self.cmap.colorGradientSteps, dtype=np.float32)
+        values = np.clip(zmap, zmin, zmax)
+        if zmax == zmin:
+            return np.repeat(steps[:1], zmap.size, axis=0).reshape(zmap.shape + (4,))
+
+        x = ((values - zmin) / (zmax - zmin)) * (len(steps) - 1)
+        x0 = np.floor(x).astype(np.int32)
+        x1 = np.ceil(x).astype(np.int32)
+        frac = (x - x0)[..., np.newaxis]
+        return ((1.0 - frac) * steps[x0] + frac * steps[x1]) / 255.0
+
+    def _sample_z_dependent_grid(self, render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint):
+        z_lo = parent.window[4]
+        z_hi = parent.window[5]
+
+        def sample_loop():
+            for xn, x in enumerate(xs):
+                for yn, y in enumerate(ys):
+                    try:
+                        z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
+                    except Exception:
+                        continue
+                    if not isinstance(z, numbers.Number):
+                        continue
+                    if z > z_hi:
+                        z = z_hi
+                        realpoint[xn, yn] = False
+                    if z < z_lo:
+                        z = z_lo
+                        realpoint[xn, yn] = False
+                    z_grid[xn, yn] = z
+
+        with render.profiler.measure('finalize_sample'):
+            try:
+                z_vals = np.asarray(
+                    self.f(x_grid, y_grid, *self.otherArgs, **self.otherKwargs),
+                    dtype=np.float64,
+                )
+            except Exception:
+                sample_loop()
+                return
+
+            if z_vals.shape != x_grid.shape or not np.issubdtype(z_vals.dtype, np.floating):
+                sample_loop()
+                return
+
+            z_vals = z_vals.astype(np.float64, copy=True)
+            over = z_vals > z_hi
+            under = z_vals < z_lo
+            realpoint[:] = ~(over | under)
+            np.clip(z_vals, z_lo, z_hi, out=z_vals)
+            z_grid[:] = z_vals
+
+    def _coords_from_grid(self, parent, x_grid, y_grid, z_grid):
+        size = parent.size
+        offset = parent.offset
+        wl = parent.windowAxisLength
+        coords = np.stack([
+            size[0] * (x_grid - parent.window[0]) / wl[0] + offset[0],
+            size[1] * (y_grid - parent.window[2]) / wl[1] + offset[1],
+            size[2] * (z_grid - parent.window[4]) / wl[2] + offset[2],
+        ], axis=-1)
+        coords[np.isnan(z_grid)] = np.nan
+        return coords
+
+    def _build_fill_mesh_arrays(self, coords, realpoint, color_grid, n):
+        c00 = coords[:n, :n]
+        c10 = coords[1:n + 1, :n]
+        c01 = coords[:n, 1:n + 1]
+        c11 = coords[1:n + 1, 1:n + 1]
+
+        v00 = ~np.isnan(c00[:, :, 0])
+        v10 = ~np.isnan(c10[:, :, 0])
+        v01 = ~np.isnan(c01[:, :, 0])
+        v11 = ~np.isnan(c11[:, :, 0])
+
+        # Match legacy __fill__: skip cells whose bottom-left corner is invalid,
+        # and only emit a triangle when all three of its corners are valid.
+        cells = v00
+        tri1 = cells & v10 & v01
+        tri2 = cells & v11 & v10 & v01
+
+        if not np.any(tri1) and not np.any(tri2):
+            return None
+
+        cell_colors = color_grid[:n, :n]
+        cell_real = realpoint[:n, :n]
+
+        p1s_parts = []
+        p2s_parts = []
+        p3s_parts = []
+        color_parts = []
+        flag_parts = []
+
+        if np.any(tri1):
+            p1s_parts.append(c00[tri1])
+            p2s_parts.append(c10[tri1])
+            p3s_parts.append(c01[tri1])
+            color_parts.append(cell_colors[tri1])
+            flag_parts.append(cell_real[tri1])
+
+        if np.any(tri2):
+            p1s_parts.append(c10[tri2])
+            p2s_parts.append(c11[tri2])
+            p3s_parts.append(c01[tri2])
+            color_parts.append(cell_colors[tri2])
+            flag_parts.append(cell_real[tri2])
+
+        p1s = np.concatenate(p1s_parts)
+        p2s = np.concatenate(p2s_parts)
+        p3s = np.concatenate(p3s_parts)
+        colors = np.concatenate(color_parts)
+        realpoint_flags = np.concatenate(flag_parts)
+        return p1s, p2s, p3s, colors, realpoint_flags
 
     def finalize(self, parent):
 
         render = parent.render
+        n = self.numPoints
+        dep_var = {"z": 0, "y": 1, "x": 2}[self.dependantVariable]
 
-        self.points = []
         xlen = parent.window[1] - parent.window[0]
         ylen = parent.window[3] - parent.window[2]
         zlen = parent.window[5] - parent.window[4]
 
-        matrix = np.empty((self.numPoints+1, self.numPoints+1), dtype=tuple)
-        matrix.fill(np.array((None, None, None)))
-        
-        zmap = np.empty((self.numPoints+1, self.numPoints+1), dtype=float)
-        zmap.fill(-math.inf)
+        coords = np.full((n + 1, n + 1, 3), np.nan, dtype=np.float64)
+        zmap = np.full((n + 1, n + 1), -math.inf, dtype=np.float64)
+        realpoint = np.ones((n + 1, n + 1), dtype=np.bool_)
 
-        realpoint = np.empty((self.numPoints+1, self.numPoints+1), dtype=bool)
-        realpoint.fill(True)
-        
-        # get points in plane
         if self.dependantVariable == "z":
-            gx = lambda xn: xlen * (xn / self.numPoints) + parent.window[0]
-            gy = lambda yn: ylen * (yn / self.numPoints) + parent.window[2]
+            xs = xlen * (np.arange(n + 1) / n) + parent.window[0]
+            ys = ylen * (np.arange(n + 1) / n) + parent.window[2]
+            x_grid, y_grid = np.meshgrid(xs, ys, indexing="ij")
+            z_grid = np.full_like(x_grid, np.nan, dtype=np.float64)
+            self._sample_z_dependent_grid(render, parent, xs, ys, x_grid, y_grid, z_grid, realpoint)
+            zmap = np.where(np.isnan(z_grid), -math.inf, z_grid)
+            coords = self._coords_from_grid(parent, x_grid, y_grid, z_grid)
         elif self.dependantVariable == "y":
-            gx = lambda xn: xlen * (xn / self.numPoints) + parent.window[0]
-            gy = lambda yn: zlen * (yn / self.numPoints) + parent.window[4]
-        else:
-            gx = lambda yn: zlen * (yn / self.numPoints) + parent.window[4]
-            gy = lambda xn: ylen * (xn / self.numPoints) + parent.window[2]
-
-        for xn in range(self.numPoints+1):
-            x = gx(xn)
-
-            for yn in range(self.numPoints+1):
-                y = gy(yn)
-
-                try:
-                    z = self.f(x,y, *self.otherArgs, **self.otherKwargs)
-                except Exception:
-                    continue
-                                
-                if not isinstance(z, numbers.Number):
-                    continue
-
-                # Check if point is outside maximum z value
-                if self.dependantVariable == "z": #xy
-                    if z > parent.window[5]:
-                        z = parent.window[5]
-                        realpoint[xn][yn] = False
-
-                    if z < parent.window[4]:
-                        z = parent.window[4]
-                        realpoint[xn][yn] = False
-                    
-                    matrix[xn][yn] = parent.pixel(x,y,z)
-                    zmap[xn][yn] = z
-                
-                elif self.dependantVariable == "y": #xz
+            xs = xlen * (np.arange(n + 1) / n) + parent.window[0]
+            ys = zlen * (np.arange(n + 1) / n) + parent.window[4]
+            for xn, x in enumerate(xs):
+                for yn, y in enumerate(ys):
+                    try:
+                        z = self.f(x, y, *self.otherArgs, **self.otherKwargs)
+                    except Exception:
+                        continue
+                    if not isinstance(z, numbers.Number):
+                        continue
                     if z > parent.window[3]:
                         z = parent.window[3]
-                        realpoint[xn][yn] = False
-
+                        realpoint[xn, yn] = False
                     if z < parent.window[2]:
                         z = parent.window[2]
-                        realpoint[xn][yn] = False
+                        realpoint[xn, yn] = False
+                    coords[xn, yn] = parent.pixel(x, z, y)
+                    zmap[xn, yn] = y
+        else:
+            z_coords = zlen * (np.arange(n + 1) / n) + parent.window[4]
+            y_coords = ylen * (np.arange(n + 1) / n) + parent.window[2]
+            for xn, z_coord in enumerate(z_coords):
+                for yn, y_coord in enumerate(y_coords):
+                    try:
+                        x_val = self.f(z_coord, y_coord, *self.otherArgs, **self.otherKwargs)
+                    except Exception:
+                        continue
+                    if not isinstance(x_val, numbers.Number):
+                        continue
+                    if x_val > parent.window[1]:
+                        x_val = parent.window[1]
+                        realpoint[xn, yn] = False
+                    if x_val < parent.window[0]:
+                        x_val = parent.window[0]
+                        realpoint[xn, yn] = False
+                    coords[xn, yn] = parent.pixel(x_val, y_coord, z_coord)
+                    zmap[xn, yn] = x_val
 
-                    matrix[xn][yn] = parent.pixel(x,z,y)
-                    zmap[xn][yn] = y
-                
-                elif self.dependantVariable == "x": #yz
-                    if z > parent.window[1]:
-                        z = parent.window[1]
-                        realpoint[xn][yn] = False
+        if self.fill:
+            zmin = parent.windowAxis[4]
+            zmax = parent.windowAxis[5]
+            with render.profiler.measure('finalize_color'):
+                color_grid = self._color_grid(zmap, zmin, zmax)
+            with render.profiler.measure('finalize_mesh'):
+                mesh = self._build_fill_mesh_arrays(coords, realpoint, color_grid, n)
+            if mesh is not None:
+                p1s, p2s, p3s, colors, realpoint_flags = mesh
+                with render.profiler.measure('finalize_upload'):
+                    render.addMeshTriangles(
+                        p1s,
+                        p2s,
+                        p3s,
+                        colors,
+                        dep_var,
+                        realpoint_flags,
+                        use_light=not self.excludeLight,
+                    )
+            return
 
-                    if z < parent.window[0]:
-                        z = parent.window[0]
-                        realpoint[xn][yn] = False
-                
-                    matrix[xn][yn] = parent.pixel(z, y, x)
-                    zmap[xn][yn] = x
-
-        # draw
-        for xn in range(self.numPoints):
-            for yn in range(self.numPoints):
-                if matrix[xn][yn][0] is None:
+        for xn in range(n):
+            for yn in range(n):
+                if np.isnan(coords[xn, yn, 0]):
                     continue
-                
-                color = self.cmap.getColor(zmap[xn][yn], parent.windowAxis[4], parent.windowAxis[5])
-
-                if self.fill:
-                    self.__fill__(render, matrix, xn, yn, color, realpoint[xn][yn])
-                else:
-                    self.__outline__(render, matrix, xn, yn, color, realpoint[xn][yn])
+                color = self.cmap.getColor(zmap[xn, yn], parent.windowAxis[4], parent.windowAxis[5])
+                self.__outline__(render, coords, xn, yn, color, realpoint[xn, yn])
 
     def legend(self, text:str, color=None, symbol=None):
         """

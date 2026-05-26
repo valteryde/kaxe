@@ -157,6 +157,14 @@ class Line(Shape):
         super().__init__()
         if batch: batch.add(self)
 
+    def setEndpoints(self, x0, y0, x1, y1):
+        self.x0 = x0
+        self.y0 = y0
+        self.x1 = x1
+        self.y1 = y1
+        self.width = int(self.x1)
+        self.height = int(max(self.y0, self.y1) - min(self.y0, self.y1))
+
     # overwrites push
     def push(self, x, y):
         self.x0 += x

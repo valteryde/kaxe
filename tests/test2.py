@@ -8,11 +8,8 @@ sys.path.append('./src')
 import math
 import kaxe
 from random import randint, random, choice
-import numpy as np
 import string
-import scipy.interpolate
 import time
-import pylab
 import scipy.stats as stats
 import statistics
 
@@ -51,7 +48,7 @@ def randomObject(legend=True):
 def randomword(length):
     letters = string.ascii_lowercase
     return ''.join(choice(letters) for i in range(length))
-
+ 
 
 class Test:
     def argument():
@@ -60,7 +57,7 @@ class Test:
         else:
             eval('Test.test{}()'.format(sys.argv[1]))
 
-    def run():        
+    def run():
         startTime = time.time()
         kaxe.setSetting(removeInfo=True)
         count = 0
@@ -79,21 +76,32 @@ class Test:
                     failed += 1
         print('\033[93m' + '{} tests ran in {} min [{} failed]'.format(count, round((time.time() - startTime)/60, 3), failed) + '\033[0m')
 
+
     def testTransparent3DPlot():
-        plt = kaxe.Plot3D()
-        
-        plt.add(kaxe.Function3D(lambda x,y:0, numPoints=10))
-        plt.add(kaxe.Function3D(lambda x,y:6, numPoints=10, color=kaxe.Colormaps.blue.setAlpha(150)))
-        plt.add(kaxe.Function3D(lambda x,y:3, numPoints=10, color=kaxe.Colormaps.blue.setAlpha(150)))
+        # plt3d = kaxe.Plot3D([-10, 10, -10, 10, 0, 40], rotation=[-45, -60], drawBackground=True)
+
+        plt = kaxe.PlotFrame3D(drawBackground=True)
+        # plt.style(width=650, height=750, fontSize=32)
+        # plt.style(width=750, height=650, fontSize=32)
+        # plt.style(width=3000, height=2000, fontSize=64)
+        # plt.style(width=1500, height=1000, fontSize=64)
+
+        # plt.add(kaxe.Function3D(lambda x,y:0, numPoints=10))
+        # plt.add(kaxe.Function3D(lambda x,y:6, numPoints=10, color=kaxe.Colormaps.blue.setAlpha(150)))
+        # plt.add(kaxe.Function3D(lambda x,y:3, numPoints=10, color=kaxe.Colormaps.blue.setAlpha(150)))
+
+        # plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9))
+        plt.add(kaxe.Function3D(lambda x,y: (x/3.5)**2 + (y/3.5)**2 - 9, numPoints=100, color=kaxe.Colormaps.rainbow)) # .setAlpha(150)
+        # plt.add(kaxe.Points3D((0, 0, 0), (1, 1, 1), (2, 2, 2), color=kaxe.Colormaps.red.setAlpha(150)))
 
         plt.show()
+        # plt.show(gui=False)
+        # plt.save("a.png")
 
 
-    def test3DText():
+    def test3DTaiChiRun():
         
-        plt = kaxe.Plot()
-
-        plt.add(kaxe.Text())
+        plt = kaxe.PlotFrame3D()
 
         plt.show()
 
@@ -105,12 +113,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
     
-    Test.test3DText()
-    
-    # Test.testTransparent3DPlot()
-
-    # Test.testBubbles()
-    # Test.testDobuleAxisPlot()
-    # Test.testHistogram()
-    
-    # Test.argument()
+    Test.testTransparent3DPlot()

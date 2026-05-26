@@ -51,3 +51,17 @@ try:
 except:
     logging.basicConfig(level=logging.INFO)
 
+
+_PLOT_D3 = frozenset({'Plot3D', 'PlotCenter3D', 'PlotFrame3D', 'PlotEmpty3D'})
+_OBJECTS_D3 = frozenset({'Points3D', 'Function3D', 'Mesh', 'Potato', 'SolidOfRotation'})
+
+
+def __getattr__(name):
+    if name in _PLOT_D3:
+        from . import plot
+        return getattr(plot, name)
+    if name in _OBJECTS_D3:
+        from . import objects
+        return getattr(objects, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+

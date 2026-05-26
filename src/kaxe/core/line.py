@@ -1,9 +1,7 @@
 
-from numba import jit
 import numpy as np
 
 # DRAW LINES
-@jit
 def trapez(y,y0,w):
     return np.clip(np.minimum(y+1+w/2-y0, -y+1+w/2+y0),0,1)
 
@@ -50,7 +48,6 @@ def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
 
     return (yy[mask].astype(int), xx[mask].astype(int), vals[mask])
 
-@jit
 def colorBlend(ar, ag, ab, aa, br, bg, bb, ba):
     # even faster but only works when all values are in range 0 to 255
     

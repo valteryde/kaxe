@@ -99,6 +99,13 @@ class Window(AttrObject):
             self.printDebugInfo = False
 
         #self.scale = [1,1], if not set axis will help set it
+        self.__allPushedTranslations__ = [0,0]
+
+    def resetAllPushed(self):
+        
+        self.pushAll(-self.__allPushedTranslations__[0], -self.__allPushedTranslations__[1])
+
+        self.__allPushedTranslations__ = [0,0]
 
 
     def __eq__(self, s):
@@ -226,6 +233,8 @@ class Window(AttrObject):
                 i[0].push(x, y)
                 continue
             i.push(x, y)
+            self.__allPushedTranslations__[0] += x
+            self.__allPushedTranslations__[1] += y
 
 
     # calculate windowAxis
@@ -425,23 +434,25 @@ class Window(AttrObject):
         if self.showProgressBar:pbar.close()
 
 
-    def __pillowPaint__(self, fname):
+    def __pillowPaint__(self, fname=None):
         startTime = time.time()
         if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
         surface = Image.new('RGBA', winSize)
-
-        background.draw(surface)
+        
+        if self.getAttr('backgroundColor')[3] != 0:
+            background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor')) # 10 ms
+            background.draw(surface) # ? ms
 
         for shape in self.shapes:
-            
             shape.draw(surface)
             
             if self.showProgressBar: pbar.update()
 
-        if fname is str:
+        if fname == None:
+            pass
+        elif fname is str:
             surface.save(fname)
         else:
             surface.save(fname, format="png")
@@ -476,7 +487,6 @@ class Window(AttrObject):
         >>> plt.save( path/where/image/saved.png )
 
         """
-        
 
         if self.__bakedImage__:
             logging.log(0, 'Using cached plot window')

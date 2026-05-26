@@ -29,7 +29,7 @@ class ColorScale:
 
     """
 
-    def __init__(self, lower:Union[float, int, tuple], upper:Union[float, int, tuple], cmap=Colormaps.standard, width:Union[int, None]=None):
+    def __init__(self, lower:Union[float, int, tuple], upper:Union[float, int, tuple], cmap=Colormaps.standard, width:Union[int, None]=None, title:Union[str, None]=None):
         """
         lower and upper can both be a number or a tuple of length 2 with value and title as values
         """
@@ -53,6 +53,7 @@ class ColorScale:
         self.supports = [identities.XYPLOT, identities.XYZPLOT]
         self.batch = shapes.Batch()
         self.width = width
+        self.title = title
 
 
     def finalize(self, parent):
@@ -100,6 +101,7 @@ class ColorScale:
             fontSize=fontsize
         )
 
+
         # add margin between text and axis        
         self.upperText.push(0, fontsize/8)
         self.lowerText.push(0, -fontsize/8)
@@ -108,6 +110,26 @@ class ColorScale:
 
         self.img = shapes.ImageArray(np.array(arr, np.uint8), *self.pos, batch=self.batch)
         
+
+        if self.title:
+            
+            # Push the colorscale to make space for the title
+            for el in [self.img, self.lowerText, self.upperText]:
+                el.push(fontsize*1.5, 0)
+
+            self.titleText = Text(
+                self.title,
+                self.pos[0]+width/2 - fontsize / 2,  # add a small fontSize/2 gap
+                self.pos[1]+height/2, 
+                batch=self.batch, 
+                rotate=90,
+                anchor_x='center',
+                anchor_y='center',
+                fontSize=fontsize
+            )
+
+            # self.titleText.push(0, -self.titleText.height/2)
+
         # add space
         lx, ly = self.lowerText.getLeftTopPos()
         ux, uy = self.upperText.getLeftTopPos()
@@ -123,6 +145,7 @@ class ColorScale:
         parent.include(self.pos[0]+width/2, self.pos[1]+height/2, width, height)
         parent.includeElement(self.upperText)
         parent.includeElement(self.lowerText)
+        # parent.includeElement(self.titleText) if self.title else None
         #parent.hasColorScale = True
 
 

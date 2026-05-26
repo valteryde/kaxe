@@ -12,7 +12,6 @@ import numpy as np
 import string
 import scipy.interpolate
 import time
-import pylab
 import scipy.stats as stats
 import statistics
 
@@ -85,6 +84,14 @@ class Test:
 
         plot.save('tests/images/normal.png')
         plot.show()
+
+    def testPlotSaveWithoutRender():
+        """2D Plot.save must not require OpenGL render on Window."""
+        from io import BytesIO
+        plot = kaxe.Plot()
+        plot.style(width=100, height=100)
+        assert not hasattr(plot, 'render')
+        plot.save(BytesIO())
 
     def testPointPlot():
         plot = kaxe.Plot()
@@ -1385,7 +1392,7 @@ class Test:
         plt3d = kaxe.Plot3D(window=[-10, 10, -10, 10, -20, 20], rotation=[45+90, -70])
         plt3d.title('x', 'y')
         plt3d.style(fontSize=40)
-        plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
+        plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \\, \\sin{(x)} + 4 \\, \\cos{(x)} + x^2 - y$') )
 
         grid = kaxe.Grid()
         grid.style(width=4000, height=2000)
@@ -1515,9 +1522,7 @@ class Test:
         plt.add(kaxe.Function3D( func ))
         plt.add(kaxe.Contour( func, a=0 ))
 
-        plt2d = kaxe.Plot([-3, 3, -3, 3])
-        plt2d.add(kaxe.Equation( func, lambda x,y: 3 ))
-        plt.show()
+        plt.show(gui=True)
         plt.save('tests/images/f2din3d.png')
 
 
@@ -1535,7 +1540,7 @@ class Test:
         plt3d.add( kaxe.Function3D(f, numPoints=500).legend('$f(x,y)=4 \, \sin{(x)} + 4 \, \cos{(x)} + x^2 - y$') )
 
         plt3d.show()
-        plt3d.save('tests/images/contour3d.png')
+        # plt3d.save('tests/images/contour3d.png')
 
     
     def test3DWidthHeightDiffrence():
@@ -1763,6 +1768,7 @@ class Test:
         ]
 
         plt = kaxe.PlotEmpty3D(window, size=True, light=[0, 0, 1])
+        plt = kaxe.PlotFrame3D(window, size=True, light=[0, 0, 1])
         plt.adjust(0.6)
         plt.style( zNumbers=10 )
         plt.add( mesh )
@@ -1800,9 +1806,6 @@ class Test:
         plt = kaxe.QQPlot(measurements/np.max(measurements))
         plt.show()
 
-        # stats.probplot(measurements, dist="norm", plot=pylab)
-        # pylab.show()
-
 
     def testHistogram():
         
@@ -1822,7 +1825,7 @@ class Test:
         cmap = kaxe.Colormaps.rainbow
         cmap = cmap.setAlpha(150)
         plt.add(kaxe.Function3D(lambda x,y: x*y**3 -y*x**3 + 0.1, color=cmap))
-        plt.save('tests/images/3d-center.png')
+        # plt.save('tests/images/3d-center.png')
         plt.show()
 
 
@@ -2058,9 +2061,20 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
 
+    # Test.run()
+
     # Test.testBubbles()
     # Test.testDobuleAxisPlot()
     # Test.testHistogram()
     # Test.argument()
 
-    Test.testMesh()
+    # Test.testPrettyContour2DIn3D()
+    # Test.test3DCoordinateSystem()
+    # Test.testSolidofRevolution()
+    # Test.testVectorField3D()
+    # Test.testMesh()
+    Test.testSingleMesh()
+    # Test.testLightning()
+    
+    # Test.test2DIn3D()
+    # Test.testTransparent3D()

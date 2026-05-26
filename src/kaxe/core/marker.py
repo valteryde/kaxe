@@ -98,15 +98,16 @@ class Marker(AttrObject):
         # force specefic height
 
         self.textLabel = Text(self.text,
-                                  x=pos[0], 
-                                  y=pos[1], 
-                                  color=color, 
-                                #   batch=self.batch, 
-                                  anchor_x="center",
-                                  anchor_y="center",
-                                # font_name=self.font,
-                                  fontSize=int(fontSize),
+            x=pos[0], 
+            y=pos[1], 
+            color=color, 
+        #   batch=self.batch, 
+            anchor_x="center",
+            anchor_y="center",
+        # font_name=self.font,
+            fontSize=int(fontSize),
         )
+        
 
         # da den placeres på aksen til at starte med skal den bare 
         # flyttes tickLength ned med n.
@@ -130,6 +131,69 @@ class Marker(AttrObject):
         parent.addDrawingFunction(self.textLabel, 2)
         
         parent.includeElement(self.textLabel)
+
+    def reposition(self, parent):
+        self.setAttrMap(parent.attrmap)
+
+        pos = self.axis.get(self.x)
+        if not parent.inside(*pos):
+            self.shown = False
+            if hasattr(self, 'textLabel'):
+                self.textLabel.hide()
+            if hasattr(self, 'line') and self.line is not None:
+                self.line.hide()
+            if hasattr(self, 'tickLine'):
+                self.tickLine.hide()
+            return
+
+        self.shown = True
+
+        showLine = self.getAttr('showLine')
+        n = (self.axis.titleNormal[0] / parent.scale[0], self.axis.titleNormal[1] / parent.scale[1])
+        nlen = vlen(n)
+        n = (n[0] / nlen, n[1] / nlen)
+
+        halfMarkerLength = self.getAttr('tickLength') / 2
+        p1 = (pos[0] + n[0] * halfMarkerLength, pos[1] + n[1] * halfMarkerLength)
+        p2 = (pos[0] - n[0] * halfMarkerLength, pos[1] - n[1] * halfMarkerLength)
+
+        if self.getAttr('offsetTick'):
+            p1 = p1[0] + n[0] * halfMarkerLength, p1[1] + n[1] * halfMarkerLength
+            p2 = p2[0] + n[0] * halfMarkerLength, p2[1] + n[1] * halfMarkerLength
+
+        if showLine and self.line is not None:
+            gp1, gp2 = parent.pointOnWindowBorderFromLine(
+                parent.inversetranslate(*self.axis.get(self.x)),
+                self.axis.v,
+            )
+            self.line.setEndpoints(gp1[0], gp1[1], gp2[0], gp2[1])
+            self.line.show()
+
+        if self.getAttr('showTick') and hasattr(self, 'tickLine'):
+            self.tickLine.setEndpoints(p1[0], p1[1], p2[0], p2[1])
+            self.tickLine.show()
+
+        if not self.getAttr('showNumber') or not hasattr(self, 'textLabel'):
+            return
+
+        label_x, label_y = pos[0], pos[1]
+        if abs(self.axis.titleNormal[0]) > abs(self.axis.titleNormal[1]):
+            label_x += sign(self.axis.titleNormal[0]) * self.textLabel.width / 2
+        else:
+            label_y += sign(self.axis.titleNormal[1]) * self.textLabel.height / 2
+
+        nudge = vectorScalar(
+            self.axis.titleNormal,
+            self.getAttr('showTick') * (
+                self.getAttr('offsetTick') * self.getAttr('tickLength') / 2
+                + self.getAttr('tickLength') / 2
+            ) + self.getAttr('tickGap'),
+        )
+        label_x += nudge[0]
+        label_y += nudge[1]
+
+        self.textLabel.setCenterPos(label_x, label_y)
+        self.textLabel.show()
 
 
     def getBoundingBox(self):
