@@ -5,7 +5,7 @@ from ..core.window import *
 from ..core.legend import LegendBox
 from typing import Union
 from PIL import Image
-from .d3 import XYZPLOT
+from .constants import XYZPLOT
 
 class Grid(AttrObject):
     """

@@ -6,7 +6,6 @@ from ..core.symbol import makeSymbolShapes
 from ..core.symbol import symbol as symbols
 from ..core.helper import *
 from ..plot import identities
-from ..core.d3.objects import Triangle, Line3D
 import numpy as np
 
 class Text:

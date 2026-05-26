@@ -8,11 +8,11 @@ def rc() -> tuple:
     """random color"""
     return (randint(0,255), randint(0,255), randint(0,255), 255)
 
-@jit
+@jit(cache=True)
 def magnitude(x):
     return np.sqrt(np.dot(x, x))
 
-@njit
+@njit(cache=True)
 def clamp(v, a, b):
     return min(max(v, a), b)
 
@@ -22,7 +22,7 @@ def formatColor(color):
 
     return np.array([np.uint8(i) for i in color], dtype=np.int32)
 
-# @jit
+# @jit(cache=True)
 # def isPointInTriangle(v1, v2, v3, pt):
 #     d1 = sign(pt, v1, v2)
 #     d2 = sign(pt, v2, v3)

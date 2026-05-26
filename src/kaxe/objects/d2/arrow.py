@@ -5,9 +5,7 @@ from ...core.symbol import makeSymbolShapes
 from ...core.symbol import symbol as symbols
 from ...core.helper import *
 from ...plot import identities
-from ...core.d3.objects import Triangle, Line3D, Point3D
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 
 class Arrow:
@@ -120,7 +118,8 @@ class Arrow:
         return np.cos(theta) * ortho1 + np.sin(theta) * ortho2
 
     def finalize3D(self, parent):
-        
+        from ...core.d3.objects import Triangle, Line3D
+
         pixel0 = parent.pixel(*self.p0)
         pixel1 = parent.pixel(*self.p1)
 

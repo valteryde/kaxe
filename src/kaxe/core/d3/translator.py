@@ -6,10 +6,13 @@ from .objects import * # Line3D, Point3D, TextureQuad, Triangle
 from .helper import formatColor
 
 from ...plot.empty import EmptyWindow
-from ...plot.d3 import Plot3D
+from typing import TYPE_CHECKING
 import time
 
-def getEquivalent2DPlot(parent:Plot3D) -> EmptyWindow:
+if TYPE_CHECKING:
+    from ...plot.d3 import Plot3D
+
+def getEquivalent2DPlot(parent:"Plot3D") -> EmptyWindow:
 
     plt = EmptyWindow(parent.window[:5])
     plt.style(

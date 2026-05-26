@@ -10,7 +10,7 @@ from numba.typed import List
 from numba.types import ListType
 from .pointer import pointer_type
 
-@njit
+@njit(cache=True)
 def drawCircle(zbuffer, colorbuffer, radius, p_proj, p, R, w, color):
 
     rp = R @ p

@@ -1,6 +1,5 @@
 
 from .d2.function import Function2D
-from .d3.function import Function3D
 from typing import Union, Callable
 from inspect import signature
 
@@ -44,7 +43,7 @@ class Function:
                  fill:bool=True, # 3d
                  *args, 
                  **kwargs
-                ) -> Union[Function2D, Function3D]:
+                ) -> Union[Function2D, "Function3D"]:
         
         sig = signature(f)
         n = len(sig.parameters) - len(kwargs) - len(args)         
@@ -53,5 +52,6 @@ class Function:
             return Function2D(f, color=color, width=width, *args, **kwargs)
 
         if n == 2:
+            from .d3.function import Function3D
             return Function3D(f, color=color, numPoints=numPoints, fill=fill)
 

@@ -11,7 +11,7 @@ from numba.types import ListType
 from .pointer import pointer_type
 
 
-@njit
+@njit(cache=True)
 def drawLine(zbuffer, colorbuffer, p1_proj, p2_proj, p1, p2, R, w, halfwidth:int, color):
 
     # calculate normal vector

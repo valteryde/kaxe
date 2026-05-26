@@ -263,7 +263,7 @@ def set_rotation_from_diff(dx, dy):
         else:
             rotation[0] = rotation[0] - 1
 
-@jit
+@jit(cache=True)
 def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
 
     if len(tri.freespaces) > 0:
@@ -302,14 +302,14 @@ def appendTriangle(p1, p2, p3, color, normal, obj, tri:TriangleArray):
         for i in range(3):
             tri.tempNormals.append(normal)
 
-@njit
+@njit(cache=True)
 def is_close_vec(a, b, tol=1e-8):
     for i in range(len(a)):
         if abs(a[i] - b[i]) > tol:
             return False
     return True
 
-@njit
+@njit(cache=True)
 def norm2(vec):
     return np.sqrt(np.sum(vec * vec))
 

@@ -18,7 +18,7 @@ import time
 
 
 ### OPTIMIZING
-@njit
+@njit(cache=True)
 def getTriangleNormal(p1, p2, p3):
 
     Ax, Ay, Az = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
@@ -30,7 +30,7 @@ def getTriangleNormal(p1, p2, p3):
 
     return (Nx, Ny, Nz)
 
-@njit
+@njit(cache=True)
 def isHorizontalTriangle(dependantVariable, p1, p2, p3):
     normal = getTriangleNormal(p1, p2, p3)
 

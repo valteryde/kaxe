@@ -11,8 +11,6 @@ import numbers
 from random import randint
 from .function import Function2D
 from typing import Union
-from ...core.d3.objects import Line3D, Point3D
-from ...core.d3.render import Render
 
 class ParametricEquation:
     """
@@ -140,6 +138,9 @@ class ParametricEquation:
                 parent.add(tf)
 
         elif parent == identities.XYZPLOT:
+            from ...core.d3.objects import Line3D, Point3D
+            from ...core.d3.render import Render
+
             render:Render = parent.render
 
             for ls in lineSegments:

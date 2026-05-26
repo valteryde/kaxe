@@ -1,9 +1,4 @@
 
-try:
-    from openpyxl import load_workbook
-except ImportError:
-    pass
-
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
@@ -30,7 +25,8 @@ def loadExcel(fname, sheet:str, top:tuple, bottom:tuple, flip:bool=False):
     list
         A 2D list containing the data from the specified range in the Excel sheet.
     """
-    
+    from openpyxl import load_workbook
+
     wb = load_workbook(filename = fname)
     ws = wb[sheet]
 
@@ -48,4 +44,3 @@ def loadExcel(fname, sheet:str, top:tuple, bottom:tuple, flip:bool=False):
         data = [[data[i][j] for i in range(len(data))] for j in range(len(data[0]))]
 
     return data
-    

@@ -9,7 +9,6 @@ from ...core.helper import isRealNumber
 from ...plot import identities
 from random import randint
 from typing import Union
-from ...core.d3.translator import translate2DTo3DObjects, getEquivalent2DPlot, has3DReference
 
 class Function2D:
     """
@@ -139,6 +138,8 @@ class Function2D:
 
 
     def finalize(self, parent):
+
+        from ...core.d3.translator import translate2DTo3DObjects, getEquivalent2DPlot, has3DReference
 
         self.lineSegments = [[]]
         fills = []

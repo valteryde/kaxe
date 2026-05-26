@@ -9,12 +9,12 @@ import numpy as np
 from numba.experimental import jitclass
 from .pointer import Pointer
 
-@njit
+@njit(cache=True)
 def sign(p1, p2, p3):
     return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
 
 
-@njit
+@njit(cache=True)
 def barycentricWeights(a,b,c,p):
     bottom = sign(a,b,c)
 
@@ -27,7 +27,7 @@ def barycentricWeights(a,b,c,p):
     return w1, w2, 1 - w1 - w2
 
 
-@njit
+@njit(cache=True)
 def drawTriangle(zbuffer, 
                  colorbuffer, 
                  R, 

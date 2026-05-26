@@ -53,7 +53,7 @@ XYZPLOT = 'xyz'  # Plot type identifier for 3D XYZ coordinate system
 # Geometric Utility Functions (Numba-optimized for performance)
 # ============================================================================
 
-@njit
+@njit(cache=True)
 def sign(p, p1, p2):
     """
     Calculate the signed area of a triangle formed by three points.
@@ -76,7 +76,7 @@ def sign(p, p1, p2):
     return (p[0] - p2[0]) * (p1[1] - p2[1]) - (p1[0] - p2[0]) * (p[1] - p2[1])
 
 
-@njit
+@njit(cache=True)
 def isPointInTriangle(p, p1, p2, p3, tol=-1):
     """
     Test if a point lies inside a triangle using the sign method.
