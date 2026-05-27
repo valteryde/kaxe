@@ -91,6 +91,7 @@ class LegendBox(AttrObject):
             legendGridSpacing = self.getAttr('gaps')
             legendSymbolTextSpacing = self.getAttr('symbolTextSpacing')
             legendGap = self.getAttr('topMargin')
+            legendPadding = max(1, fontSize // 16)
 
             # legendSizeThickness = 2 #NOTE: STYLE
             # legendPadding = (5, 5, 5, 5) # NOTE: STYLE, left bottom right top
@@ -119,7 +120,7 @@ class LegendBox(AttrObject):
             grid.reverse()
 
             # create legends
-            currentLinePos = [0, 0]
+            currentLinePos = [legendPadding, legendPadding]
             maxPos = [0, 0]
             minPos = [math.inf, math.inf]
             for row in grid:
@@ -168,8 +169,13 @@ class LegendBox(AttrObject):
 
             if debug: shapes.Circle(0,0, 10, batch=self.batch)
 
-            height = (maxPos[1] - minPos[1])
-            width = (maxPos[0] - minPos[0])
+            minPos[0] -= legendPadding
+            minPos[1] -= legendPadding
+            maxPos[0] += legendPadding
+            maxPos[1] += legendPadding
+
+            height = math.ceil(maxPos[1] - minPos[1])
+            width = math.ceil(maxPos[0] - minPos[0])
             
             ### skub den ned til window 0,0 (her burde title være med)
             # self.batch.push(-minPos[0], -minPos[1])

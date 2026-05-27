@@ -76,6 +76,31 @@ def test_legend_multiline_wraps_to_new_row():
 
 
 @unit()
+def test_legend_circle_is_not_clipped_at_bottom():
+    """Legend circle markers should be symmetric and not clipped at the bottom edge."""
+    parent = Window()
+    parent.attrmap.default("width", 800)
+    parent.attrmap.default("fontSize", 16)
+    parent.attrmap.default("color", (0, 0, 0, 255))
+
+    lb = LegendBox()
+    lb.add("Simulation (Non-linear)", symbol.CIRCLE, (200, 0, 0, 255))
+    img = lb.finalize(parent, sneaky=True)
+
+    rgb = np.array(img)[..., :3]
+    red = (rgb[:, :, 0] > 150) & (rgb[:, :, 1] < 80) & (rgb[:, :, 2] < 80)
+    rows = np.where(red.any(axis=1))[0]
+    cols = np.where(red.any(axis=0))[0]
+    cluster = red[rows.min():rows.max() + 1, cols.min():cols.max() + 1]
+
+    assert cluster.shape[0] >= 8, "legend circle marker looks clipped"
+    row_widths = [cluster[i].sum() for i in range(cluster.shape[0])]
+    assert abs(int(row_widths[0]) - int(row_widths[-1])) <= 1
+    assert int(row_widths[-1]) < int(row_widths[len(row_widths) // 2])
+    assert rows.max() < img.height - 1, "legend circle touches bottom edge"
+
+
+@unit()
 def test_legend_second_row_fits_multiple_entries():
     """Wrapped rows should still fit multiple entries when there is room."""
     img = _render_legend(415)

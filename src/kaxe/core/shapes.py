@@ -276,7 +276,9 @@ class Circle(Shape):
         doubleradius = int(2*self.radius)
         circle = Image.new("RGBA", (doubleradius, doubleradius), (0, 0, 0, 0))
         draw = ImageDraw.Draw(circle)
-        pos = (0, 0, 2 * self.radius, 2 * self.radius)
+        # PIL treats the bbox as inclusive on both ends; shrink by half a pixel so
+        # the rendered circle is symmetric and not clipped at the bottom edge.
+        pos = (-0.5, -0.5, 2 * self.radius - 0.5, 2 * self.radius - 0.5)
         if self.fill:
             draw.ellipse(pos, fill=self.color)
         else:
