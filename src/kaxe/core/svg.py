@@ -6,6 +6,7 @@ import base64
 import copy
 import io
 import math
+import os
 import xml.etree.ElementTree as ET
 from typing import Any, Optional, Union
 
@@ -185,8 +186,7 @@ class SvgDocument:
             return
 
         if dotted:
-            for x, y in points:
-                self.add_circle(x, y, width, color, fill=True)
+            self._add_dotted_polyline(points, color, width, dotted_dist)
             return
 
         svg_points = [(x, self.flip_y(y)) for x, y in points]
@@ -205,6 +205,20 @@ class SvgDocument:
         }
         _apply_color(attribs, color, stroke=True)
         self.add_element("polyline", attribs)
+
+    def _add_dotted_polyline(
+        self,
+        points: list[tuple[float, float]],
+        color: tuple,
+        width: float,
+        dot_dist: float,
+    ) -> None:
+        last = points[0]
+        for point in points[1:]:
+            dist = math.hypot(point[0] - last[0], point[1] - last[1])
+            if dist > dot_dist:
+                last = point
+                self.add_circle(last[0], last[1], width, color, fill=True)
 
     def _add_dashed_polyline(
         self,
@@ -352,7 +366,12 @@ class SvgDocument:
         return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + body
 
 
-def infer_format(fname: Union[str, Any], format: Optional[str] = None) -> str:
+def is_file_path(fname: Any) -> bool:
+    """Return True when fname is a filesystem path (str or os.PathLike)."""
+    return isinstance(fname, (str, os.PathLike))
+
+
+def infer_format(fname: Union[str, os.PathLike, Any], format: Optional[str] = None) -> str:
     """Infer save format from explicit format, file extension, or default to png."""
     if format is not None:
         fmt = format.lower().lstrip(".")
@@ -360,8 +379,8 @@ def infer_format(fname: Union[str, Any], format: Optional[str] = None) -> str:
             return fmt
         raise ValueError(f"Unsupported format: {format}")
 
-    if isinstance(fname, str):
-        lower = fname.lower()
+    if is_file_path(fname):
+        lower = os.fspath(fname).lower()
         if lower.endswith(".svg"):
             return "svg"
         if lower.endswith(".png"):

@@ -7,7 +7,7 @@ import logging
 from .styles import *
 from .legend import LegendBox
 from .shapes import shapes
-from .svg import SvgDocument, infer_format
+from .svg import SvgDocument, infer_format, is_file_path
 from PIL import Image
 import tqdm
 from random import randint
@@ -456,7 +456,7 @@ class Window(AttrObject):
             if self.showProgressBar: pbar.update()
 
         if fname is not None:
-            if isinstance(fname, str):
+            if is_file_path(fname):
                 surface.save(fname)
             else:
                 surface.save(fname, format="png")
@@ -485,7 +485,7 @@ class Window(AttrObject):
         xml = doc.serialize()
 
         if fname is not None:
-            if isinstance(fname, str):
+            if is_file_path(fname):
                 with open(fname, 'w', encoding='utf-8') as f:
                     f.write(xml)
             else:
@@ -529,7 +529,10 @@ class Window(AttrObject):
 
         if fmt == "png" and self.__bakedImage__:
             logging.log(0, 'Using cached plot window')
-            self.__bakedImage__.save(fname)
+            if is_file_path(fname):
+                self.__bakedImage__.save(fname)
+            else:
+                self.__bakedImage__.save(fname, format="png")
             return
 
         totStartTime = time.time()
@@ -539,7 +542,7 @@ class Window(AttrObject):
 
         if fmt == "png":
             if fname is not None:
-                if isinstance(fname, str):
+                if is_file_path(fname):
                     result.save(fname)
                 else:
                     result.save(fname, format="png")

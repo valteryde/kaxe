@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
   "pillow",
-  "fondi @ git+https://github.com/valteryde/fondi.git",
+  "fondi>=0.2.0",
   "sympy",
   "scipy",
   "openpyxl",

@@ -11,6 +11,22 @@ mathtextCache = {}
 maxTextCacheSize = 100
 
 
+def _cache_get(cache: dict, key):
+    if key not in cache:
+        return None
+    value = cache.pop(key)
+    cache[key] = value
+    return value
+
+
+def _cache_set(cache: dict, key, value, max_size=maxTextCacheSize):
+    if key in cache:
+        cache.pop(key)
+    elif len(cache) >= max_size:
+        cache.pop(next(iter(cache)))
+    cache[key] = value
+
+
 def _parse_kaxe_text(text: str) -> str:
     """Translate kaxe $math$ syntax to fondi LaTeX string."""
     res = ''
@@ -39,11 +55,11 @@ def _parse_kaxe_text(text: str) -> str:
 
 def _get_mathtext(latex: str, fontSize: int, color: tuple) -> MathText:
     key = str(latex), fontSize, tuple(color)
-    cached = mathtextCache.get(key)
+    cached = _cache_get(mathtextCache, key)
     if cached is not None:
         return cached
     mt = MathText(latex, fontSize, color)
-    mathtextCache[key] = mt
+    _cache_set(mathtextCache, key, mt)
     return mt
 
 
@@ -75,12 +91,12 @@ class Text(Shape):
         self._mathtext = _get_mathtext(self.latex, self.fontSize, self.color)
 
         key = str(self.latex), fontSize, tuple(color)
-        cachedImage = textImageCache.get(key)
+        cachedImage = _cache_get(textImageCache, key)
         if cachedImage:
             pilImage = cachedImage
         else:
             pilImage = self._mathtext.to_pil()
-            textImageCache[key] = pilImage
+            _cache_set(textImageCache, key, pilImage)
 
         self.img = pilImage.rotate(self.rotate, expand=True)
 
