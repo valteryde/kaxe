@@ -1,4 +1,8 @@
 
+# Regenerate doc screenshots before building Sphinx HTML:
+#   python docs/files.py
+# Then: cd docs && make html
+
 import os
 from pathlib import Path
 from markdown_it import MarkdownIt

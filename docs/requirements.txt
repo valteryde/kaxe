@@ -5,7 +5,9 @@ scipy
 openpyxl
 tqdm
 markdown-it-py
+mdit-py-plugins
 myst-parser
+sphinx>=7.0
 sphinx_rtd_theme
 numpy-stl
 pyopengl

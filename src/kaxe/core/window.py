@@ -41,6 +41,21 @@ except:
 settings = {"removeInfo":False}
 
 def setSetting(**kwargs):
+    """Set global Kaxe runtime settings.
+
+    Parameters
+    ----------
+    **kwargs
+        Supported keys:
+
+        removeInfo : bool
+            When ``True``, suppress progress bars and bake timing logs.
+            Useful in notebooks and batch scripts.
+
+    Examples
+    --------
+    >>> setSetting(removeInfo=True)
+    """
     for key in kwargs:
         settings[key] = kwargs[key]
 
@@ -138,11 +153,11 @@ class Window(AttrObject):
 
         Examples
         --------
-        >>> plt.theme(kaxe.Themes.A4Full)
+        >>> plt.theme(kaxe.Themes.A4Medium)
 
         See also
         --------
-        Kaxe.Plot.styles
+        Kaxe.Plot.style
 
         """
         

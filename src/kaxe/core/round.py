@@ -13,9 +13,29 @@ def forceround(n:float) -> float:
     return round(n, 13)
 
 
-def koundTeX(num:float) -> str:
-    
-    #num = round(num, 5)
+def koundTeX(num: float) -> str:
+    """Format a number for axis labels using LaTeX-style notation.
+
+    Small integers are returned as plain numbers. Very small or very large
+    values use scientific notation. Thousands separators use ``\\smallSpace``.
+
+    Parameters
+    ----------
+    num : float
+        Numeric value to format.
+
+    Returns
+    -------
+    str
+        LaTeX math string, e.g. ``"$5*10^{-4}$"`` or ``"$314$"``.
+
+    Examples
+    --------
+    >>> koundTeX(0.005)
+    '$5.0*10^{-3}$'
+    >>> koundTeX(314)
+    '$314$'
+    """
     if num == 0: return "$0$"
 
     if num < 100 and math.floor(int(num) - num) == math.ceil(int(num) - num):

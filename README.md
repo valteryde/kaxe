@@ -3,21 +3,35 @@
 
 ![BoxPlot](logo.png)
 
-Kaxe is an lightweight graphing tools for functions, equations, points and more written in pure python. Kaxe supports various plotting windows and charts.
+Kaxe is a lightweight, pure-Python plotting library for publication-quality figures in LaTeX documents. Create plots and charts with a simple object-oriented API, style them for A4 pages, and export to PNG or SVG.
 
-Kaxe documentation can be found [here](https://kaxe.readthedocs.io/en/latest/)
+Documentation: [kaxe.readthedocs.io](https://kaxe.readthedocs.io/en/latest/)
+
+## Quick example
+
+```python
+import kaxe
+
+plt = kaxe.Plot([-5, 5, -5, 5])
+plt.add(kaxe.Function2D(lambda x: x**2 - 4))
+plt.add(kaxe.Points2D([1, 2, 3], [1, 4, 9]))
+plt.theme(kaxe.Themes.A4Medium)
+plt.title("$x^2 - 4$")
+plt.save("figure.png")
+plt.save("figure.svg")
+```
+
+See the [getting started guide](https://kaxe.readthedocs.io/en/latest/pages/start.html), [recipes](https://kaxe.readthedocs.io/en/latest/pages/recipes.html), [styling guide](https://kaxe.readthedocs.io/en/latest/pages/styling.html), and [export guide](https://kaxe.readthedocs.io/en/latest/pages/export.html) for the full API.
 
 ## Goals
 
-Kaxe was made to create pretty, simple and easy graphs to be used along side articels, repports and other Acedima made in LaTeX. The goals for Kaxe then became
+Kaxe was made to create simple, aesthetic graphs for articles, reports, and other academic work in LaTeX:
 
-* Create pretty plots thats fit into the astectic of LaTeX
-* A very simple object oriented interface
-
-To get started visit [the getting started section](https://kaxe.readthedocs.io/en/latest/pages/start.html)
-
+* Plots that fit the look of LaTeX documents (Computer Modern math via [fondi](https://github.com/valteryde/fondi))
+* A straightforward object-oriented interface: create a window, add objects, style, save
 
 ## Examples of plots
+
 ![BoxPlot](tests/images/boxed.png)
 ![Polar plot](tests/images/polar.png)
 ![PrettyPlot3D2](tests/images/3d-function-pretty-2.png)

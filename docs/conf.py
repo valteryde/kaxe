@@ -1,6 +1,7 @@
 
 import sys
 from pathlib import Path
+import tomllib
 
 
 # Configuration file for the Sphinx documentation builder.
@@ -14,7 +15,11 @@ from pathlib import Path
 project = 'Kaxe'
 copyright = '2024, Valter Yde Daugberg'
 author = 'Valter Yde Daugberg'
-release = '18-12-2023'
+
+_pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+with open(_pyproject, "rb") as f:
+    _meta = tomllib.load(f)
+version = release = _meta["project"]["version"]
 
 # patch path
 sys.path.insert(0, str(Path('..', 'src').resolve()))
@@ -24,7 +29,6 @@ import kaxe
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-# pip install --upgrade myst-parser
 
 extensions = [
     'sphinx.ext.autodoc',

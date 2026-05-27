@@ -14,31 +14,10 @@ All plots inherits from the Window base class. This class should not be used in 
     .. automethod:: kaxe.AttrMap.help
 
 
-Saving plots
-------------
+Export
+------
 
-All 2D plot and chart windows support PNG (default) and SVG export via :py:meth:`kaxe.Window.save`.
-
-.. code-block:: python
-
-   plt.save("plot.png")
-   plt.save("plot.svg")
-
-When the filename has no extension, pass ``format`` explicitly (for example when writing to ``BytesIO``):
-
-.. code-block:: python
-
-   from io import BytesIO
-
-   buf = BytesIO()
-   plt.save(buf, format="svg")
-
-SVG export produces a self-contained vector file: curves, axes, and labels are vector graphics.
-Math labels use `fondi <https://github.com/valteryde/fondi>`_ with embedded New Computer Modern fonts.
-PNG and SVG can be saved from the same plot; saving SVG does not affect a cached PNG.
-
-.. note::
-   SVG export is supported for 2D plots and charts only. :class:`kaxe.Plot3D` and :class:`kaxe.Grid` still save PNG.
+See :doc:`export` for PNG, SVG, and Jupyter display details.
 
 
 Classical Plot
@@ -50,6 +29,21 @@ Classical Plot
 
     .. image:: /_static/plot.png
         :width: 400 px
+
+Zoom inset
+~~~~~~~~~~
+
+Use :py:meth:`kaxe.Plot.zoom` to add a magnified region with optional connector lines. The returned inset accepts its own objects via ``zoom.add()``:
+
+.. code-block:: python
+
+   import math
+   import kaxe
+
+   plot = kaxe.Plot([0, 4 * math.pi, -1, 1])
+   plot.add(kaxe.Function2D(math.sin))
+   zoom = plot.zoom(2.5, 4, -0.4, -0.1, position=(5, -0.5))
+   zoom.add(kaxe.Points2D([3.2], [-0.2], color=(255, 0, 0, 255)))
 
 .. autoclass:: kaxe.BoxedPlot
     :show-inheritance:
@@ -159,6 +153,24 @@ Logarithmic Plot
 
 Grid
 ----
+
+Combine multiple plot windows into one image. Sub-plots keep their own styles and objects:
+
+.. code-block:: python
+
+   import kaxe
+
+   top = kaxe.Plot([-3, 3, -3, 3])
+   top.add(kaxe.Function2D(lambda x: x))
+
+   bottom = kaxe.Plot([-3, 3, -3, 3])
+   bottom.add(kaxe.Function2D(lambda x: x**2))
+
+   grid = kaxe.Grid()
+   grid.addColumn(top, bottom)
+   grid.save("stacked.png")
+
+Use ``addRow(*plots)`` for horizontal layouts. :class:`kaxe.Grid` saves PNG only — see :doc:`export`.
 
 .. autoclass:: kaxe.Grid
     :show-inheritance:

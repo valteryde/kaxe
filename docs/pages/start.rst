@@ -1,133 +1,156 @@
 
-Getting Started with Kaxe
-=========================
+Getting Started
+===============
 
-Kaxe is simple and object oriented. There is support for a wide variety of plots, objects and charts.
+Kaxe is object oriented: create a plot or chart window, add content, style it, then save or show the result.
 
 Installation
 ------------
-
-You can install Kaxe using pip:
 
 .. code-block:: bash
 
    pip install kaxe
 
-Quick Start for plots
----------------------
+Complete example
+----------------
 
-To get started with Kaxe, you can create a simple plot:
+This example shows the full workflow: bounds, objects, theme, title, and export.
 
 .. code-block:: python
 
    import kaxe
+
+   plt = kaxe.Plot([-5, 5, -5, 5])
+   plt.add(kaxe.Function2D(lambda x: x**2 - 4))
+   plt.add(kaxe.Points2D([1, 2, 3], [1, 4, 9]))
+   plt.theme(kaxe.Themes.A4Medium)
+   plt.title("$x^2 - 4$")
+   plt.save("figure.png")
+   plt.save("figure.svg")
+
+Minimal plot
+------------
+
+.. code-block:: python
+
+   import kaxe
+
    plt = kaxe.Plot()
    plt.show()
 
-Saving
+Plot windows
+------------
+
+Plot windows hold drawable objects (functions, points, contours, and more).
+
+* :class:`kaxe.Plot` — standard Cartesian plot
+* :class:`kaxe.BoxedPlot` — axes pinned to the bottom-left corner
+* :class:`kaxe.PolarPlot` — polar coordinates
+* :class:`kaxe.LogPlot`, :class:`kaxe.BoxedLogPlot` — logarithmic axes
+* :class:`kaxe.DoubleAxisPlot` — two y-axes
+* :class:`kaxe.EmptyPlot`, :class:`kaxe.EmptyWindow` — blank canvases
+* :class:`kaxe.Grid` — multi-panel layouts
+* :class:`kaxe.Plot3D`, :class:`kaxe.PlotCenter3D`, :class:`kaxe.PlotFrame3D`, :class:`kaxe.PlotEmpty3D` — 3D plots
+
+See :doc:`plots` for the full API reference.
+
+Adding objects
+--------------
+
+Add objects with :py:meth:`kaxe.Window.add`. Smart objects pick 2D or 3D based on the plot:
+
+.. code-block:: python
+
+   plt.add(kaxe.Function(lambda x: 2 * x - 1))
+   plt.add(kaxe.Points([0, 1, 2, 3], [0, 1, 2, 3]))
+
+For explicit 2D types:
+
+.. code-block:: python
+
+   plt.add(kaxe.Function2D(lambda x: x**2))
+   plt.add(kaxe.Points2D([1, 2], [3, 4]))
+
+See :doc:`objects` for all object types.
+
+Styling
+-------
+
+Set individual style keys with :py:meth:`kaxe.AttrMap.style`:
+
+.. code-block:: python
+
+   plt.style(fontSize=80, lineWidth=4)
+
+List available keys with :py:meth:`kaxe.AttrMap.help`:
+
+.. code-block:: python
+
+   plt.help()
+
+Apply a page-sized preset with :py:meth:`kaxe.Window.theme`:
+
+.. code-block:: python
+
+   plt.theme(kaxe.Themes.A4Large)
+
+Scale the figure to a fraction of an A4 page width with :py:meth:`kaxe.Window.adjust`:
+
+.. code-block:: python
+
+   plt.adjust(0.5)
+
+See :doc:`api_workflow` for how plots, charts, objects, and styling fit together.
+
+More guides
+-----------
+
+* :doc:`recipes` — copy-paste examples for common tasks
+* :doc:`styling` — style keys, colors, themes, and ``adjust``
+* :doc:`legends_and_titles` — titles, object legends, chart legends, symbols
+* :doc:`export` — PNG, SVG, Jupyter, and LaTeX inclusion
+
+Charts
 ------
 
-Save a plot as PNG (default) or SVG:
+Charts are standalone windows — they are not added to a :class:`kaxe.Plot`.
+
+* :class:`kaxe.Pie`
+* :class:`kaxe.Bar`
+* :class:`kaxe.GroupBar`
+* :class:`kaxe.BoxPlot` — box-and-whisker chart (not the same as :class:`kaxe.BoxedPlot`)
+* :class:`kaxe.QQPlot`
+
+See :doc:`charts` for per-chart usage and the full API.
+
+Export
+------
+
+Save as PNG (default) or SVG (2D plots and charts):
 
 .. code-block:: python
 
    plt.save("myplot.png")
    plt.save("myplot.svg")
 
-Open SVG files in a browser or vector editor (Inkscape, Illustrator). The built-in editor XML view is source, not a rendered preview.
+See :doc:`export` for format details, Jupyter usage, and LaTeX tips.
 
-Kaxe has theese plots
+API quick reference
+-------------------
 
-* :class:`kaxe.Plot`
-* :class:`kaxe.BoxPlot`
-* :class:`kaxe.EmptyPlot`
-* :class:`kaxe.EmptyWindow`
-* :class:`kaxe.PolarPlot`
-* :class:`kaxe.LogPlot`
-* :class:`kaxe.Plot3D`
-* :class:`kaxe.PlotCenter3D`
-* :class:`kaxe.PlotFrame3D`
-* :class:`kaxe.PlotEmpty3D`
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
 
-
-Adding Objects to the Plotting Window
--------------------------------------
-
-You can add different objects to the plotting window. For example, to add a function:
-
-.. code-block:: python
-
-   func = kaxe.Function(lambda x: 2*x-1)
-   plt.add(func)
-
-Or to add points:
-
-.. code-block:: python
-
-   points = kaxe.Points([0, 1, 2, 3], [0, 1, 2, 3])
-   plt.add(points)
-
-Kaxe has theese objects 
-
-Smart Objects
-
-* :class:`kaxe.Points`
-* :class:`kaxe.Function`
-
-2D Objects
-
-* :class:`kaxe.Points2D`
-* :class:`kaxe.Arrow`
-* :class:`kaxe.Equation`
-* :class:`kaxe.ColorScale`
-* :class:`kaxe.HeatMap`
-* :class:`kaxe.ParametricEquation`
-* :class:`kaxe.Pillars`
-
-3D Objects
-
-* :class:`kaxe.Points3D`
-* :class:`kaxe.Function3D`
-
-
-Styling the window
-------------------
-
-Styling the plotting window is as simple as
-
-.. code-block:: python
-
-   plt.styles( {"styleName": "style"} otherStyleName=style)
-
-See :py:func:`kaxe.AttrMap.styles`
-
-All the styles avaliable can be printed to the terminal by using
-
-.. code-block:: python
-
-   plt.help()
-
-There are some themes build into Kaxe. Theese can be found in the class :py:class:`kaxe.Themes` and used with
-
-.. code-block:: python
-
-   plt.theme( kaxe.Themes.A4Large )
-
-
-Kaxe can also give an estimate for some styles to match a acedemia page. This is done using the :py:func:`window.adjust` method.
-
-.. code-block:: python
-
-   plt.adjust( 0.5 )
-
-
-Quick Start for charts
-----------------------
-
-Charts use more or less the same structure as plotting windows but is more limited. 
-The charts usage differ from chart to chart and the best way to learn about each one is to inspect the wished chart.
-Kaxe supports theese charts
-
-* :class:`kaxe.Pie`
-* :class:`kaxe.Bar`
-* :class:`kaxe.BarGroup`
+   * - Category
+     - Main symbols
+   * - Plot windows
+     - :class:`kaxe.Plot`, :class:`kaxe.BoxedPlot`, :class:`kaxe.PolarPlot`, :class:`kaxe.LogPlot`, :class:`kaxe.Grid`, :class:`kaxe.Plot3D`
+   * - Charts
+     - :class:`kaxe.Pie`, :class:`kaxe.Bar`, :class:`kaxe.GroupBar`, :class:`kaxe.BoxPlot`, :class:`kaxe.QQPlot`
+   * - Smart objects
+     - :class:`kaxe.Function`, :class:`kaxe.Points`, :class:`kaxe.Arrow`, :class:`kaxe.ParametricEquation`
+   * - Window methods
+     - ``add``, ``style``, ``theme``, ``adjust``, ``title``, ``save``, ``show``, ``help``, ``zoom``
+   * - Utilities
+     - :class:`kaxe.Themes`, :func:`kaxe.koundTeX`, :func:`kaxe.resetColor`, :func:`kaxe.setSetting`, :func:`kaxe.data.loadExcel`

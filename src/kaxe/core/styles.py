@@ -9,6 +9,16 @@ BLACK = (0,0,0,255)
 
 colorNum = -1
 def getRandomColor() -> tuple:
+    """Return the next color from Kaxe's default color cycle.
+
+    Colors rotate through the built-in palette. Call :func:`resetColor` to
+    restart the cycle from the first color.
+
+    Returns
+    -------
+    tuple
+        RGBA color tuple, e.g. ``(222, 107, 72, 255)``.
+    """
     global colorNum
     colorNum+=1
     return colors[colorNum%(len(colors))]
@@ -205,8 +215,8 @@ class AttrMap:
 
         Examples
         --------
-        >>> plt.styles(color=(255,0,0,255), fontSize=128)
-        >>> plt.styles({'marker.tickWidth': 10}, fontSize=64)
+        >>> plt.style(color=(255,0,0,255), fontSize=128)
+        >>> plt.style({'marker.tickWidth': 10}, fontSize=64)
         
         See also
         --------

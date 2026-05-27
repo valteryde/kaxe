@@ -106,6 +106,47 @@ def test_svg_vector_text_labels():
     assert "style" in tags
 
 
+def _svg_elements_in_bounds(root: ET.Element, margin: int = 2) -> None:
+    w = int(root.get("width"))
+    h = int(root.get("height"))
+
+    for el in root.iter():
+        tag = _local_tag(el.tag)
+        if tag == "circle":
+            cx = float(el.get("cx"))
+            cy = float(el.get("cy"))
+            r = float(el.get("r"))
+            assert margin <= cx - r and cx + r <= w - margin, (cx, cy, r)
+            assert margin <= cy - r and cy + r <= h - margin, (cx, cy, r)
+        elif tag == "rect":
+            fill = el.get("fill", "")
+            if not fill.startswith("rgb"):
+                continue
+            x = float(el.get("x", 0))
+            y = float(el.get("y", 0))
+            rw = float(el.get("width", 0))
+            rh = float(el.get("height", 0))
+            if rw >= w - 10 and rh >= h - 10:
+                continue
+            assert margin <= x and x + rw <= w - margin, (x, y, rw, rh)
+            assert margin <= y and y + rh <= h - margin, (x, y, rw, rh)
+
+
+@unit()
+def test_svg_legend_and_y_title_in_bounds():
+    plot = kaxe.Plot([0, 100, -1.5, 3.5])
+    plot.title("Time [s]", "Current [A]")
+    plot.add(kaxe.Points([0, 50, 100], [0, 1, 0], connect=True).legend("Series A"))
+    plot.add(kaxe.Points([0, 50, 100], [1, 0, 1], connect=True).legend("Series B"))
+    plot.showProgressBar = False
+    plot.printDebugInfo = False
+
+    buf = BytesIO()
+    plot.save(buf, format="svg")
+    root = _parse_svg(buf.getvalue().decode("utf-8"))
+    _svg_elements_in_bounds(root)
+
+
 @unit()
 def test_svg_chart_pie():
     chart = kaxe.Pie()

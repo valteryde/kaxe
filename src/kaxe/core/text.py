@@ -177,10 +177,14 @@ class Text(Shape):
         )
 
         if hasattr(self._mathtext, "scene"):
+            scene = self._mathtext.scene()
+            # Center the unrotated fondi scene on the rendered (rotated) bbox, matching Pillow.
+            scene_left = rotate_center[0] - scene.width / 2
+            scene_top = rotate_center[1] - scene.height / 2
             doc.add_fondi_scene(
-                self._mathtext.scene(),
-                self.__leftTop__[0],
-                svg_top,
+                scene,
+                scene_left,
+                scene_top,
                 rotate=self.rotate,
                 rotate_center=rotate_center,
             )

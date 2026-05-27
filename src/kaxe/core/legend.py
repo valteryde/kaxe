@@ -104,7 +104,7 @@ class LegendBox(AttrObject):
                 # start med at få bredden
                 symbolSize = symbol.getBoundingBox()
                 width = symbolSize[0] + text.width + legendGridSpacing[0] + legendSymbolTextSpacing
-                height = max(symbolSize[0], text.height)
+                height = max(symbolSize[1], text.height)
 
                 currentLineWidth += width
                 # hvis bredden er for meget så gå en linje ned
@@ -131,8 +131,17 @@ class LegendBox(AttrObject):
                     y = currentLinePos[1]
 
                     currentLinePos[0] += width
+                    row_mid = y + row["height"] / 2
                     symbol.x = x
-                    symbol.y = y + row["height"]/2 - symbolSize[1]/2
+                    # Circle uses cornerAlign (x, y) = top-left of bbox; rectangles use bottom-left y.
+                    if isinstance(symbol, shapes.Circle):
+                        symbol.y = row_mid + symbolSize[1] / 2
+                        sym_min_y = symbol.y - symbolSize[1]
+                        sym_max_y = symbol.y
+                    else:
+                        symbol.y = row_mid - symbolSize[1] / 2
+                        sym_min_y = symbol.y
+                        sym_max_y = symbol.y + symbolSize[1]
                     text.setLeftTopPos(
                         x + symbolSize[0] + legendSymbolTextSpacing, 
                         y + text.height/2 + row["height"]/2 #+ text.height + height/2 - text.height/2 #+ height/2 + text.height/2
@@ -144,10 +153,10 @@ class LegendBox(AttrObject):
                     # find left top most
                     tx, ty = text.getLeftTopPos()
                     maxPos[0] = max(maxPos[0], tx + text.width, symbol.x + symbolSize[0])
-                    maxPos[1] = max(maxPos[1], ty, symbol.y + symbolSize[1])
+                    maxPos[1] = max(maxPos[1], ty, sym_max_y)
 
                     minPos[0] = min(minPos[0], tx, symbol.x)
-                    minPos[1] = min(minPos[1], ty - text.height, symbol.y)
+                    minPos[1] = min(minPos[1], ty - text.height, sym_min_y)
 
                 currentLinePos[1] += row["height"] + legendGridSpacing[1]
 
