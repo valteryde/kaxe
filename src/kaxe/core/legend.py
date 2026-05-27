@@ -106,15 +106,15 @@ class LegendBox(AttrObject):
                 width = symbolSize[0] + text.width + legendGridSpacing[0] + legendSymbolTextSpacing
                 height = max(symbolSize[1], text.height)
 
-                currentLineWidth += width
-                # hvis bredden er for meget så gå en linje ned
-                if currentLineWidth > legendMaxWidth:
+                if currentLineWidth > 0 and currentLineWidth + width > legendMaxWidth:
                     grid.append({"elements":[], "height":0})
                     currentLineWidth = 0
-                
+
+                currentLineWidth += width
                 grid[-1]["elements"].append((symbol, text, width, height))
                 grid[-1]["height"] = max(grid[-1]["height"], height)
 
+            grid = [row for row in grid if row["elements"]]
             grid.reverse()
 
             # create legends
@@ -132,23 +132,24 @@ class LegendBox(AttrObject):
 
                     currentLinePos[0] += width
                     row_mid = y + row["height"] / 2
-                    symbol.x = x
                     if isinstance(symbol, shapes.Circle):
+                        symbol.x = x + symbolSize[0] / 2
                         symbol.centerAlign()
                         symbol.y = row_mid
-                        sym_min_x = symbol.x - symbolSize[0] / 2
-                        sym_max_x = symbol.x + symbolSize[0] / 2
+                        sym_min_x = x
+                        sym_max_x = x + symbolSize[0]
                         sym_min_y = symbol.y - symbolSize[1] / 2
                         sym_max_y = symbol.y + symbolSize[1] / 2
                     else:
+                        symbol.x = x
                         symbol.y = row_mid - symbolSize[1] / 2
                         sym_min_x = symbol.x
                         sym_max_x = symbol.x + symbolSize[0]
                         sym_min_y = symbol.y
                         sym_max_y = symbol.y + symbolSize[1]
                     text.setLeftTopPos(
-                        x + symbolSize[0] + legendSymbolTextSpacing, 
-                        y + text.height/2 + row["height"]/2 #+ text.height + height/2 - text.height/2 #+ height/2 + text.height/2
+                        x + symbolSize[0] + legendSymbolTextSpacing,
+                        y + row["height"] / 2 + text.height / 2,
                     )
 
                     if debug:
