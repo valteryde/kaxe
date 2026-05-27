@@ -45,6 +45,37 @@ When writing to a buffer without a filename extension, pass ``format`` explicitl
 
 PNG and SVG can be saved from the same plot; saving SVG does not invalidate a cached PNG.
 
+PDF (2D plots and charts)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+PDF export produces a vector file with the same content as SVG. Math labels use Computer Modern fonts from `fondi`. Install the optional dependency first:
+
+.. code-block:: bash
+
+   pip install kaxe[pdf]
+
+.. code-block:: python
+
+   plt.save("figure.pdf")
+
+.. note::
+   PDF follows the same rules as SVG: supported for 2D plots, charts, and :class:`kaxe.Grid` layouts. Individual :class:`kaxe.Plot3D` windows save a raster image inside a PDF page; in a grid, 3D cells are embedded as raster images inside the vector PDF.
+
+.. code-block:: python
+
+   grid = kaxe.Grid()
+   grid.addRow(plt1, plt2)
+   grid.save("figure_grid.pdf")
+
+When writing to a buffer without a filename extension, pass ``format`` explicitly:
+
+.. code-block:: python
+
+   from io import BytesIO
+
+   buf = BytesIO()
+   plt.save(buf, format="pdf")
+
 Display with show()
 -------------------
 
@@ -77,10 +108,16 @@ Including figures in LaTeX
 
    \\includesvg[width=0.8\\textwidth]{figures/parabola.svg}
 
+**PDF** — vector output, widely compatible with ``\\includegraphics`` (requires ``pip install kaxe[pdf]``):
+
+.. code-block:: latex
+
+   \\includegraphics[width=0.8\\textwidth]{figures/parabola.pdf}
+
 Tips for publication figures:
 
 * Use ``plt.theme(kaxe.Themes.A4Medium)`` or ``plt.adjust(0.5)`` to match document font size — see :doc:`styling`
-* Prefer ``.svg`` for 2D plots when your LaTeX toolchain supports it
+* Prefer ``.svg`` or ``.pdf`` for 2D plots in LaTeX documents
 * Use ``kaxe.resetColor()`` before each figure if you need consistent colors across multiple saves in one script
 
 Suppressing progress output

@@ -36,6 +36,7 @@ class Grid(AttrObject):
     >>> grid.show()
     >>> grid.save('fname.png')
     >>> grid.save('fname.svg')  # 2D vector; 3D cells embed as raster
+    >>> grid.save('fname.pdf')  # 2D vector PDF; requires kaxe[pdf]
 
     """
 
@@ -65,6 +66,7 @@ class Grid(AttrObject):
 
         self.__bakedImage__ = False
         self.__bakedSvg__ = None
+        self.__bakedPdf__ = None
         self.laterDraws = []
 
 
@@ -233,7 +235,7 @@ class Grid(AttrObject):
         return image
 
 
-    def _composite_svg(self, layout: dict) -> str:
+    def _composite_doc(self, layout: dict) -> SvgDocument:
         size = layout["size"]
         grid = layout["grid"]
         cellWidth = layout["cellWidth"]
@@ -280,7 +282,10 @@ class Grid(AttrObject):
 
             y += maxHeight
 
-        return doc.serialize()
+        return doc
+
+    def _composite_svg(self, layout: dict) -> str:
+        return self._composite_doc(layout).serialize()
 
 
     def __bake__(self):
@@ -295,6 +300,12 @@ class Grid(AttrObject):
         xml = self._composite_svg(layout)
         self.__bakedSvg__ = xml
         return xml
+
+    def __bake_pdf__(self) -> bytes:
+        layout = self._prepare_cells(vector=True)
+        pdf_bytes = self._composite_doc(layout).to_pdf()
+        self.__bakedPdf__ = pdf_bytes
+        return pdf_bytes
 
     
     def addRow(self, *row:list):
@@ -344,6 +355,20 @@ class Grid(AttrObject):
                         f.write(xml)
                 else:
                     fname.write(xml.encode('utf-8'))
+            return
+
+        if fmt == "pdf":
+            if self.__bakedPdf__ is not None:
+                pdf_bytes = self.__bakedPdf__
+            else:
+                pdf_bytes = self.__bake_pdf__()
+
+            if fname is not None:
+                if is_file_path(fname):
+                    with open(fname, 'wb') as f:
+                        f.write(pdf_bytes)
+                else:
+                    fname.write(pdf_bytes)
             return
 
         if self.__bakedImage__:

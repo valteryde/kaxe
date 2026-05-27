@@ -8,6 +8,7 @@ import io
 import math
 import os
 import xml.etree.ElementTree as ET
+from io import BytesIO
 from typing import Any, Optional, Union
 
 from PIL import Image
@@ -369,6 +370,12 @@ class SvgDocument:
         body = _ascii_safe_svg_markup(body)
         return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + body
 
+    def to_pdf(self, fname: Optional[Union[str, BytesIO]] = None) -> bytes:
+        """Render this document to PDF bytes via ReportLab."""
+        from .svg_pdf import write_pdf
+
+        return write_pdf(self, fname)
+
 
 def parse_svg_root(xml: str) -> ET.Element:
     """Parse SVG XML and return the root element."""
@@ -433,7 +440,7 @@ def infer_format(fname: Union[str, os.PathLike, Any], format: Optional[str] = No
     """Infer save format from explicit format, file extension, or default to png."""
     if format is not None:
         fmt = format.lower().lstrip(".")
-        if fmt in ("svg", "png"):
+        if fmt in ("svg", "png", "pdf"):
             return fmt
         raise ValueError(f"Unsupported format: {format}")
 
@@ -443,5 +450,7 @@ def infer_format(fname: Union[str, os.PathLike, Any], format: Optional[str] = No
             return "svg"
         if lower.endswith(".png"):
             return "png"
+        if lower.endswith(".pdf"):
+            return "pdf"
 
     return "png"

@@ -7,7 +7,7 @@ import math
 import sys
 import time
 from io import BytesIO
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import tqdm
@@ -15,6 +15,7 @@ from PIL import Image
 
 from ...core.helper import insideBox, getbbox
 from ...core.window import Window, settings
+from ...core.svg import infer_format, is_file_path
 from ...core.shapes import ImageShape, shapes
 from ...core.axis import Axis
 from ...core.marker import Marker
@@ -492,7 +493,7 @@ class Plot3D(Plot3DAxesMixin, Window):
         return self.__make_overlay__()
 
 
-    def save(self, fname:Union[str, BytesIO]):
+    def save(self, fname: Union[str, BytesIO], format: Optional[str] = None):
 
         self.setAttr('guiWidth', self.getAttr('width'))
         self.setAttr('guiHeight', self.getAttr('height'))
@@ -517,9 +518,16 @@ class Plot3D(Plot3DAxesMixin, Window):
 
         image = largeImage
 
-        if fname == None:
-            pass
-        elif fname is str:
+        if fname is None:
+            return image
+
+        fmt = infer_format(fname, format)
+        if fmt == "pdf":
+            from ...core.svg_pdf import image_to_pdf_page
+            image_to_pdf_page(image, fname)
+            return image
+
+        if is_file_path(fname):
             image.save(fname)
         else:
             image.save(fname, format="png")

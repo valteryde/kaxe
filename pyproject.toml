@@ -29,6 +29,9 @@ dependencies = [
   "opencv-python-headless",
 ]
 
+[project.optional-dependencies]
+pdf = ["reportlab>=4.0"]
+
 [project.urls]
 Homepage = "https://github.com/valteryde/kaxe"
 Issues = "https://github.com/valteryde/kaxe/issues"

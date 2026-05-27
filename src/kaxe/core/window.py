@@ -513,9 +513,34 @@ class Window(AttrObject):
         return xml
 
 
+    def __pdfPaint__(self, fname=None) -> bytes:
+        startTime = time.time()
+        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating PDF')
+
+        winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
+        doc = SvgDocument(winSize)
+
+        if self.getAttr('backgroundColor')[3] != 0:
+            background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
+            background.draw(doc)
+
+        for shape in self.shapes:
+            shape.draw(doc)
+            if self.showProgressBar: pbar.update()
+
+        pdf_bytes = doc.to_pdf(fname)
+
+        if self.showProgressBar: pbar.close()
+        if self.printDebugInfo: logging.info('Painted PDF in {}s'.format(str(round(time.time() - startTime, 4))))
+
+        return pdf_bytes
+
+
     def __paint__(self, fname=None, format: str = "png"):
         if format == "svg":
             return self.__svgPaint__(fname)
+        if format == "pdf":
+            return self.__pdfPaint__(fname)
         return self.__pillowPaint__(fname)
 
 
@@ -532,12 +557,13 @@ class Window(AttrObject):
         fname : str | BytesIO
             The filename where the image will be saved or a BytesIO object to save the image in memory.
         format : str, optional
-            Output format: ``"png"`` or ``"svg"``. Inferred from ``fname`` extension when omitted.
+            Output format: ``"png"``, ``"svg"``, or ``"pdf"``. Inferred from ``fname`` extension when omitted.
         
         Examples
         --------
         >>> plt.save( path/where/image/saved.png )
         >>> plt.save( path/where/image/saved.svg )
+        >>> plt.save( path/where/image/saved.pdf )
 
         """
 
@@ -554,7 +580,7 @@ class Window(AttrObject):
         totStartTime = time.time()
 
         self.__bake__()
-        result = self.__paint__(fname if fmt == "svg" else None, format=fmt)
+        result = self.__paint__(fname if fmt in ("svg", "pdf") else None, format=fmt)
 
         if fmt == "png":
             if fname is not None:
