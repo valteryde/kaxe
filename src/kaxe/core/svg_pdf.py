@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 _PDF_INSTALL_HINT = "PDF export requires reportlab. Install with: pip install kaxe[pdf]"
 _FONDI_FONTS_REGISTERED = False
+_REGISTERED_PDF_FONTS: set[str] = set()
 _OTF_TTF_CACHE: dict[str, bytes] = {}
 
 _TRANSFORM_RE = re.compile(
@@ -137,6 +138,7 @@ def _convert_otf_to_ttf_bytes(otf_path: os.PathLike[str]) -> bytes:
         for g in glyf.glyphs.values()
     )
     maxp.compile(font)
+    font["maxp"] = maxp
 
     post = font["post"]
     post.formatType = 2.0
@@ -182,6 +184,7 @@ def _register_fondi_fonts() -> None:
                 else:
                     data = candidate.read_bytes()
                 pdfmetrics.registerFont(TTFont(name, io.BytesIO(data)))
+                _REGISTERED_PDF_FONTS.add(name)
                 return True
             except Exception as exc:
                 logging.warning("Could not register PDF font %s from %s: %s", name, candidate, exc)
@@ -209,10 +212,13 @@ def _register_fondi_fonts() -> None:
 
 
 def _resolve_font_name(family: Optional[str], style: Optional[str]) -> str:
-    if family == "FondiNewCM" and style == "italic":
-        return "FondiNewCM-Italic"
     if family == "FondiNewCM":
-        return "FondiNewCM"
+        if style == "italic" and "FondiNewCM-Italic" in _REGISTERED_PDF_FONTS:
+            return "FondiNewCM-Italic"
+        if "FondiNewCM" in _REGISTERED_PDF_FONTS:
+            return "FondiNewCM"
+        logging.warning("FondiNewCM unavailable; using Helvetica for PDF text")
+        return "Helvetica"
     if family:
         logging.warning("Unknown PDF font family %r; using Helvetica", family)
     return "Helvetica"
