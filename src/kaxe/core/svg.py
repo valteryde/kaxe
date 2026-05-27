@@ -365,6 +365,8 @@ class SvgDocument:
         for el in self._elements:
             root.append(el)
         body = ET.tostring(root, encoding="unicode")
+        from fondi.backends.svg import _ascii_safe_svg_markup
+        body = _ascii_safe_svg_markup(body)
         return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + body
 
 
