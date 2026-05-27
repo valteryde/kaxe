@@ -26,7 +26,13 @@ SVG export produces a self-contained vector file. Curves, axes, and labels are v
    plt.save("figure.svg")
 
 .. note::
-   SVG is supported for 2D plots and charts only. :class:`kaxe.Plot3D` and :class:`kaxe.Grid` save PNG.
+   SVG is supported for 2D plots, charts, and :class:`kaxe.Grid` layouts. Individual :class:`kaxe.Plot3D` windows save PNG only; in a grid, 3D cells are embedded as raster images inside the SVG. :meth:`kaxe.Grid.show` always previews PNG.
+
+.. code-block:: python
+
+   grid = kaxe.Grid()
+   grid.addRow(plt1, plt2)
+   grid.save("figure_grid.svg")
 
 When writing to a buffer without a filename extension, pass ``format`` explicitly:
 

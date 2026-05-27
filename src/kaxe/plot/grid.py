@@ -1,11 +1,27 @@
 
 from io import BytesIO
+from typing import Optional, Union
 from ..core.styles import AttrObject, AttrMap
 from ..core.window import *
 from ..core.legend import LegendBox
-from typing import Union
+from ..core.svg import (
+    SvgDocument,
+    infer_format,
+    is_file_path,
+    parse_svg_root,
+    extract_svg_children,
+    embed_svg_children,
+    merge_fondi_css,
+)
 from PIL import Image
 from .constants import XYZPLOT
+
+
+def _cell_supports_svg(plot) -> bool:
+    if plot == XYZPLOT or isinstance(plot, str):
+        return False
+    return getattr(plot, "supports_vector_export", False)
+
 
 class Grid(AttrObject):
     """
@@ -19,6 +35,7 @@ class Grid(AttrObject):
     >>> grid.addColumn(plt3, plt4)
     >>> grid.show()
     >>> grid.save('fname.png')
+    >>> grid.save('fname.svg')
 
     """
 
@@ -47,6 +64,7 @@ class Grid(AttrObject):
         self.padding = [0,0,0,0]
 
         self.__bakedImage__ = False
+        self.__bakedSvg__ = None
         self.laterDraws = []
 
 
@@ -76,39 +94,27 @@ class Grid(AttrObject):
         self.__legends = legends
 
 
-
-    def __bake__(self):
-        """
-        only supports pillow images
-
-        TODO: Clean up
-        """
-
+    def _prepare_cells(self, vector: bool = False):
+        """Style cells, export to memory, and compute composite layout."""
         grid = self.grid
         gridSize = ((max([len(i) for i in grid])), len(grid))
         self.width, self.height = self.getAttr('width'), self.getAttr('height')
         self.outerPadding = self.getAttr('outerPadding')
 
-        # styles values
-        cellWidth, cellHeight = self.width//gridSize[0], self.height//gridSize[1]
+        cellWidth, cellHeight = self.width // gridSize[0], self.height // gridSize[1]
 
-        # calculated values        
         height = 0
         leftpadding = 0
         rightpadding = 0
         toppadding = 0
         bottompadding = 0
         gapcol = 0
-
-        # add styles to window
-        # and calculate sizes
         maxWidth = 0
+
         for row in grid:
-            
             maxHeight = 0
-            
+
             for colNum, plot in enumerate(row):
-                
                 plot.style(width=cellWidth, height=cellHeight)
                 plot.style(outerPadding=self.outerPadding)
 
@@ -119,85 +125,176 @@ class Grid(AttrObject):
                 if plot == XYZPLOT:
                     plot.forceWidthHeight = True
 
-                plot.save(memfile)
+                if vector and _cell_supports_svg(plot):
+                    plot.save(memfile, format="svg")
+                else:
+                    plot.save(memfile)
+
                 plot.__ioBytes = memfile
+                memfile.seek(0)
 
                 w, h = plot.getSize()
                 maxWidth = max(w, maxWidth)
-                
                 maxHeight = max(h, maxHeight)
-                
-                # calculate paddings
+
                 if colNum == 0:
                     leftpadding = max(leftpadding, plot.padding[0])
                     bottompadding = max(bottompadding, plot.padding[1])
-                
-                # calculate gaps
-                else: # "låner"/genbruger lige else her
-                    
-                    # Da den næste ikke er lavet bruges den forrige
+                else:
                     gapcol = max(gapcol, plot.padding[0] + row[colNum - 1].padding[2])
 
-                if colNum == len(row)-1:
+                if colNum == len(row) - 1:
                     rightpadding = max(rightpadding, plot.padding[2])
                     toppadding = max(toppadding, plot.padding[3])
 
             height += maxHeight
-        
+
         largetsRowNumber = max(len(i) for i in grid)
-        width = gapcol * (largetsRowNumber - 1) + largetsRowNumber * cellWidth + leftpadding + rightpadding
+        width = (
+            gapcol * (largetsRowNumber - 1)
+            + largetsRowNumber * cellWidth
+            + leftpadding
+            + rightpadding
+        )
 
         size = (
             width + self.outerPadding[0] + self.outerPadding[2],
-            height + self.outerPadding[1] + self.outerPadding[3] + toppadding
+            height + self.outerPadding[1] + self.outerPadding[3] + toppadding,
         )
-        
-        # Add legend
+
+        legend_image = None
+        legend_doc = None
+        legend_top_margin = 0
+
         if self.__legends:
             self.legendbox = LegendBox()
             for d in self.__legends:
                 self.legendbox.add(*d)
 
-            legendBoxImage = self.legendbox.finalize(self, sneaky=True)
+            if vector:
+                legend_doc = self.legendbox.finalize_svg_sneaky(self)
+                legend_h = legend_doc.height
+                legend_top_margin = self.legendbox.getAttr('topMargin')
+            else:
+                legend_image = self.legendbox.finalize(self, sneaky=True)
+                legend_h = legend_image.height
+                legend_top_margin = self.legendbox.getAttr('topMargin')
 
-            size = (
-                size[0],
-                size[1] + legendBoxImage.height + self.legendbox.getAttr('topMargin'),
-            )
+            size = (size[0], size[1] + legend_h + legend_top_margin)
+
+        return {
+            "grid": grid,
+            "cellWidth": cellWidth,
+            "gapcol": gapcol,
+            "size": size,
+            "leftpadding": leftpadding,
+            "toppadding": toppadding,
+            "legend_image": legend_image,
+            "legend_doc": legend_doc,
+            "legend_top_margin": legend_top_margin,
+        }
+
+
+    def _composite_png(self, layout: dict) -> Image.Image:
+        grid = layout["grid"]
+        size = layout["size"]
+        cellWidth = layout["cellWidth"]
+        gapcol = layout["gapcol"]
+        leftpadding = layout["leftpadding"]
+        toppadding = layout["toppadding"]
 
         image = Image.new('RGBA', size, self.getAttr('backgroundColor'))
 
-        if self.__legends:
-            image.alpha_composite(legendBoxImage, (image.width//2 - legendBoxImage.width//2, image.height - legendBoxImage.height - self.outerPadding[3]))
+        legend_image = layout["legend_image"]
+        if legend_image is not None:
+            image.alpha_composite(
+                legend_image,
+                (
+                    image.width // 2 - legend_image.width // 2,
+                    image.height - legend_image.height - self.outerPadding[3],
+                ),
+            )
 
-        # TEGNER!
-        # add plots to grid image
         y = toppadding + self.outerPadding[1]
 
         for row in grid:
-
             maxHeight = 0
             x = leftpadding + self.outerPadding[0]
 
             for plot in row:
-                """
-                Is a little ineffecient to write and then read from memory with png extenseion
-                but here goes.
-                """
-
-                w, h = plot.getSize()
-
                 img = Image.open(plot.__ioBytes)
+                plot.__ioBytes.seek(0)
                 image.paste(img, (x - plot.padding[0], y - plot.padding[3]))
-            
                 x += cellWidth + gapcol
-                maxHeight = max(maxHeight, h)
+                maxHeight = max(maxHeight, plot.getSize()[1])
 
             y += maxHeight
 
-        self.__bakedImage__ = image
-
         return image
+
+
+    def _composite_svg(self, layout: dict) -> str:
+        size = layout["size"]
+        grid = layout["grid"]
+        cellWidth = layout["cellWidth"]
+        gapcol = layout["gapcol"]
+        leftpadding = layout["leftpadding"]
+        toppadding = layout["toppadding"]
+
+        doc = SvgDocument(size)
+        bg = self.getAttr('backgroundColor')
+        if bg[3] != 0:
+            doc.add_rect(0, 0, size[0], size[1], bg)
+
+        legend_doc = layout["legend_doc"]
+        if legend_doc is not None:
+            lx = size[0] // 2 - legend_doc.width // 2
+            ly = size[1] - legend_doc.height - self.outerPadding[3]
+            embed_svg_children(doc, list(legend_doc._elements), lx, ly)
+            merge_fondi_css(doc, legend_doc._fondi_font_css)
+
+        y = toppadding + self.outerPadding[1]
+
+        for row in grid:
+            maxHeight = 0
+            x = leftpadding + self.outerPadding[0]
+
+            for plot in row:
+                px = x - plot.padding[0]
+                py = y - plot.padding[3]
+
+                if _cell_supports_svg(plot):
+                    plot.__ioBytes.seek(0)
+                    xml = plot.__ioBytes.read().decode("utf-8")
+                    root = parse_svg_root(xml)
+                    children, fondi_css = extract_svg_children(root)
+                    embed_svg_children(doc, children, px, py)
+                    merge_fondi_css(doc, fondi_css)
+                else:
+                    plot.__ioBytes.seek(0)
+                    img = Image.open(plot.__ioBytes)
+                    doc.add_image(img, px, py, y_coord="top")
+
+                x += cellWidth + gapcol
+                maxHeight = max(maxHeight, plot.getSize()[1])
+
+            y += maxHeight
+
+        return doc.serialize()
+
+
+    def __bake__(self):
+        layout = self._prepare_cells(vector=False)
+        image = self._composite_png(layout)
+        self.__bakedImage__ = image
+        return image
+
+
+    def __bake_svg__(self) -> str:
+        layout = self._prepare_cells(vector=True)
+        xml = self._composite_svg(layout)
+        self.__bakedSvg__ = xml
+        return xml
 
     
     def addRow(self, *row:list):
@@ -232,18 +329,36 @@ class Grid(AttrObject):
             self.grid[i].append(plot)
 
     
-    def save(self, fpath:str):
-        
+    def save(self, fname: Union[str, BytesIO], format: Optional[str] = None):
+        fmt = infer_format(fname, format)
+
+        if fmt == "svg":
+            if self.__bakedSvg__ is not None:
+                xml = self.__bakedSvg__
+            else:
+                xml = self.__bake_svg__()
+
+            if fname is not None:
+                if is_file_path(fname):
+                    with open(fname, 'w', encoding='utf-8') as f:
+                        f.write(xml)
+                else:
+                    fname.write(xml.encode('utf-8'))
+            return
+
         if self.__bakedImage__:
-            self.__bakedImage__.save(fpath)
+            if is_file_path(fname):
+                self.__bakedImage__.save(fname)
+            else:
+                self.__bakedImage__.save(fname, format="png")
             return
 
         img = self.__bake__()
-        
-        if fpath is str:
-            img.save(fpath)
+
+        if isinstance(fname, str):
+            img.save(fname)
         else:
-            img.save(fpath, format="png")
+            img.save(fname, format="png")
 
 
     def show(self):
@@ -277,4 +392,7 @@ class Grid(AttrObject):
 
 
     def getSize(self):
-        return self.__bakedImage__.size
+        if self.__bakedImage__:
+            return self.__bakedImage__.size
+        layout = self._prepare_cells(vector=False)
+        return layout["size"]

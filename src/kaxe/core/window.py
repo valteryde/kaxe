@@ -69,6 +69,7 @@ class Window(AttrObject):
     """
 
     name = "Window"
+    supports_vector_export = True
 
     def __init__(self): # |
         """

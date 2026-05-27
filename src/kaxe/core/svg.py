@@ -368,6 +368,60 @@ class SvgDocument:
         return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + body
 
 
+def parse_svg_root(xml: str) -> ET.Element:
+    """Parse SVG XML and return the root element."""
+    if xml.startswith("<?"):
+        xml = xml.split("\n", 1)[1]
+    root = ET.fromstring(xml)
+    if not (root.tag.endswith("svg") or root.tag == "svg"):
+        raise ValueError("Expected SVG root element")
+    return root
+
+
+def extract_svg_children(root: ET.Element) -> tuple[list[ET.Element], Optional[str]]:
+    """Return drawable children (excluding defs) and optional fondi style text."""
+    fondi_css: Optional[str] = None
+    children: list[ET.Element] = []
+    for child in root:
+        local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+        if local == "defs":
+            for sub in child:
+                sub_local = sub.tag.split("}")[-1] if "}" in sub.tag else sub.tag
+                if sub_local == "style" and sub.text:
+                    fondi_css = sub.text
+            continue
+        children.append(child)
+    return children, fondi_css
+
+
+def embed_svg_children(
+    doc: SvgDocument,
+    children: list[ET.Element],
+    tx: float,
+    ty: float,
+) -> None:
+    """Embed copied SVG children at top-left offset (SVG y-down coordinates)."""
+    if not children:
+        return
+    group = ET.Element(
+        f"{{{SVG_NS}}}g",
+        {"transform": f"translate({round(tx, 3)},{round(ty, 3)})"},
+    )
+    for child in children:
+        group.append(copy.deepcopy(child))
+    doc._elements.append(group)
+
+
+def merge_fondi_css(doc: SvgDocument, *style_texts: Optional[str]) -> None:
+    """Set fondi font CSS on doc once (skip duplicates and empty)."""
+    if doc._fondi_font_css is not None:
+        return
+    for text in style_texts:
+        if text:
+            doc._fondi_font_css = text
+            return
+
+
 def is_file_path(fname: Any) -> bool:
     """Return True when fname is a filesystem path (str or os.PathLike)."""
     return isinstance(fname, (str, os.PathLike))

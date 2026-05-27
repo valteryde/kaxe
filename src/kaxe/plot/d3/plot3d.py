@@ -27,6 +27,8 @@ from .axes import Plot3DAxesMixin
 
 
 class Plot3D(Plot3DAxesMixin, Window):
+    supports_vector_export = False
+
     """
     A 3D plotting window with full wireframe box and automatic axis positioning.
     

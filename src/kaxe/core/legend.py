@@ -3,6 +3,7 @@ from .symbol import makeSymbolShapes, symbol
 from .text import Text
 from .shapes import shapes
 from .styles import AttrObject, ComputedAttribute
+from .svg import SvgDocument
 import math
 from types import MappingProxyType
 from PIL import Image
@@ -46,12 +47,12 @@ class LegendBox(AttrObject):
         self.objects = objects
 
 
-    def finalize(self, parent, sneaky=False): # maybe add as a seperate object
+    def finalize(self, parent, sneaky=False, vector=False): # maybe add as a seperate object
         """
         stadigvæk lidt skrøbelig
 
         if sneaky is True the method will not do anything to parent
-        The function will also just return an image of the legendbox
+        The function will also just return an image of the legendbox (or SvgDocument when vector=True)
 
         """
         self.setAttrMap(parent.attrmap)
@@ -193,11 +194,19 @@ class LegendBox(AttrObject):
                 # tilføj plads til legenden
                 parent.addPaddingCondition(bottom=height+legendGap)
 
-            else: # Only works with PILLOW
+            else:
                 self.batch.push(-minPos[0], -minPos[1])
                 self.boxshape.push(-minPos[0], -minPos[1])
+                if vector:
+                    doc = SvgDocument((int(width), int(height)))
+                    self.boxshape.draw(doc)
+                    self.batch.draw(doc)
+                    return doc
                 surface = Image.new('RGBA', (int(width), int(height)), (0,0,0,0))
-
                 self.boxshape.draw(surface)
                 self.batch.draw(surface)
                 return surface
+
+    def finalize_svg_sneaky(self, parent):
+        """Return an SvgDocument sized to the legend for grid SVG export."""
+        return self.finalize(parent, sneaky=True, vector=True)
