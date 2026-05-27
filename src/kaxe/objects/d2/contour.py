@@ -9,7 +9,7 @@ from ...plot import identities
 from .equation import Equation
 from types import FunctionType
 from typing import Union
-from ...core.color import Colormaps, Colormap
+from ...core.color import Colormaps, Colormap, to_rgba
 
 
 class Contour:
@@ -109,5 +109,5 @@ class Contour:
         self.legendText = text
         self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self

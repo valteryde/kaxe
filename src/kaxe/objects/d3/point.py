@@ -7,7 +7,7 @@ from ...core.helper import isRealNumber
 # 3d
 from ...core.d3.objects import Point3D, Line3D
 from ...core.d3.helper import rc
-from ...core.color import Colormaps
+from ...core.color import Colormaps, to_rgba
 
 # packages
 import numpy as np
@@ -95,7 +95,7 @@ class Points3D(Base3DObject):
         self.legendText = text
 
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
 
         self.legendSymbol = symbol
 

@@ -1,5 +1,6 @@
 
 from ...core.styles import *
+from ...core.color import to_rgba
 from ...core.symbol import symbol as symbols
 from ...plot import identities
 from ...core.shapes import shapes
@@ -57,7 +58,7 @@ class Fill:
                 self.color.append(100)
             self.color = tuple(self.color)
         else:
-            self.color = color
+            self.color = to_rgba(color)
     
         self.legendColor = self.color
 
@@ -139,7 +140,7 @@ class Fill:
         self.legendText = text
         self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self
 
 

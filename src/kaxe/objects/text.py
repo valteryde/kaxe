@@ -1,5 +1,6 @@
 
 from ..core.styles import *
+from ..core.color import to_rgba
 from ..core.shapes import shapes
 from ..core.symbol import makeSymbolShapes
 from ..core.symbol import symbol as symbols
@@ -35,7 +36,7 @@ class Text:
         if color is None:
             self.color = getRandomColor()
         else:
-            self.color = color
+            self.color = to_rgba(color)
 
         self.legendColor = self.color
         self.supports = [identities.XYPLOT, identities.POLAR, identities.XYZPLOT]

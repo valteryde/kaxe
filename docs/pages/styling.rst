@@ -102,13 +102,15 @@ Useful ``marker`` keys:
 Colors
 ------
 
-Colors are RGBA tuples: ``(red, green, blue, alpha)`` with values 0–255.
+Colors accept **RGBA tuples** ``(red, green, blue, alpha)`` with values 0–255, or **hex strings** such as ``"#FF5154"``. Named CSS colors (``"red"``, ``"white"``, …) also work wherever colors are accepted.
 
 .. code-block:: python
 
-   plt.style(color=(0, 0, 0, 255))
-   func = kaxe.Function2D(lambda x: x, color=(222, 107, 72, 255))
+   plt.style(color="#000000", backgroundColor="#ffffff")
+   func = kaxe.Function2D(lambda x: x, color="#DE6B48")
    plt.add(func)
+
+Use :func:`kaxe.to_rgba` to normalize any supported input to an RGBA tuple.
 
 Default plot colors cycle automatically. Control the cycle with:
 

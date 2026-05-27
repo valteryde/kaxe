@@ -3,6 +3,8 @@ import copy
 from types import MappingProxyType, FunctionType
 import math
 
+from .color import is_color_attr
+
 # COLORS
 WHITE = (255,255,255,255)
 BLACK = (0,0,0,255)
@@ -137,6 +139,10 @@ class AttrMap:
         """
         either sumbit by passing an object and retrieve global style
         """
+
+        if type(value) is not ComputedAttribute and is_color_attr(attr):
+            from .color import normalize_color_value
+            value = normalize_color_value(value)
 
         if type(value) is ComputedAttribute:
             value.setAttrMap(self)

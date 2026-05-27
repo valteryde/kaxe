@@ -1,14 +1,12 @@
-pillow
-fondi
-sympy
-scipy
-openpyxl
-tqdm
-markdown-it-py
-mdit-py-plugins
-myst-parser
+# Sphinx and README parsing
 sphinx>=7.0
 sphinx_rtd_theme
-numpy-stl
-pyopengl
+myst-parser
+markdown-it-py
+mdit-py-plugins
+
+# 3D rendering (autodoc imports Plot3D; docs/files.py screenshots)
+PyOpenGL
 PySDL2
+pysdl2-dll
+numpy-stl

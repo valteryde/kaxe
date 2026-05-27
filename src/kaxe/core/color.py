@@ -46,6 +46,34 @@ def to_rgba(color) -> tuple[int, int, int, int]:
     return tuple(max(0, min(255, int(round(c)))) for c in channels)
 
 
+def is_color_attr(attr: str) -> bool:
+    """Return True if an AttrMap key stores a color value."""
+    name = attr.rsplit(".", 1)[-1]
+    return name == "color" or name.endswith("Color")
+
+
+def normalize_color_value(value):
+    """Normalize style/object color values to RGBA tuples or lists of them."""
+    if value is None or isinstance(value, Colormap):
+        return value
+
+    if isinstance(value, str):
+        return to_rgba(value)
+
+    if isinstance(value, (list, tuple)):
+        if not value:
+            return value
+        first = value[0]
+        if isinstance(first, str):
+            return [to_rgba(c) for c in value]
+        if isinstance(first, (list, tuple)) and len(first) in (3, 4):
+            return [to_rgba(c) for c in value]
+        if len(value) in (3, 4) and all(isinstance(c, (int, float)) for c in value):
+            return to_rgba(value)
+
+    return to_rgba(value)
+
+
 class Colormap:
     """
     A class to represent a colormap that interpolates colors from a gradient.

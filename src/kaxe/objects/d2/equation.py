@@ -1,6 +1,7 @@
 
 from ...core.shapes import shapes
 from ...core.styles import getRandomColor
+from ...core.color import to_rgba
 from ...core.symbol import symbol
 from ...plot import identities
 from ...core.helper import vdiff, vlen
@@ -47,7 +48,7 @@ class Equation:
         if color is None:
             self.color = getRandomColor()
         else:
-            self.color = color
+            self.color = to_rgba(color)
         self.legendColor = self.color # default
         
         self.dots = []
@@ -241,5 +242,5 @@ class Equation:
         self.legendText = text
         self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self

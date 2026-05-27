@@ -62,6 +62,29 @@ def _():
     assert int(arr[3]) == 255
 
 
+@test("style color accepts hex string")
+def _():
+    plt = kaxe.Plot([0, 1, 0, 1])
+    plt.style(color="#FF0000")
+    assert plt.getAttr("color") == (255, 0, 0, 255)
+
+
+@test("Function2D accepts hex color")
+def _():
+    func = kaxe.Function2D(lambda x: x, color="#00FF00")
+    assert func.color == (0, 255, 0, 255)
+
+
+@test("normalize_color_value accepts color lists for barColor")
+def _():
+    from kaxe.core.color import normalize_color_value
+
+    assert normalize_color_value(["#ff0000", "#00ff00"]) == [
+        (255, 0, 0, 255),
+        (0, 255, 0, 255),
+    ]
+
+
 @test("SingleColormap accepts hex without NameError")
 def _():
     cmap = SingleColormap("#004b23", total=3)

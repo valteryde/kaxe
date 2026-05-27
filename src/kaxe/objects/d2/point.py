@@ -1,5 +1,6 @@
 
 from ...core.styles import *
+from ...core.color import to_rgba
 from ...core.shapes import shapes
 from ...core.symbol import makeSymbolShapes
 from ...core.symbol import symbol as symbols
@@ -50,7 +51,7 @@ class Points2D:
         if color is None:
             self.color = getRandomColor()
         else:
-            self.color = color
+            self.color = to_rgba(color)
 
         self.size = size
         self.symbol = symbol
@@ -153,5 +154,5 @@ class Points2D:
         if symbol:
             self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self

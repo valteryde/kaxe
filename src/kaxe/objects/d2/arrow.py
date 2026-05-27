@@ -1,5 +1,6 @@
 
 from ...core.styles import *
+from ...core.color import to_rgba
 from ...core.shapes import shapes
 from ...core.symbol import makeSymbolShapes
 from ...core.symbol import symbol as symbols
@@ -46,7 +47,7 @@ class Arrow:
         if color is None:
             self.color = getRandomColor()
         else:
-            self.color = color
+            self.color = to_rgba(color)
     
         self.legendColor = self.color
 
@@ -172,5 +173,5 @@ class Arrow:
         self.legendText = text
         self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self

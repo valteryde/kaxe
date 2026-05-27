@@ -2,6 +2,7 @@
 from typing import Callable
 from .point import Points2D
 from ...core.styles import getRandomColor
+from ...core.color import to_rgba
 from ...core.helper import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol
@@ -73,7 +74,7 @@ class Function2D:
         if color is None:
             self.color = getRandomColor()
         else:
-            self.color = color
+            self.color = to_rgba(color)
         self.legendColor = self.color
 
         self.legendSymbol = symbol.LINE
@@ -294,5 +295,5 @@ class Function2D:
         if symbol:
             self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self

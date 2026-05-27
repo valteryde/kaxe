@@ -1,4 +1,5 @@
 
+from ..core.color import to_rgba
 from ..plot import identities
 
 class GhostLegend:
@@ -21,7 +22,7 @@ class GhostLegend:
         self.supports = [identities.POLAR, identities.XYPLOT, identities.XYZPLOT, identities.LOGPLOT]
 
         self.legendText = text
-        self.legendColor = color
+        self.legendColor = to_rgba(color)
         self.legendSymbol = symbol
 
     

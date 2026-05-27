@@ -8,7 +8,7 @@ from .base import Base3DObject
 from ...core.d3.objects import Triangle, Line3D, Point3D
 from ...core.d3.backend import RenderBackend
 from ...core.d3.helper import rc
-from ...core.color import Colormaps, Colormap
+from ...core.color import Colormaps, Colormap, to_rgba
 
 # other
 import numpy as np
@@ -154,7 +154,7 @@ class Mesh(Base3DObject):
         self.legendText = text
 
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
 
 
         if symbol:

@@ -20,7 +20,13 @@ dependencies = [
   "openpyxl",
   "tqdm",
   "numba",
-  "python-dotenv"
+  "python-dotenv",
+  "pyopengl",
+  "PySDL2",
+  "pysdl2-dll",
+  "numpy-stl",
+  "psutil",
+  "opencv-python-headless",
 ]
 
 [project.urls]

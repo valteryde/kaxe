@@ -2,7 +2,7 @@
 from typing import Callable
 from .point import Points2D
 from ...core.styles import getRandomColor
-from ...core.color import Colormap
+from ...core.color import Colormap, to_rgba
 from ...core.helper import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol
@@ -62,7 +62,7 @@ class ParametricEquation:
         if color is None:
             self.color = getRandomColor()
         else:
-            self.color = color
+            self.color = color if isinstance(color, Colormap) else to_rgba(color)
         
         self.legendColor = self.color
         if type(self.color) is Colormap:
@@ -227,5 +227,5 @@ class ParametricEquation:
         self.legendText = text
         self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self

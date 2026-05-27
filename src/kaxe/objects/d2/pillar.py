@@ -1,6 +1,7 @@
 
 from typing import Union
 from ...core.styles import *
+from ...core.color import to_rgba
 from ...core.shapes import shapes
 from ...core.symbol import makeSymbolShapes
 from ...core.symbol import symbol as symbols
@@ -43,7 +44,7 @@ class Pillars:
     def __init__(self, x, heights, colors:Union[tuple, list[tuple]]=None, width:int=None, outlineWidth=5, outlineColor:tuple=(0,0,0,255)) -> None:
     
         self.outlineWidth = outlineWidth
-        self.outlineColor = outlineColor
+        self.outlineColor = to_rgba(outlineColor)
 
         self.x = x
         
@@ -66,9 +67,11 @@ class Pillars:
             self.color = [getRandomColor() for i in range(maxColors)]
             self.randomColor = True
         else:
-            if not (type(colors[0]) in [list, tuple]):
+            if isinstance(colors, str):
+                colors = [to_rgba(colors)]
+            elif not (type(colors[0]) in [list, tuple]):
                 colors = [colors]
-            self.color = colors
+            self.color = [to_rgba(c) for c in colors]
 
         self.legendColor = self.color[0]
         
@@ -177,7 +180,7 @@ class Pillars:
         self.legendText = text
         self.legendSymbol = symbol
         if color:
-            self.legendColor = color
+            self.legendColor = to_rgba(color)
         return self
 
 
