@@ -6,6 +6,7 @@ from random import randint
 from PIL import Image, ImageDraw
 from .styles import *
 from .helper import *
+from .color import to_rgba
 from .line import drawLineOnPillowImage
 from .svg import SvgDocument
 import os
@@ -54,7 +55,7 @@ def findMinMax(*pairs):
 
 
 def prepColor(color):
-    return tuple(int(round(i)) for i in color)
+    return to_rgba(color)
 
 
 
@@ -124,7 +125,7 @@ class Rectangle(Shape):
         if batch: batch.add(self)
 
         self.outlineWidth = outlineWidth
-        self.outlineColor = outlineColor
+        self.outlineColor = prepColor(outlineColor)
 
 
     def centerAlign(self):
@@ -167,7 +168,7 @@ class Line(Shape):
         self.y0 = y0
         self.y1 = y1
         self.thickness = width
-        self.color = color
+        self.color = to_rgba(color)
         self.batch = batch
         self.width = int(self.x1)
         self.height = int(max(self.y0, self.y1) - min(self.y0, self.y1))
@@ -250,7 +251,7 @@ class Circle(Shape):
         self.x = x
         self.y = y
         self.radius = radius
-        self.color = color
+        self.color = to_rgba(color)
         self.cornerAlign = cornerAlign
         self.fill = fill
         self.width = width
@@ -370,7 +371,7 @@ class Triangle(Shape):
         self.p1 = p1
         self.p2 = p2
         self.p3 = p3
-        self.color = color
+        self.color = to_rgba(color)
         self.batch = batch
         super().__init__()
         if batch: batch.add(self)
@@ -418,7 +419,7 @@ class Triangle(Shape):
 class Polygon(Shape):
 
     def __init__(self, *points, color:tuple=BLACK, batch:Batch=None):
-        self.color = color
+        self.color = to_rgba(color)
         self.batch = batch
         super().__init__()
         if batch: batch.add(self)
@@ -470,7 +471,7 @@ class LineSegment(Shape):
         self.dashed = dashed
         self.dashedDist = dashedDist
         self.thickness = width
-        self.color = color
+        self.color = to_rgba(color)
         self.batch = batch
         self.centerAlign = center
         self.offset = [0,0]
@@ -571,7 +572,7 @@ class Arc(Shape):
         self.radius = int(radius)
         self.center = [center[0], center[1]]
         
-        self.color = color
+        self.color = to_rgba(color)
         self.batch = batch
         
         super().__init__()

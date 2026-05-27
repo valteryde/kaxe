@@ -1,5 +1,6 @@
 
 import numpy as np
+from .color import to_rgba
 
 # DRAW LINES
 def trapez(y,y0,w):
@@ -73,10 +74,7 @@ def drawLineOnPillowImage(
 
     pixels = surface.load()
 
-    if len(color) < 4:
-        color = list(color)
-        color.append(255)
-
+    color = to_rgba(color)
 
     for i in range(len(a)):
 

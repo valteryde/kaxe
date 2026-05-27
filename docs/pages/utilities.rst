@@ -20,6 +20,8 @@ Global settings
 Colors
 ------
 
+.. autofunction:: kaxe.to_rgba
+
 .. autofunction:: kaxe.setDefaultColors
 
 .. autofunction:: kaxe.resetColor

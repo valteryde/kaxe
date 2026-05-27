@@ -66,15 +66,17 @@ def setDefaultColors(colorList:list):
     Parameters
     ----------
     colorList : list
-        A list of colors to be set as the default colors.
+        A list of colors to be set as the default colors. Entries may be RGBA
+        tuples or hex/named color strings (see :func:`kaxe.to_rgba`).
     
     Notes
     -----
     This function sets the global variable `colors` to the provided list of colors.
     """
+    from .color import to_rgba
 
     global colors
-    colors = colorList
+    colors = [to_rgba(c) for c in colorList]
 
 
 class bcolors:

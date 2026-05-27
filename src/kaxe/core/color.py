@@ -5,6 +5,47 @@ import numpy as np
 from typing import Union
 
 
+def to_rgba(color) -> tuple[int, int, int, int]:
+    """
+    Normalize a color to an RGBA tuple with channels in 0–255.
+
+    Parameters
+    ----------
+    color : str, sequence, or numpy array
+        Hex string (e.g. ``"#FF5154"``), named color (e.g. ``"red"``),
+        or RGB/RGBA sequence.
+
+    Returns
+    -------
+    tuple[int, int, int, int]
+        ``(r, g, b, a)`` with integer channels 0–255.
+
+    Raises
+    ------
+    TypeError
+        If ``color`` is a :class:`Colormap` instance.
+    ValueError
+        If the color format is not recognized.
+    """
+    if isinstance(color, Colormap):
+        raise TypeError("to_rgba() does not accept Colormap instances; use getColor() instead")
+
+    if isinstance(color, str):
+        return ImageColor.getcolor(color, "RGBA")
+
+    try:
+        channels = tuple(color)
+    except TypeError:
+        raise ValueError(f"Unsupported color type: {type(color)!r}") from None
+
+    if len(channels) == 3:
+        channels = (*channels, 255)
+    elif len(channels) != 4:
+        raise ValueError(f"Color sequence must have length 3 or 4, got {len(channels)}")
+
+    return tuple(max(0, min(255, int(round(c)))) for c in channels)
+
+
 class Colormap:
     """
     A class to represent a colormap that interpolates colors from a gradient.
@@ -18,11 +59,8 @@ class Colormap:
     def __init__(self, colorGradientSteps:Union[list, tuple]):
         colorGradientSteps = list(colorGradientSteps).copy()
         self.colorGradientSteps = colorGradientSteps
-        for i, phex in enumerate(colorGradientSteps):
-            if type(phex) is str:
-                self.colorGradientSteps[i] = np.array(ImageColor.getcolor(phex, "RGBA"))
-            else:
-                self.colorGradientSteps[i] = np.array(self.colorGradientSteps[i])
+        for i, step in enumerate(colorGradientSteps):
+            self.colorGradientSteps[i] = np.array(to_rgba(step))
 
     
     def getColor(self, value:Union[int, float], start:Union[int, float], end:Union[int, float]):
@@ -114,13 +152,7 @@ class SingleColormap(Colormap):
 
     def __init__(self, color, spread=0.3, total=10):
 
-        if type(color) is str:
-            color = np.array(ImageColor.getcolor(hex, "RGBA"))
-
-        if len(color) == 3:
-            color = (*color, 255)
-        
-        color = np.array(color)
+        color = np.array(to_rgba(color))
 
         self.color = color
         self.spread = spread

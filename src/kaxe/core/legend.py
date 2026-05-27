@@ -133,13 +133,17 @@ class LegendBox(AttrObject):
                     currentLinePos[0] += width
                     row_mid = y + row["height"] / 2
                     symbol.x = x
-                    # Circle uses cornerAlign (x, y) = top-left of bbox; rectangles use bottom-left y.
                     if isinstance(symbol, shapes.Circle):
-                        symbol.y = row_mid + symbolSize[1] / 2
-                        sym_min_y = symbol.y - symbolSize[1]
-                        sym_max_y = symbol.y
+                        symbol.centerAlign()
+                        symbol.y = row_mid
+                        sym_min_x = symbol.x - symbolSize[0] / 2
+                        sym_max_x = symbol.x + symbolSize[0] / 2
+                        sym_min_y = symbol.y - symbolSize[1] / 2
+                        sym_max_y = symbol.y + symbolSize[1] / 2
                     else:
                         symbol.y = row_mid - symbolSize[1] / 2
+                        sym_min_x = symbol.x
+                        sym_max_x = symbol.x + symbolSize[0]
                         sym_min_y = symbol.y
                         sym_max_y = symbol.y + symbolSize[1]
                     text.setLeftTopPos(
@@ -152,10 +156,10 @@ class LegendBox(AttrObject):
                     
                     # find left top most
                     tx, ty = text.getLeftTopPos()
-                    maxPos[0] = max(maxPos[0], tx + text.width, symbol.x + symbolSize[0])
+                    maxPos[0] = max(maxPos[0], tx + text.width, sym_max_x)
                     maxPos[1] = max(maxPos[1], ty, sym_max_y)
 
-                    minPos[0] = min(minPos[0], tx, symbol.x)
+                    minPos[0] = min(minPos[0], tx, sym_min_x)
                     minPos[1] = min(minPos[1], ty - text.height, sym_min_y)
 
                 currentLinePos[1] += row["height"] + legendGridSpacing[1]
@@ -189,6 +193,8 @@ class LegendBox(AttrObject):
                 parent.addPaddingCondition(bottom=height+legendGap)
 
             else: # Only works with PILLOW
+                self.batch.push(-minPos[0], -minPos[1])
+                self.boxshape.push(-minPos[0], -minPos[1])
                 surface = Image.new('RGBA', (int(width), int(height)), (0,0,0,0))
 
                 self.boxshape.draw(surface)

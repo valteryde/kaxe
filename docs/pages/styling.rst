@@ -46,10 +46,10 @@ Common global styles
      - Base font size for labels and math
    * - ``color``
      - black
-     - Default foreground color (RGBA tuple)
+     - Default foreground color (RGBA tuple or hex string, e.g. ``"#000000"``)
    * - ``backgroundColor``
      - white
-     - Canvas background (RGBA tuple)
+     - Canvas background (RGBA tuple or hex string)
    * - ``outerPadding``
      - [50, 50, 50, 50]
      - Padding around the plot area: left, bottom, top, right

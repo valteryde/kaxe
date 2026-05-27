@@ -5,5 +5,5 @@ from .symbol import CustomSymbol, symbol
 from .styles import resetColor, setDefaultColors, getRandomColor
 from .axis import Axis
 from .round import koundTeX
-from .color import Colormaps, SingleColormap, Colormap
+from .color import Colormaps, SingleColormap, Colormap, to_rgba
 from .window import setSetting

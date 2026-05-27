@@ -12,6 +12,8 @@ from typing import Any, Optional, Union
 
 from PIL import Image
 
+from .color import to_rgba
+
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
 
@@ -26,8 +28,8 @@ def flip_y(y: float, height: int) -> float:
 
 def rgba_to_svg(color: tuple) -> tuple[str, Optional[float]]:
     """Return (fill/stroke color string, opacity or None)."""
-    r, g, b = int(color[0]), int(color[1]), int(color[2])
-    alpha = color[3] / 255.0 if len(color) > 3 else 1.0
+    r, g, b, a = to_rgba(color)
+    alpha = a / 255.0
     opacity = None if alpha >= 1.0 else round(alpha, 4)
     return f"rgb({r},{g},{b})", opacity
 

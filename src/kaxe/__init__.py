@@ -38,7 +38,7 @@ from .core import getRandomColor
 from .core import resetColor
 from .core import symbol as Symbol
 from .core import symbol
-from .core import Colormaps, SingleColormap, Colormap
+from .core import Colormaps, SingleColormap, Colormap, to_rgba
 from .core.window import Window, AttrObject, AttrMap, setSetting
 from .core import Axis
 
