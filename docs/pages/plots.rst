@@ -14,6 +14,33 @@ All plots inherits from the Window base class. This class should not be used in 
     .. automethod:: kaxe.AttrMap.help
 
 
+Saving plots
+------------
+
+All 2D plot and chart windows support PNG (default) and SVG export via :py:meth:`kaxe.Window.save`.
+
+.. code-block:: python
+
+   plt.save("plot.png")
+   plt.save("plot.svg")
+
+When the filename has no extension, pass ``format`` explicitly (for example when writing to ``BytesIO``):
+
+.. code-block:: python
+
+   from io import BytesIO
+
+   buf = BytesIO()
+   plt.save(buf, format="svg")
+
+SVG export produces a self-contained vector file: curves, axes, and labels are vector graphics.
+Math labels use `fondi <https://github.com/valteryde/fondi>`_ with embedded New Computer Modern fonts.
+PNG and SVG can be saved from the same plot; saving SVG does not affect a cached PNG.
+
+.. note::
+   SVG export is supported for 2D plots and charts only. :class:`kaxe.Plot3D` and :class:`kaxe.Grid` still save PNG.
+
+
 Classical Plot
 --------------
 .. autoclass:: kaxe.Plot

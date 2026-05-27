@@ -24,6 +24,18 @@ To get started with Kaxe, you can create a simple plot:
    plt = kaxe.Plot()
    plt.show()
 
+Saving
+------
+
+Save a plot as PNG (default) or SVG:
+
+.. code-block:: python
+
+   plt.save("myplot.png")
+   plt.save("myplot.svg")
+
+Open SVG files in a browser or vector editor (Inkscape, Illustrator). The built-in editor XML view is source, not a rendered preview.
+
 Kaxe has theese plots
 
 * :class:`kaxe.Plot`
