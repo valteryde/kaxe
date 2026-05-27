@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw
 from .styles import *
 from .helper import *
 from .line import drawLineOnPillowImage
+from .svg import SvgDocument
 import os
 import numpy as np
 import logging
@@ -81,13 +82,19 @@ class Shape:
 
 
     def draw(self, *args, **kwargs):
-        if self.__hidden__:return
-
+        if self.__hidden__:
+            return
+        if args and isinstance(args[0], SvgDocument):
+            self.drawSvg(args[0])
+            return
         try:
             if self.engine == engine.PILLOW:
                 self.drawPillow(*args, **kwargs)
         except ZeroDivisionError:
             logging.critical('No man')
+
+    def drawSvg(self, doc: SvgDocument):
+        pass
 
     
     def hide(self):
@@ -139,6 +146,17 @@ class Rectangle(Shape):
     
     def getBoundingBox(self):
         return [self.width, self.height]
+
+    def drawSvg(self, doc: SvgDocument):
+        doc.add_rect(
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            self.color,
+            outline_width=self.outlineWidth,
+            outline_color=self.outlineColor,
+        )
 
 
 class Line(Shape):
@@ -222,6 +240,9 @@ class Line(Shape):
         return self.drawPillowNew(surface)
         return self.drawPillowSimple(surface)
 
+    def drawSvg(self, doc: SvgDocument):
+        doc.add_line(self.x0, self.y0, self.x1, self.y1, self.color, self.thickness)
+
 
 class Circle(Shape):
 
@@ -268,6 +289,20 @@ class Circle(Shape):
     def getBoundingBox(self): # returns 
         return [self.radius*2, self.radius*2]
 
+    def drawSvg(self, doc: SvgDocument):
+        cx, cy = self.x, self.y
+        if self.cornerAlign:
+            cx = self.x + self.radius
+            cy = self.y - self.radius
+        doc.add_circle(
+            cx,
+            cy,
+            self.radius,
+            self.color,
+            fill=self.fill,
+            stroke_width=self.width,
+        )
+
 
 class ImageShape(Shape):
     def __init__(self, file:Union[str, Image.Image], x:int, y:int, batch:Batch=None):
@@ -299,6 +334,9 @@ class ImageShape(Shape):
     def drawPillow(self, surface):
         return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
 
+    def drawSvg(self, doc: SvgDocument):
+        doc.add_image(self.img, self.x, self.y)
+
 
 class ImageArrayShape(Shape):
     def __init__(self, imarr:np.ndarray, x:int, y:int, batch:Batch=None):
@@ -321,6 +359,9 @@ class ImageArrayShape(Shape):
 
     def drawPillow(self, surface):
         return blitImageToSurface(surface, self.img, (self.x, flipHorizontal(surface, self.y)[0] - self.img.height))
+
+    def drawSvg(self, doc: SvgDocument):
+        doc.add_image(self.img, self.x, self.y)
 
 
 class Triangle(Shape):
@@ -360,6 +401,9 @@ class Triangle(Shape):
     
     def getBoundingBox(self):
         return [self.width, self.height]
+
+    def drawSvg(self, doc: SvgDocument):
+        doc.add_polygon([self.p1, self.p2, self.p3], self.color)
 
 
     def push(self, x, y):
@@ -408,6 +452,10 @@ class Polygon(Shape):
     
     def getBoundingBox(self):
         return [self.width, self.height]
+
+    def drawSvg(self, doc: SvgDocument):
+        absolute = [(px + self.x, py + self.y) for px, py in self.points]
+        doc.add_polygon(absolute, self.color)
 
 
 
@@ -496,6 +544,19 @@ class LineSegment(Shape):
             except IndexError:
                 pass
 
+    def drawSvg(self, doc: SvgDocument):
+        if len(self.points) <= 1:
+            return
+        shifted = [(x + self.offset[0], y + self.offset[1]) for x, y in self.points]
+        doc.add_polyline(
+            shifted,
+            self.color,
+            self.thickness,
+            dotted=self.dotted,
+            dotted_dist=self.dottedDist,
+            dashed=self.dashed,
+            dashed_dist=self.dashedDist,
+        )
 
 
 class Arc(Shape):
@@ -533,6 +594,18 @@ class Arc(Shape):
         draw.pieslice((0,0, doubleRadius, doubleRadius), -self.angle-self.phaseshift, -self.phaseshift, fill=self.color)
 
         blitImageToSurface(surface, img, (self.center[0]-self.radius, self.center[1]-self.radius))
+
+    def drawSvg(self, doc: SvgDocument):
+        start = -self.angle - self.phaseshift
+        end = -self.phaseshift
+        doc.add_arc_wedge(
+            self.center[0],
+            self.center[1],
+            self.radius,
+            start,
+            end,
+            self.color,
+        )
 
 
 # NAMESPACE

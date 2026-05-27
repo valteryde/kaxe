@@ -1,12 +1,13 @@
 
 from io import BytesIO
 import time
-from typing import Union
+from typing import Union, Optional
 from .helper import *
 import logging
 from .styles import *
 from .legend import LegendBox
 from .shapes import shapes
+from .svg import SvgDocument, infer_format
 from PIL import Image
 import tqdm
 from random import randint
@@ -88,6 +89,7 @@ class Window(AttrObject):
         
         self.__included__ = []
         self.__bakedImage__ = False
+        self.__baked__ = False
 
         self.legendbox = LegendBox()
         self.offset = [0,0]
@@ -370,6 +372,9 @@ class Window(AttrObject):
 
     # baking
     def __bake__(self):
+        if getattr(self, '__baked__', False):
+            return
+
         # finish making plot
         # fit "plot" into window 
         startTime = time.time()        
@@ -450,12 +455,11 @@ class Window(AttrObject):
             
             if self.showProgressBar: pbar.update()
 
-        if fname == None:
-            pass
-        elif fname is str:
-            surface.save(fname)
-        else:
-            surface.save(fname, format="png")
+        if fname is not None:
+            if isinstance(fname, str):
+                surface.save(fname)
+            else:
+                surface.save(fname, format="png")
 
         if self.showProgressBar: pbar.close()
         if self.printDebugInfo: logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
@@ -463,14 +467,44 @@ class Window(AttrObject):
         return surface
 
 
-    def __paint__(self, *args, **kwargs):
-        
-        if True: # self.engine == 'PILLOW':
-            return self.__pillowPaint__(*args, **kwargs)
+    def __svgPaint__(self, fname=None) -> str:
+        startTime = time.time()
+        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating SVG')
+
+        winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
+        doc = SvgDocument(winSize)
+
+        if self.getAttr('backgroundColor')[3] != 0:
+            background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
+            background.draw(doc)
+
+        for shape in self.shapes:
+            shape.draw(doc)
+            if self.showProgressBar: pbar.update()
+
+        xml = doc.serialize()
+
+        if fname is not None:
+            if isinstance(fname, str):
+                with open(fname, 'w', encoding='utf-8') as f:
+                    f.write(xml)
+            else:
+                fname.write(xml.encode('utf-8'))
+
+        if self.showProgressBar: pbar.close()
+        if self.printDebugInfo: logging.info('Painted SVG in {}s'.format(str(round(time.time() - startTime, 4))))
+
+        return xml
+
+
+    def __paint__(self, fname=None, format: str = "png"):
+        if format == "svg":
+            return self.__svgPaint__(fname)
+        return self.__pillowPaint__(fname)
 
 
     # save and show    
-    def save(self, fname:Union[str, BytesIO]):
+    def save(self, fname:Union[str, BytesIO], format:Optional[str]=None):
         """
         Save the current window image to a file.
         
@@ -479,16 +513,21 @@ class Window(AttrObject):
         
         Parameters
         ----------
-        fname : str | BytesIO
+        fname : str | BytesIO
             The filename where the image will be saved or a BytesIO object to save the image in memory.
+        format : str, optional
+            Output format: ``"png"`` or ``"svg"``. Inferred from ``fname`` extension when omitted.
         
         Examples
         --------
         >>> plt.save( path/where/image/saved.png )
+        >>> plt.save( path/where/image/saved.svg )
 
         """
 
-        if self.__bakedImage__:
+        fmt = infer_format(fname, format)
+
+        if fmt == "png" and self.__bakedImage__:
             logging.log(0, 'Using cached plot window')
             self.__bakedImage__.save(fname)
             return
@@ -496,7 +535,15 @@ class Window(AttrObject):
         totStartTime = time.time()
 
         self.__bake__()
-        self.__bakedImage__ = self.__paint__(fname)
+        result = self.__paint__(fname if fmt == "svg" else None, format=fmt)
+
+        if fmt == "png":
+            if fname is not None:
+                if isinstance(fname, str):
+                    result.save(fname)
+                else:
+                    result.save(fname, format="png")
+            self.__bakedImage__ = result
         
         if self.printDebugInfo:
             logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))

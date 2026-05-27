@@ -7,7 +7,45 @@ from fondi import MathText
 import numpy as np
 
 textImageCache = {}
+mathtextCache = {}
 maxTextCacheSize = 100
+
+
+def _parse_kaxe_text(text: str) -> str:
+    """Translate kaxe $math$ syntax to fondi LaTeX string."""
+    res = ''
+    open_ = 0
+    word = ''
+    for char in text:
+        if char == '$' and open_:
+            open_ = False
+            continue
+        elif char == '$' and not open_:
+            open_ = True
+            if len(word) > 0:
+                res += '\\text{' + word + '}'
+            word = ''
+            continue
+
+        if open_:
+            res += char
+        else:
+            word += char
+
+    if len(word) > 0:
+        res += '\\text{' + word + '}'
+    return res
+
+
+def _get_mathtext(latex: str, fontSize: int, color: tuple) -> MathText:
+    key = str(latex), fontSize, tuple(color)
+    cached = mathtextCache.get(key)
+    if cached is not None:
+        return cached
+    mt = MathText(latex, fontSize, color)
+    mathtextCache[key] = mt
+    return mt
+
 
 class Text(Shape):
     
@@ -33,51 +71,21 @@ class Text(Shape):
         super().__init__()
         if batch: batch.add(self)
 
-        # translate str "$math$ + normaltext" to "math + \\text{normaltext}"
-        res = ''
-        open_ = 0
-        word = ''
-        for char in text:
-            if char == '$' and open_:
-                open_ = False
-                continue
-            elif char == '$' and not open_:
-                open_ = True
-                if len(word) > 0: res += '\\text{' + word + '}'
-                word = ''
-                continue
-        
-            if open_:
-                res += char
-            else:
-                word += char
+        self.latex = _parse_kaxe_text(text)
+        self._mathtext = _get_mathtext(self.latex, self.fontSize, self.color)
 
-        if len(word) > 0: res += '\\text{' + word + '}'
-
-        text = res
-
-        # make pil image
-        key = str(text), fontSize, tuple(color)
+        key = str(self.latex), fontSize, tuple(color)
         cachedImage = textImageCache.get(key)
         if cachedImage:
             pilImage = cachedImage
         else:
-            pilImage = MathText(text, self.fontSize, self.color).image
+            pilImage = self._mathtext.to_pil()
             textImageCache[key] = pilImage
-        
-        # width = pilImage.width 
-        # height = pilImage.height 
 
         self.img = pilImage.rotate(self.rotate, expand=True)
 
-        # newCenterFromTopLeft = np.array([[math.cos(self.rotate), -math.sin(self.rotate)], [math.sin(self.rotate), math.cos(self.rotate)]]) @ np.array((width/2, height/2))
-
         self.width = self.img.width
         self.height = self.img.height
-
-        # revert positions from rotation
-        # self.x -= newCenterFromTopLeft[0] - pilImage.width
-        # self.y -= newCenterFromTopLeft[1] - pilImage.height
 
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y
@@ -143,6 +151,33 @@ class Text(Shape):
     def drawPillow(self, surface):
         [y] = flipHorizontal(surface, self.__center__[1] + self.height/2)
         blitImageToSurface(surface, self.img, (self.__leftTop__[0], y))
+
+    def drawSvg(self, doc):
+        kaxe_top = self.__center__[1] + self.height / 2
+        svg_top = doc.flip_y(kaxe_top)
+        rotate_center = (
+            self.__leftTop__[0] + self.width / 2,
+            svg_top + self.height / 2,
+        )
+
+        if hasattr(self._mathtext, "scene"):
+            doc.add_fondi_scene(
+                self._mathtext.scene(),
+                self.__leftTop__[0],
+                svg_top,
+                rotate=self.rotate,
+                rotate_center=rotate_center,
+            )
+            return
+
+        doc.add_image(
+            self.img,
+            self.__leftTop__[0],
+            kaxe_top,
+            y_coord="top",
+            rotate=self.rotate,
+            rotate_center=rotate_center,
+        )
 
 
     def push(self, x, y):
