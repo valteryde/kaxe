@@ -35,7 +35,7 @@ class Grid(AttrObject):
     >>> grid.addColumn(plt3, plt4)
     >>> grid.show()
     >>> grid.save('fname.png')
-    >>> grid.save('fname.svg')
+    >>> grid.save('fname.svg')  # 2D vector; 3D cells embed as raster
 
     """
 
