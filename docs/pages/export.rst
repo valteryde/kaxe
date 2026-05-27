@@ -48,7 +48,7 @@ PNG and SVG can be saved from the same plot; saving SVG does not invalidate a ca
 PDF (2D plots and charts)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-PDF export produces a vector file with the same content as SVG. Math labels use Computer Modern fonts from `fondi`. Install the optional dependency first:
+PDF export produces a vector file with the same content as SVG. Math labels use Computer Modern fonts from `fondi`. Install the optional dependencies first:
 
 .. code-block:: bash
 

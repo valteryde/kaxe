@@ -132,6 +132,25 @@ def test_pdf_grid_2x2():
 
 
 @unit()
+def test_pdf_rotated_axis_title():
+    if _skip_without_reportlab():
+        return
+
+    plot = kaxe.Plot([0, 8, 0, 60])
+    plot.add(kaxe.Function2D(lambda x: 40 if x > 0.7 else 0))
+    plot.title(None, "$\\omega_{mech}$ [rad/s]")
+    plot.style(fontSize=40)
+    plot.showProgressBar = False
+    plot.printDebugInfo = False
+
+    buf = BytesIO()
+    plot.save(buf, format="pdf")
+    data = buf.getvalue()
+    assert _is_pdf(data)
+    assert len(data) > 1000
+
+
+@unit()
 def test_pdf_missing_reportlab_raises():
     from kaxe.core import svg_pdf
 

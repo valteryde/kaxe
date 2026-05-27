@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 _PDF_INSTALL_HINT = "PDF export requires reportlab. Install with: pip install kaxe[pdf]"
 _FONDI_FONTS_REGISTERED = False
+_OTF_TTF_CACHE: dict[str, bytes] = {}
 
 _TRANSFORM_RE = re.compile(
     r"(translate|rotate|matrix)\s*\(([^)]*)\)"
@@ -71,6 +72,90 @@ def _rl_color(value: Optional[str], opacity: Optional[str] = None):
     return Color(r / 255.0, g / 255.0, b / 255.0, alpha=alpha)
 
 
+def _require_fonttools():
+    try:
+        import fontTools  # noqa: F401
+    except ImportError as exc:
+        raise ImportError(
+            "PDF font embedding requires fonttools. Install with: pip install kaxe[pdf]"
+        ) from exc
+
+
+def _convert_otf_to_ttf_bytes(otf_path: os.PathLike[str]) -> bytes:
+    path = os.fspath(otf_path)
+    cached = _OTF_TTF_CACHE.get(path)
+    if cached is not None:
+        return cached
+
+    _require_fonttools()
+    from fontTools.pens.cu2quPen import Cu2QuPen
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    from fontTools.ttLib import TTFont, newTable
+
+    def _glyphs_to_quadratic(glyphs):
+        quad: dict = {}
+        for gname in glyphs.keys():
+            tt_pen = TTGlyphPen(glyphs)
+            cu2qu_pen = Cu2QuPen(tt_pen, 1.0, reverse_direction=True)
+            glyphs[gname].draw(cu2qu_pen)
+            quad[gname] = tt_pen.glyph()
+        return quad
+
+    font = TTFont(path)
+    if font.sfntVersion != "OTTO" or "CFF " not in font:
+        buf = io.BytesIO()
+        font.save(buf)
+        data = buf.getvalue()
+        _OTF_TTF_CACHE[path] = data
+        return data
+
+    glyph_order = font.getGlyphOrder()
+    font["loca"] = newTable("loca")
+    glyf = newTable("glyf")
+    glyf.glyphOrder = glyph_order
+    glyf.glyphs = _glyphs_to_quadratic(font.getGlyphSet())
+    font["glyf"] = glyf
+    del font["CFF "]
+    glyf.compile(font)
+
+    hmtx = font["hmtx"]
+    for glyph_name, glyph in glyf.glyphs.items():
+        if hasattr(glyph, "xMin"):
+            hmtx[glyph_name] = (hmtx[glyph_name][0], glyph.xMin)
+
+    maxp = newTable("maxp")
+    maxp.tableVersion = 0x00010000
+    maxp.maxZones = 1
+    maxp.maxTwilightPoints = 0
+    maxp.maxStorage = 0
+    maxp.maxFunctionDefs = 0
+    maxp.maxInstructionDefs = 0
+    maxp.maxStackElements = 0
+    maxp.maxSizeOfInstructions = 0
+    maxp.maxComponentElements = max(
+        len(g.components if hasattr(g, "components") else [])
+        for g in glyf.glyphs.values()
+    )
+    maxp.compile(font)
+
+    post = font["post"]
+    post.formatType = 2.0
+    post.extraNames = []
+    post.mapping = {}
+    post.glyphOrder = glyph_order
+    try:
+        post.compile(font)
+    except OverflowError:
+        post.formatType = 3
+
+    font.sfntVersion = "\000\001\000\000"
+    buf = io.BytesIO()
+    font.save(buf)
+    data = buf.getvalue()
+    _OTF_TTF_CACHE[path] = data
+    return data
+
+
 def _register_fondi_fonts() -> None:
     global _FONDI_FONTS_REGISTERED
     if _FONDI_FONTS_REGISTERED:
@@ -83,22 +168,49 @@ def _register_fondi_fonts() -> None:
     from reportlab.pdfbase.ttfonts import TTFont
 
     resources = Path(fondi.__file__).parent / "resources"
-    regular_ttf = resources / "cmu.serif-roman.ttf"
-    if not regular_ttf.is_file():
-        logging.warning("Fondi regular TTF not found; PDF math labels will use Helvetica")
+    regular_otf = resources / "NewCM10-Regular.otf"
+    italic_otf = resources / "NewCM10-Italic.otf"
+    fallback_ttf = resources / "cmu.serif-roman.ttf"
+
+    def _register(name: str, otf: Path, ttf_fallback: Optional[Path] = None) -> bool:
+        for candidate in (otf, ttf_fallback):
+            if not candidate or not candidate.is_file():
+                continue
+            try:
+                if candidate.suffix.lower() == ".otf":
+                    data = _convert_otf_to_ttf_bytes(candidate)
+                else:
+                    data = candidate.read_bytes()
+                pdfmetrics.registerFont(TTFont(name, io.BytesIO(data)))
+                return True
+            except Exception as exc:
+                logging.warning("Could not register PDF font %s from %s: %s", name, candidate, exc)
+        return False
+
+    if not _register("FondiNewCM", regular_otf, fallback_ttf):
+        logging.warning("Fondi regular font unavailable; PDF math labels will use Helvetica")
         _FONDI_FONTS_REGISTERED = True
         return
 
-    pdfmetrics.registerFont(TTFont("FondiNewCM", str(regular_ttf)))
-    pdfmetrics.registerFontFamily(
-        "FondiNewCM",
-        normal="FondiNewCM",
-        italic="FondiNewCM",
-    )
+    if _register("FondiNewCM-Italic", italic_otf):
+        pdfmetrics.registerFontFamily(
+            "FondiNewCM",
+            normal="FondiNewCM",
+            italic="FondiNewCM-Italic",
+        )
+    else:
+        pdfmetrics.registerFontFamily(
+            "FondiNewCM",
+            normal="FondiNewCM",
+            italic="FondiNewCM",
+        )
+
     _FONDI_FONTS_REGISTERED = True
 
 
 def _resolve_font_name(family: Optional[str], style: Optional[str]) -> str:
+    if family == "FondiNewCM" and style == "italic":
+        return "FondiNewCM-Italic"
     if family == "FondiNewCM":
         return "FondiNewCM"
     if family:
@@ -130,6 +242,31 @@ class _Matrix:
             self.a * x + self.c * y + self.e,
             self.b * x + self.d * y + self.f,
         )
+
+
+def _is_identity(matrix: _Matrix, tol: float = 1e-9) -> bool:
+    return (
+        abs(matrix.a - 1.0) < tol
+        and abs(matrix.d - 1.0) < tol
+        and abs(matrix.b) < tol
+        and abs(matrix.c) < tol
+        and abs(matrix.e) < tol
+        and abs(matrix.f) < tol
+    )
+
+
+def _matrix_to_reportlab_transform(matrix: _Matrix, height: int, *, nested: bool) -> list[float]:
+    """Map SVG-local y-down coords to ReportLab parent coords via Group.transform."""
+    # Conjugate y-down SVG affine with flip-to-y-up: T(height) * M * F, F:(x,y)->(x,-y)
+    f = height if not nested else 0.0
+    return [
+        matrix.a,
+        -matrix.b,
+        -matrix.c,
+        matrix.d,
+        matrix.e,
+        f + matrix.f,
+    ]
 
 
 def _parse_transform(transform: Optional[str]) -> _Matrix:
@@ -178,14 +315,29 @@ class _PdfBuilder:
         self.drawing = Drawing(width, height)
         self._shapes: list[Any] = []
 
-    def _to_rl(self, matrix: _Matrix, x: float, y: float) -> tuple[float, float]:
+    def _to_rl(
+        self,
+        matrix: _Matrix,
+        x: float,
+        y: float,
+        *,
+        local: bool = False,
+    ) -> tuple[float, float]:
+        if local:
+            return x, -y
         sx, sy = matrix.map_point(x, y)
         return sx, self.height - sy
 
     def _add(self, shape) -> None:
         self._shapes.append(shape)
 
-    def _render_element(self, el: ET.Element, matrix: _Matrix) -> None:
+    def _render_element(
+        self,
+        el: ET.Element,
+        matrix: _Matrix,
+        *,
+        local: bool = False,
+    ) -> None:
         from reportlab.graphics.shapes import (
             Circle,
             Group,
@@ -203,13 +355,28 @@ class _PdfBuilder:
         opacity = _attr(el, "opacity")
 
         if tag == "g":
-            child_matrix = matrix.multiply(_parse_transform(_attr(el, "transform")))
+            local_transform = _parse_transform(_attr(el, "transform"))
+            if _is_identity(local_transform):
+                for child in el:
+                    self._render_element(
+                        child,
+                        matrix.multiply(local_transform),
+                        local=local,
+                    )
+                return
+
+            combined = matrix.multiply(local_transform)
             group = Group()
+            group.transform = _matrix_to_reportlab_transform(
+                combined if not local else local_transform,
+                self.height,
+                nested=local,
+            )
             child_shapes: list[Any] = []
             saved = self._shapes
             self._shapes = child_shapes
             for child in el:
-                self._render_element(child, child_matrix)
+                self._render_element(child, _Matrix(), local=True)
             self._shapes = saved
             for shape in child_shapes:
                 group.add(shape)
@@ -222,8 +389,8 @@ class _PdfBuilder:
             y = _parse_float(_attr(el, "y"))
             w = _parse_float(_attr(el, "width"))
             h = _parse_float(_attr(el, "height"))
-            x0, y0 = self._to_rl(matrix, x, y)
-            x1, y1 = self._to_rl(matrix, x + w, y + h)
+            x0, y0 = self._to_rl(matrix, x, y, local=local)
+            x1, y1 = self._to_rl(matrix, x + w, y + h, local=local)
             rect = Rect(
                 min(x0, x1),
                 min(y0, y1),
@@ -236,15 +403,15 @@ class _PdfBuilder:
             return
 
         if tag == "line":
-            x1, y1 = self._to_rl(matrix, _parse_float(_attr(el, "x1")), _parse_float(_attr(el, "y1")))
-            x2, y2 = self._to_rl(matrix, _parse_float(_attr(el, "x2")), _parse_float(_attr(el, "y2")))
+            x1, y1 = self._to_rl(matrix, _parse_float(_attr(el, "x1")), _parse_float(_attr(el, "y1")), local=local)
+            x2, y2 = self._to_rl(matrix, _parse_float(_attr(el, "x2")), _parse_float(_attr(el, "y2")), local=local)
             stroke = _rl_color(_attr(el, "stroke"), opacity)
             width = _parse_float(_attr(el, "stroke-width"), 1.0)
             self._add(Line(x1, y1, x2, y2, strokeColor=stroke, strokeWidth=width))
             return
 
         if tag == "circle":
-            cx, cy = self._to_rl(matrix, _parse_float(_attr(el, "cx")), _parse_float(_attr(el, "cy")))
+            cx, cy = self._to_rl(matrix, _parse_float(_attr(el, "cx")), _parse_float(_attr(el, "cy")), local=local)
             radius = _parse_float(_attr(el, "r"))
             fill = _attr(el, "fill")
             if fill and fill != "none":
@@ -271,7 +438,7 @@ class _PdfBuilder:
             return
 
         if tag == "polygon":
-            points = self._parse_points(_attr(el, "points"), matrix)
+            points = self._parse_points(_attr(el, "points"), matrix, local=local)
             self._add(
                 Polygon(
                     points,
@@ -282,7 +449,7 @@ class _PdfBuilder:
             return
 
         if tag == "polyline":
-            points = self._parse_points(_attr(el, "points"), matrix)
+            points = self._parse_points(_attr(el, "points"), matrix, local=local)
             self._add(
                 PolyLine(
                     points,
@@ -294,7 +461,7 @@ class _PdfBuilder:
             return
 
         if tag == "path":
-            path = self._parse_path(_attr(el, "d"), matrix)
+            path = self._parse_path(_attr(el, "d"), matrix, local=local)
             if path is not None:
                 path.fillColor = _rl_color(_attr(el, "fill"), opacity)
                 path.strokeColor = None
@@ -312,24 +479,58 @@ class _PdfBuilder:
             y = _parse_float(_attr(el, "y"))
             w = _parse_float(_attr(el, "width"), img.width)
             h = _parse_float(_attr(el, "height"), img.height)
+            image_transform = _parse_transform(_attr(el, "transform"))
 
-            image_matrix = matrix.multiply(_parse_transform(_attr(el, "transform")))
-            x0, y0 = self._to_rl(image_matrix, x, y)
-            x1, y1 = self._to_rl(image_matrix, x + w, y + h)
-            rl_img = RlImage(
-                min(x0, x1),
-                min(y0, y1),
-                abs(x1 - x0),
-                abs(y1 - y0),
-                path=ImageReader(io.BytesIO(raw)),
+            def _add_image_shape() -> None:
+                x0, y0 = self._to_rl(_Matrix(), x, y, local=True)
+                x1, y1 = self._to_rl(_Matrix(), x + w, y + h, local=True)
+                rl_img = RlImage(
+                    min(x0, x1),
+                    min(y0, y1),
+                    abs(x1 - x0),
+                    abs(y1 - y0),
+                    path=ImageReader(io.BytesIO(raw)),
+                )
+                self._add(rl_img)
+
+            if _is_identity(image_transform):
+                if local:
+                    _add_image_shape()
+                else:
+                    x0, y0 = self._to_rl(matrix, x, y, local=False)
+                    x1, y1 = self._to_rl(matrix, x + w, y + h, local=False)
+                    self._add(
+                        RlImage(
+                            min(x0, x1),
+                            min(y0, y1),
+                            abs(x1 - x0),
+                            abs(y1 - y0),
+                            path=ImageReader(io.BytesIO(raw)),
+                        )
+                    )
+                return
+
+            combined = matrix.multiply(image_transform)
+            group = Group()
+            group.transform = _matrix_to_reportlab_transform(
+                combined if not local else image_transform,
+                self.height,
+                nested=local,
             )
-            self._add(rl_img)
+            child_shapes: list[Any] = []
+            saved = self._shapes
+            self._shapes = child_shapes
+            _add_image_shape()
+            self._shapes = saved
+            for shape in child_shapes:
+                group.add(shape)
+            self._add(group)
             return
 
         if tag == "text":
             x = _parse_float(_attr(el, "x"))
             y = _parse_float(_attr(el, "y"))
-            rl_x, rl_y = self._to_rl(matrix, x, y)
+            rl_x, rl_y = self._to_rl(matrix, x, y, local=local)
             text = (el.text or "").strip()
             if not text:
                 text = "".join(el.itertext())
@@ -350,17 +551,23 @@ class _PdfBuilder:
             )
             return
 
-    def _parse_points(self, value: Optional[str], matrix: _Matrix) -> list[float]:
+    def _parse_points(
+        self,
+        value: Optional[str],
+        matrix: _Matrix,
+        *,
+        local: bool = False,
+    ) -> list[float]:
         if not value:
             return []
         nums = [float(n) for n in re.split(r"[\s,]+", value.strip()) if n]
         points: list[float] = []
         for i in range(0, len(nums) - 1, 2):
-            x, y = self._to_rl(matrix, nums[i], nums[i + 1])
+            x, y = self._to_rl(matrix, nums[i], nums[i + 1], local=local)
             points.extend([x, y])
         return points
 
-    def _parse_path(self, d: Optional[str], matrix: _Matrix):
+    def _parse_path(self, d: Optional[str], matrix: _Matrix, *, local: bool = False):
         from reportlab.graphics.shapes import Path
 
         if not d:
@@ -382,11 +589,11 @@ class _PdfBuilder:
                 current_x, current_y = nums[0], nums[1]
                 start_x, start_y = current_x, current_y
                 subpath_start_x, subpath_start_y = current_x, current_y
-                x, y = self._to_rl(matrix, current_x, current_y)
+                x, y = self._to_rl(matrix, current_x, current_y, local=local)
                 path.moveTo(x, y)
             elif cmd == "L" and len(nums) >= 2:
                 current_x, current_y = nums[0], nums[1]
-                x, y = self._to_rl(matrix, current_x, current_y)
+                x, y = self._to_rl(matrix, current_x, current_y, local=local)
                 path.lineTo(x, y)
             elif cmd == "A" and len(nums) >= 7:
                 rx, ry, _, large_arc, sweep, end_x, end_y = nums[:7]
@@ -401,11 +608,12 @@ class _PdfBuilder:
                     rx,
                     bool(int(large_arc)),
                     bool(int(sweep)),
+                    local=local,
                 )
                 current_x, current_y = end_x, end_y
             elif cmd == "Z":
                 current_x, current_y = subpath_start_x, subpath_start_y
-                x, y = self._to_rl(matrix, current_x, current_y)
+                x, y = self._to_rl(matrix, current_x, current_y, local=local)
                 path.lineTo(x, y)
                 path.closePath()
 
@@ -422,12 +630,14 @@ class _PdfBuilder:
         radius: float,
         large_arc: bool,
         sweep: bool,
+        *,
+        local: bool = False,
     ) -> None:
         dx = x2 - x1
         dy = y2 - y1
         dist = math.hypot(dx, dy)
         if dist == 0 or radius == 0:
-            x, y = self._to_rl(matrix, x2, y2)
+            x, y = self._to_rl(matrix, x2, y2, local=local)
             path.lineTo(x, y)
             return
 
@@ -479,7 +689,7 @@ class _PdfBuilder:
             t = start + (end - start) * (i / steps)
             px = cx + radius * math.cos(t)
             py = cy + radius * math.sin(t)
-            x, y = self._to_rl(matrix, px, py)
+            x, y = self._to_rl(matrix, px, py, local=local)
             path.lineTo(x, y)
 
     def build(self, elements: list[ET.Element]):

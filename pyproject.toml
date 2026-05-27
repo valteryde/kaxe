@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pdf = ["reportlab>=4.0"]
+pdf = ["reportlab>=4.0", "fonttools>=4.0"]
 
 [project.urls]
 Homepage = "https://github.com/valteryde/kaxe"
