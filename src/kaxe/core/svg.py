@@ -59,7 +59,6 @@ class SvgDocument:
         self._fondi_font_css: Optional[str] = None
         self._clip_defs: list[ET.Element] = []
         self._clip_counter = 0
-        self._active_group: Optional[ET.Element] = None
 
     @property
     def height(self) -> int:
@@ -72,48 +71,12 @@ class SvgDocument:
     def flip_y(self, y: float) -> float:
         return flip_y(y, self._height)
 
-    def _register_clip_rect(self, x: float, y: float, width: float, height: float) -> str:
-        clip_id = f"kaxe-clip-{self._clip_counter}"
-        self._clip_counter += 1
-        clip_path = ET.Element(
-            f"{{{SVG_NS}}}clipPath",
-            {"id": clip_id},
-        )
-        ET.SubElement(
-            clip_path,
-            f"{{{SVG_NS}}}rect",
-            {
-                "x": str(round(x, 3)),
-                "y": str(round(y, 3)),
-                "width": str(round(width, 3)),
-                "height": str(round(height, 3)),
-            },
-        )
-        self._clip_defs.append(clip_path)
-        return clip_id
-
-    def push_clip_layer(self, x: float, y: float, width: float, height: float) -> None:
-        """Clip subsequent elements to a rectangle in SVG top-down coordinates."""
-        clip_id = self._register_clip_rect(x, y, width, height)
-        group = ET.Element(
-            f"{{{SVG_NS}}}g",
-            {"clip-path": f"url(#{clip_id})"},
-        )
-        self._elements.append(group)
-        self._active_group = group
-
-    def pop_clip_layer(self) -> None:
-        self._active_group = None
-
     def add_element(self, tag: str, attribs: dict[str, Any]) -> ET.Element:
         el = ET.Element(
             f"{{{SVG_NS}}}{tag}",
             {k: str(v) for k, v in attribs.items() if v is not None},
         )
-        if self._active_group is not None:
-            self._active_group.append(el)
-        else:
-            self._elements.append(el)
+        self._elements.append(el)
         return el
 
     def add_rect(
@@ -388,10 +351,7 @@ class SvgDocument:
         group = ET.Element(f"{{{SVG_NS}}}g", {"transform": transform})
         for child in list(inner):
             group.append(copy.deepcopy(child))
-        if self._active_group is not None:
-            self._active_group.append(group)
-        else:
-            self._elements.append(group)
+        self._elements.append(group)
 
     def serialize(self) -> str:
         root = ET.Element(
@@ -460,20 +420,33 @@ def embed_svg_children(
     tx: float,
     ty: float,
     *,
-    clip_rect: Optional[tuple[float, float, float, float]] = None,
+    clip_size: Optional[tuple[float, float]] = None,
 ) -> None:
-    """Embed copied SVG children at top-left offset (SVG y-down coordinates).
-
-    clip_rect is optional (x, y, width, height) in the embedded cell's local SVG space.
-    """
+    """Embed copied SVG children at top-left offset (SVG y-down coordinates)."""
     if not children:
         return
     attribs: dict[str, str] = {
         "transform": f"translate({round(tx, 3)},{round(ty, 3)})",
     }
-    if clip_rect is not None:
-        cx, cy, cw, ch = clip_rect
-        clip_id = doc._register_clip_rect(cx, cy, cw, ch)
+    if clip_size is not None:
+        clip_w, clip_h = clip_size
+        clip_id = f"kaxe-clip-{doc._clip_counter}"
+        doc._clip_counter += 1
+        clip_path = ET.Element(
+            f"{{{SVG_NS}}}clipPath",
+            {"id": clip_id},
+        )
+        ET.SubElement(
+            clip_path,
+            f"{{{SVG_NS}}}rect",
+            {
+                "x": "0",
+                "y": "0",
+                "width": str(round(clip_w, 3)),
+                "height": str(round(clip_h, 3)),
+            },
+        )
+        doc._clip_defs.append(clip_path)
         attribs["clip-path"] = f"url(#{clip_id})"
     group = ET.Element(f"{{{SVG_NS}}}g", attribs)
     for child in children:

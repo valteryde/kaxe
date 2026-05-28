@@ -111,8 +111,6 @@ class Grid(AttrObject):
         plot.__included__ = []
         plot.__baked__ = False
         plot.__bakedImage__ = False
-        if hasattr(plot, "shape_layers"):
-            plot.shape_layers = []
         for axis in (getattr(plot, "firstAxis", None), getattr(plot, "secondAxis", None)):
             if axis is not None:
                 axis.markers = []
@@ -329,12 +327,13 @@ class Grid(AttrObject):
                     xml = plot.__ioBytes.read().decode("utf-8")
                     root = parse_svg_root(xml)
                     children, fondi_css = extract_svg_children(root)
+                    cell_w, cell_h = plot.getSize()
                     embed_svg_children(
                         doc,
                         children,
                         px,
                         py,
-                        clip_rect=plot_window_clip_rect_svg(plot),
+                        clip_size=(cell_w, cell_h),
                     )
                     merge_fondi_css(doc, fondi_css)
                 else:

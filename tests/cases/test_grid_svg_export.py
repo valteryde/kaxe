@@ -103,43 +103,6 @@ def test_grid_with_legend_svg():
 
 
 @unit()
-def test_svg_sawtooth_does_not_connect_wraparound():
-    """Angular wrap-around must not draw a connector through the plot margins."""
-    import math
-
-    n = 80
-    t = [i * 0.15 / n for i in range(n)]
-    y = [min(6.2, (i * 0.5) % 6.28) for i in range(n)]
-
-    plot = kaxe.Plot([0, 0.15, 0, 7])
-    plot.add(kaxe.Points2D(t, y, connect=True, color=(200, 0, 0, 255)))
-    plot.showProgressBar = False
-    plot.printDebugInfo = False
-
-    buf = BytesIO()
-    plot.save(buf, format="svg")
-    root = _parse_svg(buf.getvalue().decode("utf-8"))
-    height = float(root.get("height"))
-
-    long_segments = 0
-    for el in root.iter():
-        if _local_tag(el.tag) != "polyline":
-            continue
-        pts = el.get("points", "").split()
-        coords = []
-        for pair in pts:
-            x_s, y_s = pair.split(",")
-            coords.append((float(x_s), float(y_s)))
-        for i in range(len(coords) - 1):
-            x0, y0 = coords[i]
-            x1, y1 = coords[i + 1]
-            if math.hypot(x1 - x0, y1 - y0) > height * 0.35:
-                long_segments += 1
-
-    assert long_segments == 0
-
-
-@unit()
 def test_grid_stacked_svg_cells_are_clipped():
     """Stacked grid SVG cells should not leak drawable content past their bounds."""
     grid = kaxe.Grid()

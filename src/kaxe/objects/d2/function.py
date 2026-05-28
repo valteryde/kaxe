@@ -130,8 +130,6 @@ class Function2D:
                     )
 
         if parent.inside(px, py) or parent.inside(*self.__lastPoint__):
-            if should_break_polyline_segment(self.__lastPoint__, (px, py), parent):
-                self.lineSegments.append([])
             self.lineSegments[-1].append(parent.clamp(self.__lastPoint__[0], self.__lastPoint__[1]))
             self.lineSegments[-1].append(parent.clamp(px, py))
         else:
