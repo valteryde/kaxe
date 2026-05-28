@@ -136,25 +136,34 @@ class Points2D:
 
 
     def __finalizeConnectedLine__(self, parent, line_width):
-        points = []
+        segments = [[]]
         for x_val, y_val in zip(self.x, self.y):
             px, py = parent.pixel(x_val, y_val)
             if px is None or py is None:
                 continue
             if not parent.inside(px, py):
                 continue
-            points.append(parent.clamp(px, py))
+            point = parent.clamp(px, py)
+            if segments[-1] and should_break_polyline_segment(segments[-1][-1], point, parent):
+                segments.append([])
+            segments[-1].append(point)
 
-        if len(points) < 2:
-            return
-        if len(points) == 2:
-            x0, y0 = points[0]
-            x1, y1 = points[1]
-            line = shapes.Line(x0, y0, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
-            self.lines.append(line)
-            return
-
-        shapes.LineSegment(points, color=self.color, width=line_width, batch=self.batch)
+        for points in segments:
+            if len(points) < 2:
+                continue
+            if len(points) == 2:
+                x0, y0 = points[0]
+                x1, y1 = points[1]
+                line = shapes.Line(
+                    x0, y0, x1, y1,
+                    color=self.color,
+                    width=line_width,
+                    batch=self.batch,
+                    center=True,
+                )
+                self.lines.append(line)
+                continue
+            shapes.LineSegment(points, color=self.color, width=line_width, batch=self.batch)
         
     
     def draw(self, *args, **kwargs):

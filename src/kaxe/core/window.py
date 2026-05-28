@@ -418,7 +418,8 @@ class Window(AttrObject):
         self.__includeAllAgain__()
         
 
-        self.shapes = [i[0] for i in sorted(self.shapes, key=lambda x: x[1])]
+        self.shape_layers = sorted(self.shapes, key=lambda x: x[1])
+        self.shapes = [i[0] for i in self.shape_layers]
 
         # add style padding
         self.addPaddingCondition(*self.getAttr('outerPadding'))
@@ -494,7 +495,23 @@ class Window(AttrObject):
             background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
             background.draw(doc)
 
-        for shape in self.shapes:
+        box = self.windowBox
+        doc.push_clip_layer(
+            box[0],
+            winSize[1] - box[3],
+            box[2] - box[0],
+            box[3] - box[1],
+        )
+        for shape, z in getattr(self, "shape_layers", [(s, 0) for s in self.shapes]):
+            if z >= 2:
+                continue
+            shape.draw(doc)
+            if self.showProgressBar: pbar.update()
+        doc.pop_clip_layer()
+
+        for shape, z in getattr(self, "shape_layers", [(s, 0) for s in self.shapes]):
+            if z < 2:
+                continue
             shape.draw(doc)
             if self.showProgressBar: pbar.update()
 
@@ -524,7 +541,23 @@ class Window(AttrObject):
             background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor'))
             background.draw(doc)
 
-        for shape in self.shapes:
+        box = self.windowBox
+        doc.push_clip_layer(
+            box[0],
+            winSize[1] - box[3],
+            box[2] - box[0],
+            box[3] - box[1],
+        )
+        for shape, z in getattr(self, "shape_layers", [(s, 0) for s in self.shapes]):
+            if z >= 2:
+                continue
+            shape.draw(doc)
+            if self.showProgressBar: pbar.update()
+        doc.pop_clip_layer()
+
+        for shape, z in getattr(self, "shape_layers", [(s, 0) for s in self.shapes]):
+            if z < 2:
+                continue
             shape.draw(doc)
             if self.showProgressBar: pbar.update()
 

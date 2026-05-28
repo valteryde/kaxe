@@ -127,6 +127,37 @@ def insideBox(box, point):
     return True
 
 
+def segment_break_threshold(parent) -> float:
+    """Pixel y delta above which a new polyline segment should start."""
+    box = parent.windowBox
+    return (box[3] - box[1]) * 0.45
+
+
+def should_break_polyline_segment(
+    p1: tuple[float, float],
+    p2: tuple[float, float],
+    parent,
+) -> bool:
+    """Break when a segment looks like a wrap-around, not a normal diagonal."""
+    dx = abs(p2[0] - p1[0])
+    dy = abs(p2[1] - p1[1])
+    if dy <= segment_break_threshold(parent):
+        return False
+    return dy > dx * 1.5
+
+
+def plot_window_clip_rect_svg(plot) -> tuple[float, float, float, float]:
+    """Return plot windowBox as an SVG clip rect (x, y, width, height), y-down."""
+    box = plot.windowBox
+    canvas_h = plot.getSize()[1]
+    return (
+        float(box[0]),
+        float(canvas_h - box[3]),
+        float(box[2] - box[0]),
+        float(box[3] - box[1]),
+    )
+
+
 def shell(a):
     def __shell__():
         return a
