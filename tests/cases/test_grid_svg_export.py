@@ -103,6 +103,45 @@ def test_grid_with_legend_svg():
 
 
 @unit()
+def test_grid_stacked_svg_cells_are_clipped():
+    """Stacked grid SVG cells should not leak drawable content past their bounds."""
+    grid = kaxe.Grid()
+    grid.style(width=1200, height=600)
+    grid.showProgressBar = False
+    grid.printDebugInfo = False
+    grid.addColumn(_make_plot(), _make_plot())
+
+    buf = BytesIO()
+    grid.save(buf, format="svg")
+    root = _parse_svg(buf.getvalue().decode("utf-8"))
+
+    clipped_groups = 0
+    for el in root.iter():
+        if _local_tag(el.tag) == "g" and "clip-path" in el.attrib:
+            clipped_groups += 1
+
+    assert clipped_groups >= 2
+
+
+@unit()
+def test_grid_svg_cells_skip_builtin_legend():
+    """Grid-level legends must not be duplicated inside each subplot SVG."""
+    grid = kaxe.Grid()
+    grid.style(width=1200, height=600)
+    grid.showProgressBar = False
+    grid.printDebugInfo = False
+    plot = _make_plot()
+    grid.addRow(plot, _make_plot())
+    grid.legends(("Series", kaxe.Symbol.CIRCLE, (200, 0, 0, 255)))
+
+    buf = BytesIO()
+    grid.save(buf, format="svg")
+    content = buf.getvalue().decode("utf-8")
+
+    assert content.count("Series") >= 1
+
+
+@unit()
 def test_grid_mixed_3d_cell():
     grid = kaxe.Grid()
     grid.style(width=1400, height=700)

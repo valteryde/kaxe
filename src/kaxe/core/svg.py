@@ -57,6 +57,8 @@ class SvgDocument:
         self._width, self._height = int(size[0]), int(size[1])
         self._elements: list[ET.Element] = []
         self._fondi_font_css: Optional[str] = None
+        self._clip_defs: list[ET.Element] = []
+        self._clip_counter = 0
 
     @property
     def height(self) -> int:
@@ -285,9 +287,11 @@ class SvgDocument:
         rotate: float = 0,
         rotate_center: Optional[tuple[float, float]] = None,
     ) -> None:
-        """Place an image; y is in kaxe coords (y-up). y_coord='bottom' or 'top'."""
+        """Place an image; y is in kaxe coords (y-up) unless y_coord='svg_top'."""
         href = pil_to_data_uri(img)
-        if y_coord == "top":
+        if y_coord == "svg_top":
+            svg_top = y
+        elif y_coord == "top":
             svg_top = self.flip_y(y)
         else:
             svg_top = self.flip_y(y) - img.height
@@ -359,15 +363,22 @@ class SvgDocument:
                 "viewBox": f"0 0 {self._width} {self._height}",
             },
         )
-        if self._fondi_font_css is not None:
+        if self._fondi_font_css is not None or self._clip_defs:
             defs = ET.SubElement(root, f"{{{SVG_NS}}}defs")
-            style = ET.SubElement(defs, f"{{{SVG_NS}}}style")
-            style.text = self._fondi_font_css
+            if self._fondi_font_css is not None:
+                style = ET.SubElement(defs, f"{{{SVG_NS}}}style")
+                style.text = self._fondi_font_css
+            for clip_el in self._clip_defs:
+                defs.append(clip_el)
         for el in self._elements:
             root.append(el)
         body = ET.tostring(root, encoding="unicode")
-        from fondi.backends.svg import _ascii_safe_svg_markup
-        body = _ascii_safe_svg_markup(body)
+        try:
+            from fondi.backends.svg import _ascii_safe_svg_markup
+
+            body = _ascii_safe_svg_markup(body)
+        except ImportError:
+            pass
         return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + body
 
     def to_pdf(self, fname: Optional[Union[str, BytesIO]] = None) -> bytes:
@@ -408,14 +419,36 @@ def embed_svg_children(
     children: list[ET.Element],
     tx: float,
     ty: float,
+    *,
+    clip_size: Optional[tuple[float, float]] = None,
 ) -> None:
     """Embed copied SVG children at top-left offset (SVG y-down coordinates)."""
     if not children:
         return
-    group = ET.Element(
-        f"{{{SVG_NS}}}g",
-        {"transform": f"translate({round(tx, 3)},{round(ty, 3)})"},
-    )
+    attribs: dict[str, str] = {
+        "transform": f"translate({round(tx, 3)},{round(ty, 3)})",
+    }
+    if clip_size is not None:
+        clip_w, clip_h = clip_size
+        clip_id = f"kaxe-clip-{doc._clip_counter}"
+        doc._clip_counter += 1
+        clip_path = ET.Element(
+            f"{{{SVG_NS}}}clipPath",
+            {"id": clip_id},
+        )
+        ET.SubElement(
+            clip_path,
+            f"{{{SVG_NS}}}rect",
+            {
+                "x": "0",
+                "y": "0",
+                "width": str(round(clip_w, 3)),
+                "height": str(round(clip_h, 3)),
+            },
+        )
+        doc._clip_defs.append(clip_path)
+        attribs["clip-path"] = f"url(#{clip_id})"
+    group = ET.Element(f"{{{SVG_NS}}}g", attribs)
     for child in children:
         group.append(copy.deepcopy(child))
     doc._elements.append(group)

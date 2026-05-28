@@ -94,6 +94,7 @@ class Grid(AttrObject):
         """
         
         self.__legends = legends
+        self._invalidate_bake_cache()
 
 
     def theme(self, theme):
@@ -110,10 +111,21 @@ class Grid(AttrObject):
         plot.__included__ = []
         plot.__baked__ = False
         plot.__bakedImage__ = False
+        for axis in (getattr(plot, "firstAxis", None), getattr(plot, "secondAxis", None)):
+            if axis is not None:
+                axis.markers = []
+                axis.title = None
+
+
+    def _invalidate_bake_cache(self):
+        self.__bakedImage__ = False
+        self.__bakedSvg__ = None
+        self.__bakedPdf__ = None
 
 
     def _apply_cell_styles(self, plot, cellWidth, cellHeight):
         self._reset_cell_bake_state(plot)
+        plot.showLegend = False
         plot.style(
             width=cellWidth,
             height=cellHeight,
@@ -315,12 +327,19 @@ class Grid(AttrObject):
                     xml = plot.__ioBytes.read().decode("utf-8")
                     root = parse_svg_root(xml)
                     children, fondi_css = extract_svg_children(root)
-                    embed_svg_children(doc, children, px, py)
+                    cell_w, cell_h = plot.getSize()
+                    embed_svg_children(
+                        doc,
+                        children,
+                        px,
+                        py,
+                        clip_size=(cell_w, cell_h),
+                    )
                     merge_fondi_css(doc, fondi_css)
                 else:
                     plot.__ioBytes.seek(0)
                     img = Image.open(plot.__ioBytes)
-                    doc.add_image(img, px, py, y_coord="top")
+                    doc.add_image(img, px, py, y_coord="svg_top")
 
                 x += cellWidth + gapcol
 
@@ -364,6 +383,7 @@ class Grid(AttrObject):
 
         """
 
+        self._invalidate_bake_cache()
         self.grid.append(row)
 
 
@@ -376,6 +396,8 @@ class Grid(AttrObject):
         column : list
             A list of plots to be added as a column in the grid.
         """
+
+        self._invalidate_bake_cache()
 
         for i, plot in enumerate(column):
             

@@ -368,6 +368,7 @@ class Axis(AttrObject):
 
     def autoAddMarkers(self, parent):
         self.setAttrMap(parent.attrmap)
+        self.markers = []
 
         markers = self.computeMarkersAutomatic(parent)
         self.addMarkersToAxis(markers, parent)
