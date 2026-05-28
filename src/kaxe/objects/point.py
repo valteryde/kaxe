@@ -22,6 +22,7 @@ class Points:
         Y coordinates of the points.
     **kwargs
         Additional keyword arguments. For the appropiate keyworks see arguments for Points2D and Points3D.
+        ``show_points`` is supported by Points2D only (line-only plots with ``connect=True``).
 
     Returns
     -------

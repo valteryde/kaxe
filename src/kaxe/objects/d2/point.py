@@ -27,9 +27,12 @@ class Points2D:
         If True, the points will be connected by lines. Default is False.
     lollipop : bool, optional
         If True, the points will be represented as lollipops. Default is False.
+    show_points : bool, optional
+        If False, point markers are not drawn. With ``connect=True``, junction
+        circles matching the line width are still drawn. Default is True.
     """
 
-    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False):        
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False, show_points:bool=True):        
         self.batch = shapes.Batch()
         self.points = []
         self.lines = []
@@ -64,6 +67,9 @@ class Points2D:
 
         self.legendColor = self.color
         self.connect = connect
+        self.show_points = show_points
+        if not show_points and connect and not symbol:
+            self.legendSymbol = symbols.LINE
         
         if len(self.x) > 0:
             self.farLeft = min(self.x)
@@ -80,6 +86,7 @@ class Points2D:
         if self.size is None: self.size = round(parent.getAttr('fontSize') / 3)
         scale = parent.getVisualScale()
         size = max(1, round(self.size * scale))
+        line_width = max(1, int(size * 0.5))
 
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)
@@ -88,22 +95,22 @@ class Points2D:
                 continue
             
             # symbol
-            if self.symbol:
-                
-                #shapes.Circle(x,y, size, color=self.color, batch=self.batch)
-                symbol = makeSymbolShapes(self.symbol, size, self.color, batch=self.batch)
-                symbol.x = x
-                symbol.y = y
-                if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
-                self.points.append(symbol)
-            
-            else:
-                shapes.Circle(x, y, self.size/2, self.color, batch=self.batch)
+            if self.show_points:
+                if self.symbol:
+                    symbol = makeSymbolShapes(self.symbol, size, self.color, batch=self.batch)
+                    symbol.x = x
+                    symbol.y = y
+                    if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
+                    self.points.append(symbol)
+                else:
+                    shapes.Circle(x, y, self.size/2, self.color, batch=self.batch)
+            elif self.connect:
+                shapes.Circle(x, y, line_width / 2, self.color, batch=self.batch)
 
             # lollipop (lagt til lines)
             if self.lollipop:
                 _, y0 = parent.pixel(x, min(max(0, parent.windowAxis[2]), parent.windowAxis[3]))
-                line = shapes.Line(x, y, x, y0, color=self.color, width=max(1, int(size*.5)), batch=self.batch, center=True)
+                line = shapes.Line(x, y, x, y0, color=self.color, width=line_width, batch=self.batch, center=True)
                 self.lines.append(line)
 
             # connect
@@ -114,13 +121,14 @@ class Points2D:
             if x1 is None or y1 is None or x is None or y is None:
                 continue
             
-            if (vlen(vdiff((x1, y1), (x,y))) < size) and self.symbol:
+            skip_dist = size if self.symbol else (line_width if not self.show_points else None)
+            if skip_dist and vlen(vdiff((x1, y1), (x,y))) < skip_dist:
                 continue
 
             if not parent.inside(x1, y1):
                 continue
 
-            line = shapes.Line(x,y, x1, y1, color=self.color, width=max(1, int(size*.5)), batch=self.batch, center=True)
+            line = shapes.Line(x,y, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
             self.lines.append(line)
         
     
