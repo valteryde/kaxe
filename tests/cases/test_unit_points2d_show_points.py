@@ -23,7 +23,7 @@ def _finalize_points2d(obj):
 
 @unit()
 def test_points2d_show_points_false_skips_markers():
-    """connect=True, show_points=False draws lines and line-width junction circles."""
+    """connect=True, show_points=False draws line-width junction caps, not full markers."""
     obj = kaxe.Points2D([0, 5, 10], [0, 5, 10], connect=True, show_points=False)
     _finalize_points2d(obj)
 
@@ -37,6 +37,21 @@ def test_points2d_show_points_false_skips_markers():
     assert len(junctions) == 3
     assert len(connectors) == 2
     assert junctions[0].radius == connectors[0].thickness / 2
+
+
+@unit()
+def test_points2d_connect_scales_default_circles_to_line_width():
+    """Default circles with connect=True match connector line width."""
+    obj = kaxe.Points2D([0, 5, 10], [0, 5, 10], connect=True)
+    _finalize_points2d(obj)
+
+    from kaxe.core.shapes import Circle, Line
+
+    circles = [o for o in obj.batch.objects if isinstance(o, Circle)]
+    lines = [o for o in obj.batch.objects if isinstance(o, Line)]
+    assert len(circles) == 3
+    assert len(lines) == 2
+    assert circles[0].radius == lines[0].thickness / 2
 
 
 @unit()

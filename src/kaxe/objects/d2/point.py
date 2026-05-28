@@ -28,8 +28,9 @@ class Points2D:
     lollipop : bool, optional
         If True, the points will be represented as lollipops. Default is False.
     show_points : bool, optional
-        If False, point markers are not drawn. With ``connect=True``, junction
-        circles matching the line width are still drawn. Default is True.
+        If False, point markers are not drawn. With ``connect=True``, small
+        junction circles matching the line width are still drawn at vertices.
+        Default is True.
     """
 
     def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False, show_points:bool=True):        
@@ -103,7 +104,8 @@ class Points2D:
                     if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
                     self.points.append(symbol)
                 else:
-                    shapes.Circle(x, y, self.size/2, self.color, batch=self.batch)
+                    radius = line_width / 2 if self.connect else size / 2
+                    shapes.Circle(x, y, radius, self.color, batch=self.batch)
             elif self.connect:
                 shapes.Circle(x, y, line_width / 2, self.color, batch=self.batch)
 
