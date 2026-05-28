@@ -139,6 +139,18 @@ Available presets: ``A4Large``, ``A4Medium``, ``A4Small``, ``A4Slim``, ``A4Mini`
 
 Optional parameters: ``documentFontSize``, ``documentMarginProcent``, ``documentWidth``, ``imageSlimRatio``.
 
+Grid font size
+--------------
+
+On :class:`kaxe.Grid`, ``fontSize`` and ``color`` apply to the shared legend **and** every subplot cell when the grid is exported. Set them on the grid only; per-plot ``fontSize`` on cells is overridden at bake time.
+
+.. code-block:: python
+
+   grid = kaxe.Grid()
+   grid.style(width=3000, height=1000, fontSize=100)
+   grid.theme(kaxe.Themes.A4Medium)  # same presets as single plots
+   grid.addRow(p1, p2, p3)
+
 Per-object colors and widths
 ----------------------------
 

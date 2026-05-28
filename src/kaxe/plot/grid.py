@@ -96,6 +96,21 @@ class Grid(AttrObject):
         self.__legends = legends
 
 
+    def theme(self, theme):
+        """Apply a theme dict (e.g. :data:`kaxe.Themes.A4Medium`) to the grid."""
+        self.style(**theme)
+
+
+    def _apply_cell_styles(self, plot, cellWidth, cellHeight):
+        plot.style(
+            width=cellWidth,
+            height=cellHeight,
+            outerPadding=self.outerPadding,
+            fontSize=self.getAttr('fontSize'),
+            color=self.getAttr('color'),
+        )
+
+
     def _prepare_cells(self, vector: bool = False):
         """Style cells, export to memory, and compute composite layout."""
         grid = self.grid
@@ -117,8 +132,7 @@ class Grid(AttrObject):
             maxHeight = 0
 
             for colNum, plot in enumerate(row):
-                plot.style(width=cellWidth, height=cellHeight)
-                plot.style(outerPadding=self.outerPadding)
+                self._apply_cell_styles(plot, cellWidth, cellHeight)
 
                 memfile = BytesIO()
                 plot.showProgressBar = False
