@@ -101,7 +101,19 @@ class Grid(AttrObject):
         self.style(**theme)
 
 
+    def _reset_cell_bake_state(self, plot):
+        if plot == XYZPLOT or isinstance(plot, str):
+            return
+        plot.padding = [0, 0, 0, 0]
+        plot.resetAllPushed()
+        plot.shapes = []
+        plot.__included__ = []
+        plot.__baked__ = False
+        plot.__bakedImage__ = False
+
+
     def _apply_cell_styles(self, plot, cellWidth, cellHeight):
+        self._reset_cell_bake_state(plot)
         plot.style(
             width=cellWidth,
             height=cellHeight,
@@ -120,17 +132,13 @@ class Grid(AttrObject):
 
         cellWidth, cellHeight = self.width // gridSize[0], self.height // gridSize[1]
 
-        height = 0
         leftpadding = 0
         rightpadding = 0
         toppadding = 0
         bottompadding = 0
         gapcol = 0
-        maxWidth = 0
 
         for row in grid:
-            maxHeight = 0
-
             for colNum, plot in enumerate(row):
                 self._apply_cell_styles(plot, cellWidth, cellHeight)
 
@@ -149,10 +157,6 @@ class Grid(AttrObject):
                 plot.__ioBytes = memfile
                 memfile.seek(0)
 
-                w, h = plot.getSize()
-                maxWidth = max(w, maxWidth)
-                maxHeight = max(h, maxHeight)
-
                 if colNum == 0:
                     leftpadding = max(leftpadding, plot.padding[0])
                     bottompadding = max(bottompadding, plot.padding[1])
@@ -163,8 +167,24 @@ class Grid(AttrObject):
                     rightpadding = max(rightpadding, plot.padding[2])
                     toppadding = max(toppadding, plot.padding[3])
 
-            height += maxHeight
+        gapcol = max(gapcol, self.gridGap[0])
 
+        gaprows = []
+        for row_idx in range(len(grid) - 1):
+            boundary_gap = 0
+            row_above = grid[row_idx]
+            row_below = grid[row_idx + 1]
+            for col_idx in range(max(len(row_above), len(row_below))):
+                if col_idx < len(row_above) and col_idx < len(row_below):
+                    above = row_above[col_idx]
+                    below = row_below[col_idx]
+                    boundary_gap = max(
+                        boundary_gap,
+                        above.padding[1] + below.padding[3],
+                    )
+            gaprows.append(max(boundary_gap, self.gridGap[1]))
+
+        num_rows = len(grid)
         largetsRowNumber = max(len(i) for i in grid)
         width = (
             gapcol * (largetsRowNumber - 1)
@@ -172,10 +192,16 @@ class Grid(AttrObject):
             + leftpadding
             + rightpadding
         )
+        height = (
+            num_rows * cellHeight
+            + sum(gaprows)
+            + toppadding
+            + bottompadding
+        )
 
         size = (
             width + self.outerPadding[0] + self.outerPadding[2],
-            height + self.outerPadding[1] + self.outerPadding[3] + toppadding,
+            height + self.outerPadding[1] + self.outerPadding[3],
         )
 
         legend_image = None
@@ -201,10 +227,13 @@ class Grid(AttrObject):
         return {
             "grid": grid,
             "cellWidth": cellWidth,
+            "cellHeight": cellHeight,
             "gapcol": gapcol,
+            "gaprows": gaprows,
             "size": size,
             "leftpadding": leftpadding,
             "toppadding": toppadding,
+            "bottompadding": bottompadding,
             "legend_image": legend_image,
             "legend_doc": legend_doc,
             "legend_top_margin": legend_top_margin,
@@ -215,7 +244,9 @@ class Grid(AttrObject):
         grid = layout["grid"]
         size = layout["size"]
         cellWidth = layout["cellWidth"]
+        cellHeight = layout["cellHeight"]
         gapcol = layout["gapcol"]
+        gaprows = layout["gaprows"]
         leftpadding = layout["leftpadding"]
         toppadding = layout["toppadding"]
 
@@ -233,8 +264,7 @@ class Grid(AttrObject):
 
         y = toppadding + self.outerPadding[1]
 
-        for row in grid:
-            maxHeight = 0
+        for row_idx, row in enumerate(grid):
             x = leftpadding + self.outerPadding[0]
 
             for plot in row:
@@ -242,9 +272,9 @@ class Grid(AttrObject):
                 plot.__ioBytes.seek(0)
                 image.paste(img, (x - plot.padding[0], y - plot.padding[3]))
                 x += cellWidth + gapcol
-                maxHeight = max(maxHeight, plot.getSize()[1])
 
-            y += maxHeight
+            if row_idx < len(grid) - 1:
+                y += cellHeight + gaprows[row_idx]
 
         return image
 
@@ -253,7 +283,9 @@ class Grid(AttrObject):
         size = layout["size"]
         grid = layout["grid"]
         cellWidth = layout["cellWidth"]
+        cellHeight = layout["cellHeight"]
         gapcol = layout["gapcol"]
+        gaprows = layout["gaprows"]
         leftpadding = layout["leftpadding"]
         toppadding = layout["toppadding"]
 
@@ -271,8 +303,7 @@ class Grid(AttrObject):
 
         y = toppadding + self.outerPadding[1]
 
-        for row in grid:
-            maxHeight = 0
+        for row_idx, row in enumerate(grid):
             x = leftpadding + self.outerPadding[0]
 
             for plot in row:
@@ -292,9 +323,9 @@ class Grid(AttrObject):
                     doc.add_image(img, px, py, y_coord="top")
 
                 x += cellWidth + gapcol
-                maxHeight = max(maxHeight, plot.getSize()[1])
 
-            y += maxHeight
+            if row_idx < len(grid) - 1:
+                y += cellHeight + gaprows[row_idx]
 
         return doc
 
