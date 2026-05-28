@@ -262,16 +262,20 @@ def _is_identity(matrix: _Matrix, tol: float = 1e-9) -> bool:
 
 
 def _matrix_to_reportlab_transform(matrix: _Matrix, height: int, *, nested: bool) -> list[float]:
-    """Map SVG-local y-down coords to ReportLab parent coords via Group.transform."""
-    # Conjugate y-down SVG affine with flip-to-y-up: T(height) * M * F, F:(x,y)->(x,-y)
-    f = height if not nested else 0.0
+    """Map SVG-local y-down coords to ReportLab via Group.transform.
+
+    Child shapes use local coords (x, -y_svg). For a parent SVG transform
+    [a b c d e f], the equivalent ReportLab affine is
+    [a, -b, -c, d, e, height - f] at the document root, or
+    [a, -b, -c, d, e, -f] inside an already-flipped parent group.
+    """
     return [
         matrix.a,
         -matrix.b,
         -matrix.c,
         matrix.d,
         matrix.e,
-        f + matrix.f,
+        height - matrix.f if not nested else -matrix.f,
     ]
 
 

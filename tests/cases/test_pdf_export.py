@@ -151,6 +151,23 @@ def test_pdf_rotated_axis_title():
 
 
 @unit()
+def test_pdf_group_transform_keeps_tick_labels_on_page():
+    if _skip_without_reportlab():
+        return
+
+    from kaxe.core import svg_pdf
+
+    height = 2312
+    matrix = svg_pdf._parse_transform("translate(263.84,2091.0)")
+    transform = svg_pdf._matrix_to_reportlab_transform(matrix, height, nested=False)
+    local_x, local_y = 16.0, -52.0
+    rl_x = transform[0] * local_x + transform[2] * local_y + transform[4]
+    rl_y = transform[1] * local_x + transform[3] * local_y + transform[5]
+    assert 0 <= rl_x <= 3000
+    assert 0 <= rl_y <= height
+
+
+@unit()
 def test_pdf_missing_reportlab_raises():
     from kaxe.core import svg_pdf
 
