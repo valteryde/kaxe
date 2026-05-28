@@ -28,9 +28,8 @@ class Points2D:
     lollipop : bool, optional
         If True, the points will be represented as lollipops. Default is False.
     show_points : bool, optional
-        If False, point markers are not drawn. With ``connect=True``, small
-        junction circles matching the line width are still drawn at vertices.
-        Default is True.
+        If False, point markers are not drawn. With ``connect=True``, only the
+        connector polyline is drawn. Default is True.
     """
 
     def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False, show_points:bool=True):        
@@ -89,6 +88,10 @@ class Points2D:
         size = max(1, round(self.size * scale))
         line_width = max(1, int(size * 0.5))
 
+        if self.connect and not self.show_points:
+            self.__finalizeConnectedLine__(parent, line_width)
+            return
+
         for i, (x,y) in enumerate(zip(self.x,self.y)):
             x,y = parent.pixel(x, y)
             
@@ -106,8 +109,6 @@ class Points2D:
                 else:
                     radius = line_width / 2 if self.connect else size / 2
                     shapes.Circle(x, y, radius, self.color, batch=self.batch)
-            elif self.connect:
-                shapes.Circle(x, y, line_width / 2, self.color, batch=self.batch)
 
             # lollipop (lagt til lines)
             if self.lollipop:
@@ -123,7 +124,7 @@ class Points2D:
             if x1 is None or y1 is None or x is None or y is None:
                 continue
             
-            skip_dist = size if self.symbol else (line_width if not self.show_points else None)
+            skip_dist = size if self.symbol else None
             if skip_dist and vlen(vdiff((x1, y1), (x,y))) < skip_dist:
                 continue
 
@@ -132,6 +133,28 @@ class Points2D:
 
             line = shapes.Line(x,y, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
             self.lines.append(line)
+
+
+    def __finalizeConnectedLine__(self, parent, line_width):
+        points = []
+        for x_val, y_val in zip(self.x, self.y):
+            px, py = parent.pixel(x_val, y_val)
+            if px is None or py is None:
+                continue
+            if not parent.inside(px, py):
+                continue
+            points.append(parent.clamp(px, py))
+
+        if len(points) < 2:
+            return
+        if len(points) == 2:
+            x0, y0 = points[0]
+            x1, y1 = points[1]
+            line = shapes.Line(x0, y0, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
+            self.lines.append(line)
+            return
+
+        shapes.LineSegment(points, color=self.color, width=line_width, batch=self.batch)
         
     
     def draw(self, *args, **kwargs):

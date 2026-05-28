@@ -23,20 +23,31 @@ def _finalize_points2d(obj):
 
 @unit()
 def test_points2d_show_points_false_skips_markers():
-    """connect=True, show_points=False draws line-width junction caps, not full markers."""
+    """connect=True, show_points=False draws a polyline with no marker shapes."""
     obj = kaxe.Points2D([0, 5, 10], [0, 5, 10], connect=True, show_points=False)
     _finalize_points2d(obj)
 
-    from kaxe.core.shapes import Circle, Line
+    from kaxe.core.shapes import Circle, Line, LineSegment
 
     assert len(obj.points) == 0
-    assert len(obj.lines) == 2
+    assert len(obj.lines) == 0
     assert obj.legendSymbol == kaxe.symbol.LINE
-    junctions = [o for o in obj.batch.objects if isinstance(o, Circle)]
-    connectors = [o for o in obj.batch.objects if isinstance(o, Line)]
-    assert len(junctions) == 3
-    assert len(connectors) == 2
-    assert junctions[0].radius == connectors[0].thickness / 2
+    assert not any(isinstance(o, Circle) for o in obj.batch.objects)
+    assert not any(isinstance(o, Line) for o in obj.batch.objects)
+    assert any(isinstance(o, LineSegment) for o in obj.batch.objects)
+
+
+@unit()
+def test_points2d_show_points_false_two_points_uses_line():
+    """Two visible points with show_points=False use a single Line."""
+    obj = kaxe.Points2D([0, 10], [0, 10], connect=True, show_points=False)
+    _finalize_points2d(obj)
+
+    from kaxe.core.shapes import Circle, Line, LineSegment
+
+    assert len(obj.lines) == 1
+    assert not any(isinstance(o, Circle) for o in obj.batch.objects)
+    assert not any(isinstance(o, LineSegment) for o in obj.batch.objects)
 
 
 @unit()
