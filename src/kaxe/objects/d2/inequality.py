@@ -146,7 +146,19 @@ class Inequality:
                     continue
 
                 diff = _eval_diff(parent, self.left, self.right, px, py)
-                forbidden = diff is not None and abs(diff) >= eps and self._is_forbidden(diff)
+                if diff is None:
+                    if segment_start is not None and last_point is not None:
+                        self.__add_hatch_segment__(segment_start, last_point, hatch_width)
+                    segment_start = None
+                    last_point = None
+                    continue
+
+                if abs(diff) < eps:
+                    # On the boundary: skip without breaking an open segment so
+                    # hatching stays continuous past axis intercepts and corners.
+                    continue
+
+                forbidden = self._is_forbidden(diff)
 
                 if forbidden:
                     point = (px, py)

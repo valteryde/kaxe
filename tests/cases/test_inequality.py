@@ -47,3 +47,31 @@ def test_inequality_batches():
     assert len(ineq.boundary.batch.objects) > 0
     hatch_lines = [obj for obj in ineq.hatch_batch.objects if isinstance(obj, shapes.Line)]
     assert len(hatch_lines) > 0
+
+
+@unit()
+def test_inequality_hatch_past_axis_intercept():
+    """Hatching continues past where the boundary leaves the plot (e.g. x-intercept)."""
+    g = lambda x, y: 208 / 250 * x + y - 208
+    plot = kaxe.Plot([0, 300, 0, 300])
+    ineq = kaxe.Inequality(g, lambda x, y: 0, hatch_spacing=10)
+    plot.add(ineq)
+    plot.printDebugInfo = False
+    plot.showProgressBar = False
+    plot.__bake__()
+
+    wb = plot.windowBox
+    px, py = plot.pixel(270, 5)
+    assert plot.inside(px, py)
+
+    covered = False
+    for ln in ineq.hatch_batch.objects:
+        if not isinstance(ln, shapes.Line):
+            continue
+        xmin, xmax = sorted((ln.x0, ln.x1))
+        ymin, ymax = sorted((ln.y0, ln.y1))
+        if xmin <= px <= xmax and ymin <= py <= ymax:
+            covered = True
+            break
+
+    assert covered, "forbidden point past x-intercept should lie on a hatch segment"
