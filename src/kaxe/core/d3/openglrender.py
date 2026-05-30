@@ -13,7 +13,6 @@ from .objects.line import Line3D, FlatLine3D, Line3DObject, FlatLine3DObject
 from .objects.point import Point3D, Point3DObject
 import psutil
 process = psutil.Process()
-import sys
 import sdl2
 import sdl2.ext
 import sdl2.video
@@ -994,14 +993,12 @@ class OpenGLRender:
             lasttime = time.time()
             while sdl2.SDL_PollEvent(event):
                 if event.type == sdl2.SDL_QUIT:
-                    running = False
                     self.quit(gl_context, window)
-                    sys.exit()
+                    return
                 elif event.type == sdl2.SDL_KEYDOWN:
                     if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
                         self.quit(gl_context, window)
-                        running = False
-                        sys.exit()
+                        return
                     
                     if event.key.keysym.sym == sdl2.SDLK_RETURN and (event.key.keysym.mod & sdl2.KMOD_ALT):
                         # Toggle fullscreen on Alt+Enter
