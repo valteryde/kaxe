@@ -81,6 +81,10 @@ Use typed 2D objects when you need explicit control or parameters only available
 .. autoclass:: kaxe.Function2D
     :members: 
 
+    When the plot window leaves an axis as ``None``, :class:`kaxe.Function2D` estimates
+    bounds by coarse sampling. Use ``domain`` to control the x sampling interval and
+    ``range`` to pin the y axis. See :doc:`api_workflow` for auto-scaling details.
+
     .. image:: /_static/function2d.png
         :width: 400 px
     
@@ -158,6 +162,10 @@ Use typed 2D objects when you need explicit control or parameters only available
 
 .. autoclass:: kaxe.Function3D
     :members: 
+
+    When the plot window leaves an axis as ``None``, :class:`kaxe.Function3D` estimates
+    bounds by coarse sampling over the independent variables. Use ``domain`` for the
+    sampling box and ``range`` to pin the dependent axis (z for ``axis="xy"``).
 
     .. image:: /_static/function3d.png
         :width: 400 px

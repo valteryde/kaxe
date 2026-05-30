@@ -19,6 +19,11 @@ class Function:
         The number of points to plot for 3D functions. Default is None.
     fill : bool, optional
         Whether to fill the area under the function plot for 3D functions. Default is True.
+    domain : tuple, optional
+        Sampling interval for auto-scaled axes. See :class:`kaxe.Function2D` and
+        :class:`kaxe.Function3D`.
+    range : tuple, optional
+        Fixed output interval on the dependent axis when auto-scaling.
     *args : tuple
         Additional positional arguments to pass to the function f.
     **kwargs : dict
@@ -53,5 +58,5 @@ class Function:
 
         if n == 2:
             from .d3.function import Function3D
-            return Function3D(f, color=color, numPoints=numPoints, fill=fill)
+            return Function3D(f, color=color, numPoints=numPoints, fill=fill, *args, **kwargs)
 

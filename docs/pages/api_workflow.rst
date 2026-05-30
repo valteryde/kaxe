@@ -131,6 +131,42 @@ Pass ``[x0, x1, y0, y1]`` to set the visible data range. Use ``None`` for an axi
    plt = kaxe.Plot([-40, 30, None, None]) # auto y from data
    plt = kaxe.Plot()                       # auto both axes
 
+Points, pillars, and other data objects contribute their extents automatically.
+:class:`kaxe.Function2D` and :class:`kaxe.Function3D` also participate: when an axis
+is left as ``None``, Kaxe coarse-samples the function and sets the window from the
+result. Auto-computed axes get 5% symmetric padding.
+
+.. code-block:: python
+
+   import math
+   import kaxe
+
+   plt = kaxe.Plot()
+   plt.add(kaxe.Function2D(math.sin))  # auto x and y
+
+   plt = kaxe.Plot([-5, 5, None, None])
+   plt.add(kaxe.Function2D(math.sin))  # fixed x, auto y
+
+   plt = kaxe.Plot3D()
+   plt.add(kaxe.Function3D(lambda x, y: math.sin(x) * math.cos(y)))
+
+Override sampling or output intervals on the function itself:
+
+.. code-block:: python
+
+   # Sample on [-pi, pi] instead of the default [-10, 10]
+   kaxe.Function2D(math.sin, domain=(-math.pi, math.pi))
+
+   # Pin y while auto-scaling x
+   kaxe.Function2D(lambda x: x**2, range=(0, 10))
+
+   # 3D: explicit xy domain, auto z
+   kaxe.Function3D(lambda x, y: x + y, domain=(-2, 2, -3, 3))
+
+For unbounded functions (``exp``, ``1/x``, sharp asymptotes), set ``domain`` and/or
+``range`` explicitly, or fix the plot window. Use :py:meth:`kaxe.Plot.pad` for extra
+margin beyond the built-in 5%.
+
 Polar plots take ``[r_min, r_max]``. 3D plots take ``[x0, x1, y0, y1, z0, z1]``.
 
 Log plots use positive bounds on logarithmic axes. For log-log, pass both flags:

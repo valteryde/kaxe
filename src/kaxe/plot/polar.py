@@ -61,8 +61,33 @@ class PolarPlot(Window):
 
     # creating plotting window
     def __calculateWindowBorders__(self):
-        if self.windowAxis[0] is None: self.windowAxis[0] = 0
-        if self.windowAxis[1] is None: self.windowAxis[1] = 10
+        if self.windowAxis[0] is None:
+            self.windowAxis[0] = 0
+
+        if self.windowAxis[1] is not None:
+            return
+
+        r_vals = []
+        for obj in self.objects:
+            bounds_fn = getattr(obj, 'bounds', None)
+            if callable(bounds_fn):
+                bounds = bounds_fn(plot_window=self.windowAxis, plot=self)
+                if bounds:
+                    if bounds[0] is not None:
+                        r_vals.append(bounds[0])
+                    if bounds[1] is not None:
+                        r_vals.append(bounds[1])
+                continue
+            try:
+                r_vals.append(obj.farLeft)
+                r_vals.append(obj.farRight)
+            except AttributeError:
+                continue
+
+        if r_vals:
+            self.windowAxis[1] = max(r_vals)
+        else:
+            self.windowAxis[1] = 10
 
 
     def __addRoundLines__(self):

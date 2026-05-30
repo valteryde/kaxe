@@ -1,5 +1,5 @@
 
-from typing import Callable
+from typing import Callable, Optional, Sequence, Tuple, Union
 from .point import Points2D
 from ...core.styles import getRandomColor
 from ...core.color import to_rgba
@@ -7,9 +7,16 @@ from ...core.helper import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol
 from ...core.helper import isRealNumber
+from ...core.bounds import (
+    DEFAULT_DOMAIN_1D,
+    DEFAULT_MARGIN,
+    apply_margin,
+    resolve_interval,
+    sample_1d,
+    sample_polar_1d,
+)
 from ...plot import identities
 from random import randint
-from typing import Union
 
 class Function2D:
     """
@@ -30,6 +37,11 @@ class Function2D:
         If greater than 0, the function plot line will be dotted with the specified distance between dots. Default is 0.
     dashed : int, optional
         If greater than 0, the function plot line will be dashed with the specified distance between dashes. Default is 0.
+    domain : tuple, optional
+        Sampling interval ``(x0, x1)`` for auto-scaled x when the plot window
+        does not fix x. Default is ``(-10, 10)``.
+    range : tuple, optional
+        Fixed output interval ``(y0, y1)`` for the y axis when auto-scaling.
     args : tuple, optional
         Additional positional arguments to be passed to the function f.
     kwargs : dict, optional
@@ -56,6 +68,8 @@ class Function2D:
                  width:int=10,
                  dotted:int=0,
                  dashed:int=0,
+                 domain:Optional[Sequence[float]]=None,
+                 range:Optional[Sequence[float]]=None,
                  *args, 
                  **kwargs
                 ):
@@ -90,7 +104,73 @@ class Function2D:
         self.otherArgs = args
         self.otherKwargs = kwargs
 
+        self.domain = tuple(domain) if domain is not None else None
+        self.range = tuple(range) if range is not None else None
+
         self.supports = [identities.XYPLOT, identities.POLAR, identities.LOGPLOT]
+
+
+    def _call(self, x):
+        return self.function(x, *self.otherArgs, **self.otherKwargs)
+
+    def bounds(self, plot_window=None, plot=None):
+        """
+        Estimate data bounds for auto-scaling.
+
+        Returns up to six values ``[x0, x1, y0, y1, z0, z1]``. Entries are
+        ``None`` when that axis is fixed by the plot window or not applicable.
+        """
+        if plot_window is None and plot is not None:
+            plot_window = getattr(plot, 'windowAxis', None)
+
+        plot_identity = getattr(plot, 'identity', None) if plot is not None else None
+        first_axis_log = getattr(plot, 'firstAxisLog', False) if plot is not None else False
+        second_axis_log = getattr(plot, 'secondAxisLog', False) if plot is not None else False
+
+        if plot_identity == identities.POLAR:
+            wa = plot_window or [None, None]
+            if wa[0] is not None and wa[1] is not None:
+                return [wa[0], wa[1], None, None]
+            r0, r1 = sample_polar_1d(self._call)
+            if r0 is None:
+                return [None, None, None, None]
+            return [r0, r1, None, None]
+
+        wa = list(plot_window or [None, None, None, None])
+        while len(wa) < 4:
+            wa.append(None)
+
+        default_x = (0.01, 10.0) if first_axis_log else DEFAULT_DOMAIN_1D
+        x0, x1 = resolve_interval(self.domain, wa[0], wa[1], default_x)
+        if first_axis_log and x0 <= 0:
+            x0 = 0.01
+
+        auto_x = wa[0] is None or wa[1] is None
+        auto_y = wa[2] is None or wa[3] is None
+
+        if self.range is not None:
+            y0, y1 = float(self.range[0]), float(self.range[1])
+        elif auto_y:
+            _, _, y0, y1 = sample_1d(self._call, x0, x1)
+            if y0 is None:
+                return [None, None, None, None]
+            if second_axis_log:
+                if y0 <= 0:
+                    y0 = 0.01
+                if y1 <= 0:
+                    y1 = 0.01
+            y0, y1 = apply_margin(y0, y1)
+        else:
+            y0, y1 = None, None
+
+        if auto_x:
+            x0, x1 = apply_margin(x0, x1)
+            if first_axis_log and x0 <= 0:
+                x0 = 0.01
+        else:
+            x0, x1 = None, None
+
+        return [x0, x1, y0, y1]
 
 
     def __call__(self, x):

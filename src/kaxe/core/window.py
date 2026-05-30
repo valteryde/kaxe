@@ -268,23 +268,27 @@ class Window(AttrObject):
         if len(self.windowAxis) != 6:
             [self.windowAxis.append(None) for _ in range(6 - len(self.windowAxis))]
 
-        # har ingen effekt på 3D
         if sorted(self.windowAxis, key=lambda x: x==None)[-1] == None:
             x = []
             y = []
             z = []
             for i in self.objects:
-                if hasattr(i, 'bounds'):
-                    bounds = i.bounds()
-                    x.append(bounds[0])
-                    x.append(bounds[1])
-                    y.append(bounds[2])
-                    y.append(bounds[3])
-                    try:
-                        z.append(bounds[4])
-                        z.append(bounds[5])
-                    except IndexError as e:
-                        pass
+                bounds_fn = getattr(i, 'bounds', None)
+                if callable(bounds_fn):
+                    bounds = bounds_fn(plot_window=self.windowAxis, plot=self)
+                    if bounds:
+                        if bounds[0] is not None:
+                            x.append(bounds[0])
+                        if len(bounds) > 1 and bounds[1] is not None:
+                            x.append(bounds[1])
+                        if len(bounds) > 2 and bounds[2] is not None:
+                            y.append(bounds[2])
+                        if len(bounds) > 3 and bounds[3] is not None:
+                            y.append(bounds[3])
+                        if len(bounds) > 4 and bounds[4] is not None:
+                            z.append(bounds[4])
+                        if len(bounds) > 5 and bounds[5] is not None:
+                            z.append(bounds[5])
                     continue
 
                 try:

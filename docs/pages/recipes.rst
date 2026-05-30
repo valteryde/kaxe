@@ -16,6 +16,31 @@ Linear and polynomial functions
    plt.add(kaxe.Function2D(lambda x: x**2 - 4))
    plt.save("functions.png")
 
+Auto-scaled function plots
+--------------------------
+
+Leave the plot window open (``None`` bounds) and let functions set the visible range:
+
+.. code-block:: python
+
+   import math
+   import kaxe
+
+   # 2D — default domain [-10, 10], auto y with 5% padding
+   plt = kaxe.Plot()
+   plt.add(kaxe.Function2D(math.sin))
+   plt.save("sin-auto.png")
+
+   # 3D — auto x, y, and z
+   plt3 = kaxe.Plot3D()
+   plt3.add(kaxe.Function3D(lambda x, y: math.sin(x) * math.cos(y)))
+   plt3.save("surface-auto.png")
+
+   # Explicit sampling domain, auto output range
+   plt = kaxe.Plot()
+   plt.add(kaxe.Function2D(math.sin, domain=(-math.pi, math.pi)))
+   plt.save("sin-pi-domain.png")
+
 Multiple functions with fill and tangent
 ----------------------------------------
 

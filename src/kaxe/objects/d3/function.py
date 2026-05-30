@@ -13,6 +13,14 @@ import numpy as np
 import math
 import numbers
 import time
+from typing import Optional, Sequence
+
+from ...core.bounds import (
+    DEFAULT_DOMAIN_1D,
+    apply_margin,
+    resolve_interval,
+    sample_2d,
+)
 
 
 
@@ -75,6 +83,14 @@ class Function3D(Base3DObject):
         Whether to fill the plot. default is True
     drawDiagonalLines: bool
         Whether to draw diagonal lines in triangles when fill is False. default is False
+    domain : tuple, optional
+        Sampling interval for the two independent axes. For ``axis="xy"`` this is
+        ``(x0, x1, y0, y1)``; for ``axis="xz"`` it is ``(x0, x1, z0, z1)``; for
+        ``axis="yz"`` it is ``(y0, y1, z0, z1)``. Defaults to ``(-10, 10)`` on
+        each independent axis when the plot window does not fix them.
+    range : tuple, optional
+        Fixed interval ``(lo, hi)`` on the dependent axis (z for ``axis="xy"``,
+        y for ``axis="xz"``, x for ``axis="yz"``).
     excludeLight : bool, optional
         Whether to exclude lighting effects. Default is True.
     
@@ -93,6 +109,8 @@ class Function3D(Base3DObject):
                  drawDiagonalLines:bool=False, 
                  axis="xy", 
                  excludeLight=True,
+                 domain:Optional[Sequence[float]]=None,
+                 range:Optional[Sequence[float]]=None,
                  *args, 
                  **kwargs
         ):
@@ -105,6 +123,9 @@ class Function3D(Base3DObject):
         self.otherArgs = args
         self.otherKwargs = kwargs
         self.excludeLight = excludeLight
+
+        self.domain = tuple(domain) if domain is not None else None
+        self.range = tuple(range) if range is not None else None
 
         self.fill = fill
         self.drawDiagonalLines = drawDiagonalLines
@@ -124,8 +145,80 @@ class Function3D(Base3DObject):
             self.numPoints = 25
 
 
-    
+    _AXIS_IDX = {'x': (0, 1), 'y': (2, 3), 'z': (4, 5)}
 
+    def _call(self, a, b):
+        return self.f(a, b, *self.otherArgs, **self.otherKwargs)
+
+    def _resolve_axis_interval(self, axis_name, plot_window, domain_slice):
+        lo_i, hi_i = self._AXIS_IDX[axis_name]
+        plot_lo = plot_window[lo_i] if len(plot_window) > lo_i else None
+        plot_hi = plot_window[hi_i] if len(plot_window) > hi_i else None
+        user = domain_slice if domain_slice is not None else None
+        return resolve_interval(user, plot_lo, plot_hi, DEFAULT_DOMAIN_1D)
+
+    def _axis_auto(self, axis_name, plot_window):
+        lo_i, hi_i = self._AXIS_IDX[axis_name]
+        if len(plot_window) <= hi_i:
+            return True
+        return plot_window[lo_i] is None or plot_window[hi_i] is None
+
+    def bounds(self, plot_window=None, plot=None):
+        """
+        Estimate data bounds for auto-scaling 3D plots.
+
+        Returns ``[x0, x1, y0, y1, z0, z1]`` with ``None`` for fixed axes.
+        """
+        if plot_window is None and plot is not None:
+            plot_window = getattr(plot, 'windowAxis', None)
+
+        wa = list(plot_window or [None] * 6)
+        while len(wa) < 6:
+            wa.append(None)
+
+        ind0, ind1 = self.axis[0], self.axis[1]
+        dep = self.dependantVariable
+
+        domain = self.domain
+        d0 = domain[0:2] if domain is not None else None
+        d1 = domain[2:4] if domain is not None else None
+
+        if self.axis == 'xy':
+            u_axis, v_axis = 'x', 'y'
+        elif self.axis == 'xz':
+            u_axis, v_axis = 'x', 'z'
+        else:
+            u_axis, v_axis = 'y', 'z'
+
+        u0, u1 = self._resolve_axis_interval(u_axis, wa, d0)
+        v0, v1 = self._resolve_axis_interval(v_axis, wa, d1)
+
+        result = [None] * 6
+
+        for axis_name, lo, hi in ((u_axis, u0, u1), (v_axis, v0, v1)):
+            if not self._axis_auto(axis_name, wa):
+                continue
+            lo, hi = apply_margin(lo, hi)
+            lo_i, hi_i = self._AXIS_IDX[axis_name]
+            result[lo_i] = lo
+            result[hi_i] = hi
+
+        if self.range is not None:
+            dep_lo, dep_hi = float(self.range[0]), float(self.range[1])
+        elif self._axis_auto(dep, wa):
+            _, _, _, _, dep_lo, dep_hi = sample_2d(self._call, u0, u1, v0, v1)
+            if dep_lo is None:
+                return result
+            dep_lo, dep_hi = apply_margin(dep_lo, dep_hi)
+        else:
+            return result
+
+        dep_lo_i, dep_hi_i = self._AXIS_IDX[dep]
+        result[dep_lo_i] = dep_lo
+        result[dep_hi_i] = dep_hi
+        return result
+
+    
     def __addTriangle__(self, render, p1, p2, p3, color, isRealpoint):
         
         # dont draw vertical vertices
