@@ -123,6 +123,23 @@ _display_initialized = False
 MSAA_SAMPLES = 4
 
 
+def _should_quit_sdl_subsystem():
+    """Jupyter kernels are long-lived; SDL_Quit can crash or hang IPython on macOS."""
+    from ..window import terminaltype
+    return terminaltype != 'jupyter'
+
+
+def _release_sdl_window(window, gl_context, *, quit_subsystem=None):
+    if gl_context:
+        sdl2.SDL_GL_DeleteContext(gl_context)
+    if window:
+        sdl2.SDL_DestroyWindow(window)
+    if quit_subsystem is None:
+        quit_subsystem = _should_quit_sdl_subsystem()
+    if quit_subsystem:
+        sdl2.SDL_Quit()
+
+
 def configure_gl_context_attributes():
     sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 2)
     sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
@@ -926,9 +943,7 @@ class OpenGLRender:
             self.triNoLight.finalizeAppend()
 
     def quit(self, gl_context, window):
-        sdl2.SDL_GL_DeleteContext(gl_context)
-        sdl2.SDL_DestroyWindow(window)
-        sdl2.SDL_Quit()
+        _release_sdl_window(window, gl_context)
 
 
     def gui(self, overlay=None, plot=None):
@@ -993,10 +1008,12 @@ class OpenGLRender:
             lasttime = time.time()
             while sdl2.SDL_PollEvent(event):
                 if event.type == sdl2.SDL_QUIT:
+                    running = False
                     self.quit(gl_context, window)
                     return
                 elif event.type == sdl2.SDL_KEYDOWN:
                     if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                        running = False
                         self.quit(gl_context, window)
                         return
                     
@@ -1013,6 +1030,10 @@ class OpenGLRender:
                         idle = True
 
                 elif event.type == sdl2.SDL_WINDOWEVENT:
+                    if event.window.event == sdl2.SDL_WINDOWEVENT_CLOSE:
+                        running = False
+                        self.quit(gl_context, window)
+                        return
                     if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
                         width = event.window.data1
                         height = event.window.data2
@@ -1111,7 +1132,7 @@ class OpenGLRender:
             sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_HIDDEN
         )
         if not window:
-            sdl2.SDL_Quit()
+            _release_sdl_window(None, None)
             raise RuntimeError("SDL_CreateWindow Error: " + str(sdl2.SDL_GetError()))
 
         self.__setIcon__(window)
@@ -1140,9 +1161,7 @@ class OpenGLRender:
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
         _cleanup_offscreen_resources(resources)
-        sdl2.SDL_GL_DeleteContext(gl_context)
-        sdl2.SDL_DestroyWindow(window)
-        sdl2.SDL_Quit()
+        _release_sdl_window(window, gl_context)
 
         self.image = image
         return self.image
