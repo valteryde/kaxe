@@ -6,8 +6,9 @@ from ...core.shapes import shapes
 from ...core.text import Text
 from ...core.round import koundTeX
 from ...plot import identities
-from typing import Union
+from typing import Callable, Union
 from ...core.color import Colormaps
+from ...core.bounds import DEFAULT_DOMAIN_2D
 
 
 class ColorScale:
@@ -204,14 +205,97 @@ class HeatMap:
         else:
             self.maxValue = max([max(row) for row in self.data])
 
-        self.farLeft = len(data[0]) * self.unitPerPixel[0]
         self.farRight = position[0]
-        self.farTop = len(data) * self.unitPerPixel[1]
+        self.farLeft = position[0] + len(data[0]) * self.unitPerPixel[0]
         self.farBottom = position[1]
+        self.farTop = position[1] + len(data) * self.unitPerPixel[1]
         
         self.supports = [identities.XYPLOT]
 
-    
+    @classmethod
+    def fromFunction(
+        cls,
+        f: Callable,
+        numSamples: int = 100,
+        domain=None,
+        cmap=Colormaps.standard,
+        minValue=None,
+        maxValue=None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Build a heatmap by sampling a 2D function on a regular grid.
+
+        Parameters
+        ----------
+        f : callable
+            Function ``f(x, y)`` returning the value at each grid point.
+            May accept numpy arrays for vectorized evaluation.
+        numSamples : int, optional
+            Number of cells per axis (default is 100).
+        domain : tuple, optional
+            Placement region ``(x0, x1, y0, y1)`` in plot coordinates
+            (default is ``(-10, 10, -10, 10)``).
+        cmap : Colormap, optional
+            Colormap for value-to-color mapping.
+        minValue : float or int, optional
+            Minimum value for the color scale. Calculated from data if omitted.
+        maxValue : float or int, optional
+            Maximum value for the color scale. Calculated from data if omitted.
+        *args
+            Additional positional arguments passed to ``f``.
+        **kwargs
+            Additional keyword arguments passed to ``f``.
+
+        Returns
+        -------
+        HeatMap
+
+        Examples
+        --------
+        >>> import math
+        >>> hm = kaxe.HeatMap.fromFunction(
+        ...     lambda x, y: math.sin(x) * math.cos(y),
+        ...     numSamples=100,
+        ...     domain=(-10, 10, -10, 10),
+        ... )
+        >>> plt.add(hm)
+        """
+        if domain is None:
+            domain = DEFAULT_DOMAIN_2D
+        x0, x1, y0, y1 = domain
+        n = numSamples
+        dx = (x1 - x0) / n
+        dy = (y1 - y0) / n
+
+        xs = np.linspace(x0 + dx / 2, x1 - dx / 2, n)
+        ys = np.linspace(y0 + dy / 2, y1 - dy / 2, n)
+
+        data = None
+        try:
+            x_grid, y_grid = np.meshgrid(xs, ys)
+            z_vals = np.asarray(f(x_grid, y_grid, *args, **kwargs), dtype=np.float64)
+            if z_vals.shape == (n, n):
+                data = z_vals.tolist()
+        except Exception:
+            pass
+
+        if data is None:
+            data = [
+                [float(f(x, y, *args, **kwargs)) for x in xs]
+                for y in ys
+            ]
+
+        return cls(
+            data,
+            cmap=cmap,
+            unitPerPixel=[dx, dy],
+            position=(x0, y0),
+            minValue=minValue,
+            maxValue=maxValue,
+        )
+
     def finalize(self, parent):
 
         # get size of one box
