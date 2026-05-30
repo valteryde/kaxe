@@ -707,6 +707,7 @@ class OpenGLRender:
         self.count = 0
         self.showHud = False
         self.debugDrawOverlay = False
+        self.profiler_report = False
         self.autoRotate = False
         self.hud = ViewportHud()
 
@@ -1062,11 +1063,11 @@ class OpenGLRender:
 
             sdl2.SDL_GL_SwapWindow(window)
             
-            # Print profiler report every 60 frames for performance analysis
-            if self.totalframes % 120 == 0 and self.totalframes > 0:
+            # Print profiler report periodically when explicitly enabled
+            if self.profiler_report and self.totalframes % 120 == 0 and self.totalframes > 0:
                 print(self.profiler.get_report(sort_by='average'))
                 print("=" * 50)
-                self.profiler.reset()  # Reset to start fresh measurements
+                self.profiler.reset()
             
 
             

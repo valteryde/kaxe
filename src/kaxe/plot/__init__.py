@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 
 from .themes import Themes
 from .log import LogPlot, BoxedLogPlot, LOGPLOT
@@ -15,7 +16,11 @@ __all__ = [
     'Plot', 'XYPLOT', 'PolarPlot', 'POLARPLOT',
     'BoxedPlot', 'EmptyPlot', 'EmptyWindow',
     'DoubleAxisPlot', 'Grid', 'XYZPLOT', 'identities',
+    'Plot3D', 'PlotCenter3D', 'PlotFrame3D', 'PlotEmpty3D',
 ]
+
+if TYPE_CHECKING:
+    from .d3 import Plot3D, PlotCenter3D, PlotFrame3D, PlotEmpty3D
 
 
 class identities:

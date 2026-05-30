@@ -28,6 +28,7 @@ Example:
 
 
 import logging
+from typing import TYPE_CHECKING
 
 from .plot import *
 from .chart import *
@@ -54,6 +55,10 @@ except:
 
 _PLOT_D3 = frozenset({'Plot3D', 'PlotCenter3D', 'PlotFrame3D', 'PlotEmpty3D'})
 _OBJECTS_D3 = frozenset({'Points3D', 'Function3D', 'Mesh', 'Potato', 'SolidOfRotation'})
+
+if TYPE_CHECKING:
+    from .plot.d3 import Plot3D, PlotCenter3D, PlotFrame3D, PlotEmpty3D
+    from .objects.d3 import Points3D, Function3D, Mesh, Potato, SolidOfRotation
 
 
 def __getattr__(name):
