@@ -95,6 +95,11 @@ Use typed 2D objects when you need explicit control or parameters only available
     .. image:: /_static/equation.png
         :width: 400 px
 
+.. autoclass:: kaxe.Inequality
+    :members:
+
+    Hatching marks the forbidden side of the inequality (where the comparison is not satisfied).
+
 .. autoclass:: kaxe.ColorScale
     :members:
 

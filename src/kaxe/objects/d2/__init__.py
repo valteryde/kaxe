@@ -1,6 +1,7 @@
 
 from .point import Points2D
 from .equation import Equation
+from .inequality import Inequality
 from .function import Function2D
 from .pillar import Pillars, Histogram
 from .map import HeatMap, ColorScale
