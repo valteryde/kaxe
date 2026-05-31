@@ -45,6 +45,48 @@ def vlen(v):
     return math.sqrt(sum([i**2 for i in v]))
 
 
+def resample_polyline(points, spacing):
+    """
+    Emit points every `spacing` pixels along polyline arc length.
+
+    Points are placed at uniform screen-space intervals by interpolating
+    along segments, so output density is non-uniform in data/index space.
+    """
+    if spacing <= 0 or len(points) < 2:
+        return list(points)
+
+    result = [points[0]]
+    dist_since_last = 0.0
+    prev = points[0]
+
+    for i in range(1, len(points)):
+        cur = points[i]
+        seg_dx = cur[0] - prev[0]
+        seg_dy = cur[1] - prev[1]
+        seg_len = math.hypot(seg_dx, seg_dy)
+
+        if seg_len == 0:
+            prev = cur
+            continue
+
+        pos_on_seg = 0.0
+        while dist_since_last + (seg_len - pos_on_seg) >= spacing:
+            need = spacing - dist_since_last
+            pos_on_seg += need
+            t = pos_on_seg / seg_len
+            result.append((prev[0] + t * seg_dx, prev[1] + t * seg_dy))
+            dist_since_last = 0.0
+
+        dist_since_last += seg_len - pos_on_seg
+        prev = cur
+
+    last = points[-1]
+    if result[-1] != last:
+        result.append(last)
+
+    return result
+
+
 def vectorScalar(v, s):
     return [i*s for i in v]
 

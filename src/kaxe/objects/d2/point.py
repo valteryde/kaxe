@@ -30,9 +30,17 @@ class Points2D:
     show_points : bool, optional
         If False, point markers are not drawn. With ``connect=True``, only the
         connector polyline is drawn. Default is True.
+    dashed : int, optional
+        If greater than 0, connected lines are dashed with the specified pixel
+        spacing between dashes. Dense point sets are resampled to that spacing
+        before rendering. Default is 0.
+    dotted : int, optional
+        If greater than 0, connected lines are dotted with the specified pixel
+        spacing between dots. Dense point sets are resampled to that spacing
+        before rendering. Default is 0.
     """
 
-    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False, show_points:bool=True):        
+    def __init__(self, x, y, color:tuple=None, size:int=None, symbol:str=None, connect:bool=False, lollipop=False, show_points:bool=True, dashed:int=0, dotted:int=0):        
         self.batch = shapes.Batch()
         self.points = []
         self.lines = []
@@ -68,6 +76,8 @@ class Points2D:
         self.legendColor = self.color
         self.connect = connect
         self.show_points = show_points
+        self.dashed = dashed
+        self.dotted = dotted
         if not show_points and connect and not symbol:
             self.legendSymbol = symbols.LINE
         
@@ -87,6 +97,11 @@ class Points2D:
         scale = parent.getVisualScale()
         size = max(1, round(self.size * scale))
         line_width = max(1, int(size * 0.5))
+
+        if self.connect and (self.dashed > 0 or self.dotted > 0):
+            self.__finalizeDashedConnectedLine__(parent, line_width)
+            if not self.show_points:
+                return
 
         if self.connect and not self.show_points:
             self.__finalizeConnectedLine__(parent, line_width)
@@ -118,6 +133,9 @@ class Points2D:
 
             # connect
             if not self.connect or i == len(self.x)-1:
+                continue
+
+            if self.dashed > 0 or self.dotted > 0:
                 continue
             
             x1, y1 = parent.pixel(self.x[i+1], self.y[i+1])
@@ -155,6 +173,43 @@ class Points2D:
             return
 
         shapes.LineSegment(points, color=self.color, width=line_width, batch=self.batch)
+
+
+    def __finalizeDashedConnectedLine__(self, parent, line_width):
+        points = []
+        for x_val, y_val in zip(self.x, self.y):
+            px, py = parent.pixel(x_val, y_val)
+            if px is None or py is None:
+                continue
+            if not parent.inside(px, py):
+                continue
+            points.append(parent.clamp(px, py))
+
+        if len(points) < 2:
+            return
+
+        spacing = self.dashed if self.dashed > 0 else self.dotted
+        points = resample_polyline(points, spacing)
+
+        if len(points) < 2:
+            return
+        if len(points) == 2:
+            x0, y0 = points[0]
+            x1, y1 = points[1]
+            line = shapes.Line(x0, y0, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
+            self.lines.append(line)
+            return
+
+        shapes.LineSegment(
+            points,
+            color=self.color,
+            width=line_width,
+            batch=self.batch,
+            dotted=self.dotted > 0,
+            dashed=self.dashed > 0,
+            dashedDist=self.dashed,
+            dottedDist=self.dotted,
+        )
         
     
     def draw(self, *args, **kwargs):
