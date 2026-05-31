@@ -1,3 +1,4 @@
+import math
 
 from ...core.shapes import shapes
 from ...core.color import to_rgba
@@ -65,6 +66,9 @@ class Inequality:
         Pixel spacing between parallel hatch lines (default is 10).
     hatch_width : int, optional
         Hatch line thickness (default is 1).
+    hatch_angle : float, optional
+        Hatch line angle in degrees, measured counter-clockwise from the
+        horizontal axis (default is 45).
     computePadding : int, optional
         Extra padding when sampling the plot area (default is 50).
 
@@ -85,6 +89,7 @@ class Inequality:
         hatch_color=(255, 0, 0, 180),
         hatch_spacing=10,
         hatch_width=1,
+        hatch_angle=45,
         computePadding=50,
     ):
         self.left = left
@@ -92,6 +97,7 @@ class Inequality:
         self.computePadding = computePadding
         self.hatch_spacing = hatch_spacing
         self.hatch_width = hatch_width
+        self.hatch_angle = hatch_angle
         self.hatch_color = to_rgba(hatch_color)
 
         if op not in _OPS:
@@ -123,14 +129,37 @@ class Inequality:
         scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
         hatch_width = max(1, int(self.hatch_width * scale))
 
-        max_extent = int(width + height)
-        for offset in range(-int(height), int(width + height), spacing):
+        angle_rad = math.radians(self.hatch_angle)
+        dx = math.cos(angle_rad)
+        dy = math.sin(angle_rad)
+        nx = -dy
+        ny = dx
+
+        corners = ((x0, y0), (x1, y0), (x0, y1), (x1, y1))
+        normal_proj = [nx * cx + ny * cy for cx, cy in corners]
+        o_min = int(min(normal_proj)) - spacing
+        o_max = int(max(normal_proj)) + spacing
+
+        for o in range(o_min, o_max + 1, spacing):
             segment_start = None
             last_point = None
 
-            for t in range(0, max_extent, sample_step):
-                px = x0 + t
-                py = y0 + t + offset
+            base_x = x0 + o * nx
+            base_y = y0 + o * ny
+            t_values = []
+            for cx, cy in corners:
+                if abs(dx) > 1e-9:
+                    t_values.append((cx - base_x) / dx)
+                if abs(dy) > 1e-9:
+                    t_values.append((cy - base_y) / dy)
+            if not t_values:
+                continue
+            t_start = int(min(t_values)) - 1
+            t_end = int(max(t_values)) + 1
+
+            for t in range(t_start, t_end, sample_step):
+                px = base_x + t * dx
+                py = base_y + t * dy
 
                 if px < x0 or px > x1 or py < y0 or py > y1:
                     if segment_start is not None and last_point is not None:
