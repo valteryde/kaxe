@@ -12,6 +12,7 @@ Kaxe documentation
    pages/styling
    pages/legends_and_titles
    pages/export
+   pages/project
    pages/plots
    pages/objects
    pages/charts

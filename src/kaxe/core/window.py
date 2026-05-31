@@ -585,7 +585,7 @@ class Window(AttrObject):
 
 
     # save and show    
-    def save(self, fname:Union[str, BytesIO], format:Optional[str]=None):
+    def save(self, fname:Union[str, BytesIO], format:Optional[str]=None, *, project:Optional[str]=None):
         """
         Save the current window image to a file.
         
@@ -598,6 +598,8 @@ class Window(AttrObject):
             The filename where the image will be saved or a BytesIO object to save the image in memory.
         format : str, optional
             Output format: ``"png"``, ``"svg"``, or ``"pdf"``. Inferred from ``fname`` extension when omitted.
+        project : str, optional
+            If given, also write a ``.kaxe`` JSON project file to this path (editable figure source).
         
         Examples
         --------
@@ -606,6 +608,10 @@ class Window(AttrObject):
         >>> plt.save( path/where/image/saved.pdf )
 
         """
+
+        if project is not None:
+            from ..project import save_project
+            save_project(self, project)
 
         fmt = infer_format(fname, format)
 

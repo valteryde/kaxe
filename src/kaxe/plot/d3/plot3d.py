@@ -493,7 +493,11 @@ class Plot3D(Plot3DAxesMixin, Window):
         return self.__make_overlay__()
 
 
-    def save(self, fname: Union[str, BytesIO], format: Optional[str] = None):
+    def save(self, fname: Union[str, BytesIO], format: Optional[str] = None, *, project: Optional[str] = None):
+        if project is not None:
+            raise NotImplementedError(
+                "3D plot project files are not supported in .kaxe v1"
+            )
 
         self.setAttr('guiWidth', self.getAttr('width'))
         self.setAttr('guiHeight', self.getAttr('height'))

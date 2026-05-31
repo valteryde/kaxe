@@ -438,7 +438,11 @@ class Grid(AttrObject):
             self.grid[i].append(plot)
 
     
-    def save(self, fname: Union[str, BytesIO], format: Optional[str] = None):
+    def save(self, fname: Union[str, BytesIO], format: Optional[str] = None, *, project: Optional[str] = None):
+        if project is not None:
+            raise NotImplementedError(
+                "Grid project files are not supported in .kaxe v1 (planned for a future release)"
+            )
         fmt = infer_format(fname, format)
 
         if fmt == "svg":
