@@ -40,6 +40,37 @@ except:
 
 settings = {"removeInfo":False}
 
+def compute_adjust_styles(
+    procentWidth,
+    documentFontSize=0.25,
+    documentMarginProcent=1.5,
+    documentWidth=11.8,
+    imageSlimRatio=1,
+):
+    """Compute width, height, and fontSize for LaTeX page-fraction sizing."""
+    width = 4000 * procentWidth
+    height = width / (1 + procentWidth) * imageSlimRatio
+    fontSize = documentFontSize / (
+        procentWidth * (documentWidth - 2 * documentMarginProcent)
+    ) * width
+    return {
+        "width": int(width),
+        "height": int(height),
+        "fontSize": int(fontSize),
+        "outerPadding": (10, 10, 10, 10),
+    }
+
+
+def compute_axis_numbers(width_px, height_px, font_size, min_ticks=4):
+    """Target tick counts from pixel extent and font size (~2*fontSize per tick)."""
+    divisor = 2 * font_size
+    if divisor <= 0:
+        divisor = 1
+    x_numbers = max(min_ticks, int(width_px // divisor))
+    y_numbers = max(min_ticks, int(height_px // divisor))
+    return x_numbers, y_numbers
+
+
 def setSetting(**kwargs):
     """Set global Kaxe runtime settings.
 
@@ -169,7 +200,7 @@ class Window(AttrObject):
         """
         Adjust the following styles based on document size and document font size. i. e. match document font size with plot font size
 
-        Directly changed styles; fontSize, width, height, outerPadding
+        Directly changed styles; fontSize, width, height, outerPadding, xNumbers, yNumbers
 
         A lot of styles indirecitly relies on fontSize, width and height.
         
@@ -183,16 +214,21 @@ class Window(AttrObject):
 
         """
 
-        # Same ratio
-        # documentFontSize/documentWidth = fontSize/width
-        # fontSize = documentFontSize/documentWidth*width
-
-        width = 4000 * procentWidth
-        height = width / (1 + procentWidth) * imageSlimRatio
-
-        fontSize = documentFontSize/(procentWidth*(documentWidth-2*documentMarginProcent))*width
-        
-        self.style(width=int(width), height=int(height), fontSize=int(fontSize), outerPadding=(10,10,10,10))
+        styles = compute_adjust_styles(
+            procentWidth,
+            documentFontSize=documentFontSize,
+            documentMarginProcent=documentMarginProcent,
+            documentWidth=documentWidth,
+            imageSlimRatio=imageSlimRatio,
+        )
+        x_numbers, y_numbers = compute_axis_numbers(
+            styles["width"], styles["height"], styles["fontSize"]
+        )
+        self.style(
+            **styles,
+            xNumbers=x_numbers,
+            yNumbers=y_numbers,
+        )
 
 
     # paddings

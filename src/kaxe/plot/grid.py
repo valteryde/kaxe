@@ -23,6 +23,14 @@ def _cell_supports_svg(plot) -> bool:
     return getattr(plot, "supports_vector_export", False)
 
 
+def _grid_has_3d_cells(grid) -> bool:
+    for row in grid:
+        for plot in row:
+            if plot == XYZPLOT or getattr(plot, "identity", None) == XYZPLOT:
+                return True
+    return False
+
+
 class Grid(AttrObject):
     """
     Assemble multiple plots in one image.
@@ -101,6 +109,50 @@ class Grid(AttrObject):
         self.style(**theme)
 
 
+    def adjust(self, procentWidth, documentFontSize=0.25, documentMarginProcent=1.5, documentWidth=11.8, imageSlimRatio=1):
+        """
+        Adjust grid size and typography for LaTeX page fractions (same API as :meth:`kaxe.Plot.adjust`).
+
+        Sets width, height, fontSize, outerPadding, and per-cell xNumbers / yNumbers from cell size.
+        zNumbers is set when the grid contains 3D plots.
+
+        See :meth:`kaxe.core.window.Window.adjust` for parameter details.
+        """
+        styles = compute_adjust_styles(
+            procentWidth,
+            documentFontSize=documentFontSize,
+            documentMarginProcent=documentMarginProcent,
+            documentWidth=documentWidth,
+            imageSlimRatio=imageSlimRatio,
+        )
+        cols = max((len(row) for row in self.grid), default=1) or 1
+        rows = len(self.grid) or 1
+        cell_w = styles["width"] // cols
+        cell_h = styles["height"] // rows
+        x_numbers, y_numbers = compute_axis_numbers(
+            cell_w, cell_h, styles["fontSize"]
+        )
+        axis_kwargs = {
+            "xNumbers": x_numbers,
+            "yNumbers": y_numbers,
+        }
+        if _grid_has_3d_cells(self.grid):
+            z_extent = min(cell_w, cell_h)
+            axis_kwargs["zNumbers"] = compute_axis_numbers(
+                z_extent, z_extent, styles["fontSize"]
+            )[0]
+        self.style(**styles, **axis_kwargs)
+
+
+    def _axis_style_kwargs(self):
+        kwargs = {}
+        for attr in ("xNumbers", "yNumbers", "zNumbers"):
+            value = self.getAttr(attr)
+            if value is not None:
+                kwargs[attr] = value
+        return kwargs
+
+
     def _reset_cell_bake_state(self, plot):
         if plot == XYZPLOT or isinstance(plot, str):
             return
@@ -120,6 +172,7 @@ class Grid(AttrObject):
             outerPadding=self.outerPadding,
             fontSize=self.getAttr('fontSize'),
             color=self.getAttr('color'),
+            **self._axis_style_kwargs(),
         )
 
 

@@ -131,7 +131,7 @@ Themes and adjust
 
 Available presets: ``A4Large``, ``A4Medium``, ``A4Small``, ``A4Slim``, ``A4Mini``. See :class:`kaxe.Themes` for exact values.
 
-**adjust** scales width, height, and font size from a target fraction of page width:
+**adjust** scales width, height, font size, and axis tick counts (``xNumbers``, ``yNumbers``) from a target fraction of page width:
 
 .. code-block:: python
 
@@ -139,12 +139,18 @@ Available presets: ``A4Large``, ``A4Medium``, ``A4Small``, ``A4Slim``, ``A4Mini`
 
 Optional parameters: ``documentFontSize``, ``documentMarginProcent``, ``documentWidth``, ``imageSlimRatio``.
 
-Grid font size
---------------
+Grids
+-----
 
-On :class:`kaxe.Grid`, ``fontSize`` and ``color`` apply to the shared legend **and** every subplot cell when the grid is exported. Set them on the grid only; per-plot ``fontSize`` on cells is overridden at bake time.
+On :class:`kaxe.Grid`, ``fontSize``, ``color``, and axis tick counts (``xNumbers``, ``yNumbers``, and ``zNumbers`` for 3D cells) apply to the shared legend **and** every subplot cell when the grid is exported. Set them on the grid only; per-plot values on cells are overridden at bake time.
+
+Use :meth:`kaxe.Grid.adjust` with the same API as single plots. Tick targets are computed from each cell's pixel size after the grid layout is divided, so subplots keep multiple grid lines instead of a single marker interval.
 
 .. code-block:: python
+
+   grid = kaxe.Grid()
+   grid.adjust(0.5)
+   grid.addRow(p1, p2, p3)
 
    grid = kaxe.Grid()
    grid.style(width=3000, height=1000, fontSize=100)

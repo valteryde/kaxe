@@ -115,13 +115,16 @@ class Axis(AttrObject):
         length = self.endNumber - self.startNumber
 
         numberOnAxisGoal = self.getAttr(self.numberOnAxisGoalReference)
-        if not numberOnAxisGoal: # default
-            numberOnAxisGoal = pixelLength // (3*self.getAttr('fontSize'))
+        explicit_goal = bool(numberOnAxisGoal)
+        if not numberOnAxisGoal:
+            numberOnAxisGoal = max(
+                4, pixelLength // (2 * self.getAttr('fontSize'))
+            )
 
-        if numberOnAxisGoal - 1 == 0:
-            numberOnAxisGoal = 2
-
-        acceptence = [numberOnAxisGoal-1, numberOnAxisGoal+1]
+        if explicit_goal and numberOnAxisGoal < 3:
+            acceptence = [numberOnAxisGoal - 1, numberOnAxisGoal + 1]
+        else:
+            acceptence = [max(3, numberOnAxisGoal - 1), numberOnAxisGoal + 1]
 
         MARKERSTEP = [2, 5, 10]
         
@@ -158,8 +161,17 @@ class Axis(AttrObject):
                 continue
 
             break
-        
-        lengthOverStep = round(lengthOverStep)
+
+        if not explicit_goal or numberOnAxisGoal >= 3:
+            min_intervals = 3
+            refine_c = c
+            while round(length / step) < min_intervals and refine_c > 0:
+                refine_c -= 1
+                step = MARKERSTEP[refine_c % len(MARKERSTEP)] * 10 ** (
+                    refine_c // len(MARKERSTEP)
+                )
+
+        lengthOverStep = round(length / step)
 
         # is null in frame?
         nullX, nullY = self.get(0)
