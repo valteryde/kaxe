@@ -781,10 +781,18 @@ class Axis(AttrObject):
                 posMarkerB = np.array((b.tickLine.x0/2 + b.tickLine.x1/2, b.tickLine.y0/2 + b.tickLine.y1/2))
 
                 va = posSelfCenter - posMarkerA
-                va /= np.sqrt(np.dot(va, va))
+                norm_sq_a = np.dot(va, va)
+                if norm_sq_a > 0 and np.isfinite(norm_sq_a):
+                    va = va / np.sqrt(norm_sq_a)
+                else:
+                    va = np.asarray(self.titleNormal, dtype=float)
 
                 vb = posAxisCenter - posMarkerB
-                vb /= np.sqrt(np.dot(vb, vb))
+                norm_sq_b = np.dot(vb, vb)
+                if norm_sq_b > 0 and np.isfinite(norm_sq_b):
+                    vb = vb / np.sqrt(norm_sq_b)
+                else:
+                    vb = np.asarray(axis.titleNormal, dtype=float)
 
 
                 push_factor = 10
