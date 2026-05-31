@@ -57,6 +57,8 @@ class Function:
             return Function2D(f, color=color, width=width, *args, **kwargs)
 
         if n == 2:
+            from .._require_3d import require_3d
+            require_3d()
             from .d3.function import Function3D
             return Function3D(f, color=color, numPoints=numPoints, fill=fill, *args, **kwargs)
 

@@ -185,10 +185,12 @@ class Equation:
 
 
     def finalize(self, parent):
+        from ..._require_3d import require_3d
         from ...core.d3.translator import translate2DTo3DObjects, getEquivalent2DPlot, has3DReference
 
         # Translate to 3D plot
         if parent == identities.XYZPLOT:
+            require_3d()
             parent = getEquivalent2DPlot(parent)
         scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
         self._effectiveWidth = max(1, int(self.width * scale))
@@ -201,6 +203,7 @@ class Equation:
 
         # Translate to 3D plot
         if has3DReference(parent):
+            require_3d()
             translate2DTo3DObjects(parent, self.batch)
 
         # algoritmen burde findes alle pixels hvor ligningen går op

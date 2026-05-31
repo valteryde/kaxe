@@ -139,6 +139,8 @@ class ParametricEquation:
                 parent.add(tf)
 
         elif parent == identities.XYZPLOT:
+            from ..._require_3d import require_3d
+            require_3d()
             from ...core.d3.objects import Line3D, Point3D
             from ...core.d3.backend import RenderBackend
 

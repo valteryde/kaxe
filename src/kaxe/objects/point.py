@@ -38,6 +38,8 @@ class Points:
     def __new__(self, x, y, z = None, **kwargs) -> Union[Points2D, "Points3D"]:
     
         if z:
+            from .._require_3d import require_3d
+            require_3d()
             from .d3.point import Points3D
             return Points3D(x, y, z, **kwargs)
         return Points2D(x, y, **kwargs)

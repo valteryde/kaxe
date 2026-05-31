@@ -4,9 +4,3 @@ sphinx_rtd_theme
 myst-parser
 markdown-it-py
 mdit-py-plugins
-
-# 3D rendering (autodoc imports Plot3D; docs/files.py screenshots)
-PyOpenGL
-PySDL2
-pysdl2-dll
-numpy-stl

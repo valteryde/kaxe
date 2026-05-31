@@ -54,6 +54,12 @@ PDF export produces a vector file with the same content as SVG. Math labels use 
 
    pip install kaxe[pdf]
 
+For 3D plots and PDF export together:
+
+.. code-block:: bash
+
+   pip install kaxe[3d,pdf]
+
 .. code-block:: python
 
    plt.save("figure.pdf")

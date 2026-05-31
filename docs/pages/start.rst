@@ -7,9 +7,19 @@ Kaxe is object oriented: create a plot or chart window, add content, style it, t
 Installation
 ------------
 
+The default install includes 2D plotting only:
+
 .. code-block:: bash
 
    pip install kaxe
+
+For 3D plots (OpenGL rendering), install the optional extra:
+
+.. code-block:: bash
+
+   pip install kaxe[3d]
+
+For PDF export, see :doc:`export`.
 
 Complete example
 ----------------

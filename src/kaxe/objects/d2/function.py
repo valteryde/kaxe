@@ -220,6 +220,7 @@ class Function2D:
 
     def finalize(self, parent):
 
+        from ..._require_3d import require_3d
         from ...core.d3.translator import translate2DTo3DObjects, getEquivalent2DPlot, has3DReference
 
         self.lineSegments = [[]]
@@ -228,6 +229,7 @@ class Function2D:
 
         # translate xyz
         if parent == identities.XYZPLOT:
+            require_3d()
             parent = getEquivalent2DPlot(parent)
 
 
@@ -298,6 +300,7 @@ class Function2D:
 
         # translate fully to xyz
         if has3DReference(parent):
+            require_3d()
             translate2DTo3DObjects(parent, self.batch)
             # translate2DTo3DObjects(parent, self.fillbatch)
 

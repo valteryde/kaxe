@@ -20,9 +20,10 @@ _OPS = {
 
 
 def _resolve_plot(parent):
-    from ...core.d3.translator import getEquivalent2DPlot
-
     if getattr(parent, 'identity', None) == identities.XYZPLOT:
+        from ..._require_3d import require_3d
+        require_3d()
+        from ...core.d3.translator import getEquivalent2DPlot
         return getEquivalent2DPlot(parent)
     return parent
 
@@ -187,6 +188,7 @@ class Inequality:
         )
 
     def finalize(self, parent):
+        from ..._require_3d import require_3d
         from ...core.d3.translator import translate2DTo3DObjects, has3DReference
 
         plot = _resolve_plot(parent)
@@ -194,6 +196,7 @@ class Inequality:
         self.__build_hatch__(plot)
 
         if has3DReference(plot):
+            require_3d()
             translate2DTo3DObjects(plot, self.hatch_batch)
 
     def push(self, x, y):

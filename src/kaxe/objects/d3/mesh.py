@@ -86,7 +86,9 @@ class Mesh(Base3DObject):
         """
 
         if not STLLIBIMPORTED:
-            raise ImportError('Please ensure that the numpy-stl library is installed')
+            raise ImportError(
+                '3D features require optional dependencies. Install with: pip install kaxe[3d]'
+            )
 
         return Mesh(stlmesh.Mesh.from_file(fpath), **kwargs)
 

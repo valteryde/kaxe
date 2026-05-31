@@ -121,6 +121,8 @@ class Arrow:
         return np.cos(theta) * ortho1 + np.sin(theta) * ortho2
 
     def finalize3D(self, parent):
+        from ..._require_3d import require_3d
+        require_3d()
         from ...core.d3.objects import Triangle, Line3D
 
         pixel0 = parent.pixel(*self.p0)

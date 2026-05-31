@@ -18,7 +18,6 @@ import sdl2.ext
 import sdl2.video
 import ctypes
 from ..fileloader import loadFile
-import cv2
 from ..profiler import Profiler
 from ..helper import to_numpy
 from .hud import ViewportHud
@@ -808,12 +807,12 @@ class OpenGLRender:
             if overlay_np.shape[1] > self.width or overlay_np.shape[0] > self.height:
                 overlay_np = overlay_np[:self.height, :self.width]
 
-        with self.profiler.measure("opencv_resize"):
+        with self.profiler.measure("overlay_resize"):
             if overlay_np.shape[1] != self.guiWidth or overlay_np.shape[0] != self.guiHeight:
-                overlay_np = cv2.resize(
-                    overlay_np,
-                    (self.guiWidth, self.guiHeight),
-                    interpolation=cv2.INTER_LINEAR,
+                overlay_np = np.asarray(
+                    Image.fromarray(overlay_np).resize(
+                        (self.guiWidth, self.guiHeight), Image.BILINEAR
+                    )
                 )
 
         return overlay_np

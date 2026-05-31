@@ -7,6 +7,15 @@ Kaxe is a lightweight, pure-Python plotting library for publication-quality figu
 
 Documentation: [kaxe.readthedocs.io](https://kaxe.readthedocs.io/en/latest/)
 
+## Installation
+
+```bash
+pip install kaxe          # 2D plotting (default)
+pip install kaxe[3d]        # add 3D plotting (OpenGL)
+pip install kaxe[pdf]       # add PDF export
+pip install kaxe[3d,pdf]    # 3D + PDF
+```
+
 ## Quick example
 
 ```python

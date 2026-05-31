@@ -13,23 +13,23 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+  "numpy",
   "pillow",
   "fondi>=0.2.0",
-  "sympy",
-  "scipy",
   "openpyxl",
   "tqdm",
-  "numba",
-  "python-dotenv",
+]
+
+[project.optional-dependencies]
+core = []
+3d = [
+  "scipy",
   "pyopengl",
   "PySDL2",
   "pysdl2-dll",
   "numpy-stl",
   "psutil",
-  "opencv-python-headless",
 ]
-
-[project.optional-dependencies]
 pdf = ["reportlab>=4.0", "fonttools>=4.0"]
 
 [project.urls]

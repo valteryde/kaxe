@@ -16,7 +16,6 @@ __all__ = [
     'Plot', 'XYPLOT', 'PolarPlot', 'POLARPLOT',
     'BoxedPlot', 'EmptyPlot', 'EmptyWindow',
     'DoubleAxisPlot', 'Grid', 'XYZPLOT', 'identities',
-    'Plot3D', 'PlotCenter3D', 'PlotFrame3D', 'PlotEmpty3D',
 ]
 
 if TYPE_CHECKING:
