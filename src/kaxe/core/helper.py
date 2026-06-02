@@ -45,30 +45,46 @@ def vlen(v):
     return math.sqrt(sum([i**2 for i in v]))
 
 
-def contour_label_angle(polyline, index):
-    """Readable tangent angle in degrees for text placed on a contour polyline."""
-    n = len(polyline)
-    if n < 2:
+def contour_label_angle(func, parent, px, py, polyline=None, tangent_window=40):
+    """Readable tangent angle in degrees for ``Text.rotate`` at pixel (px, py).
+
+    Uses the function gradient mapped into pixel space (matplotlib clabel style:
+    arctan2 of the tangent vector in kaxe y-up coordinates, then keep text
+    right-side up). The returned value is passed directly to ``Text.rotate`` /
+    ``PIL.Image.rotate`` (SVG export negates internally to match).
+    """
+    del polyline, tangent_window
+
+    x, y = parent.inversepixel(px, py)
+    if x is None or y is None:
         return 0
 
-    if index <= 0:
-        p0, p1 = polyline[0], polyline[1]
-    elif index >= n - 1:
-        p0, p1 = polyline[-2], polyline[-1]
-    else:
-        p0, p1 = polyline[index - 1], polyline[index + 1]
+    scale = max(abs(x), abs(y), 1.0)
+    h = 1e-4 * scale
 
-    dx = p1[0] - p0[0]
-    dy = p1[1] - p0[1]
+    try:
+        fx = (func(x + h, y) - func(x - h, y)) / (2 * h)
+        fy = (func(x, y + h) - func(x, y - h)) / (2 * h)
+    except (TypeError, ValueError, ZeroDivisionError):
+        return 0
+
+    tx, ty = -fy, fx
+    if tx == 0 and ty == 0:
+        return 0
+
+    px0, py0 = parent.pixel(x, y)
+    px1, py1 = parent.pixel(x + tx, y + ty)
+    if px0 is None or py0 is None or px1 is None or py1 is None:
+        return 0
+
+    dx = px1 - px0
+    dy = py1 - py0
     if dx == 0 and dy == 0:
         return 0
 
-    angle = math.degrees(math.atan2(-dy, dx))
-    if angle > 90:
-        angle -= 180
-    elif angle < -90:
-        angle += 180
-    return angle
+    rotation = math.degrees(math.atan2(dy, dx))
+    rotation = (rotation + 90) % 180 - 90
+    return rotation
 
 
 def bbox_overlaps(a, b, padding=0):
