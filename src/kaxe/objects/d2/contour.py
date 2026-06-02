@@ -4,13 +4,13 @@ import math
 from ...core.styles import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol as symbols
-from ...core.helper import contour_label_angle
+from ...core.helper import bbox_overlaps, contour_label_angle, resample_polyline
 from ...core.text import Text
 from ...core.round import koundTeX
 from ...plot import identities
 from .equation import Equation, trace_contour_polylines
 from types import FunctionType
-from typing import Union
+from typing import Optional, Union
 from ...core.color import Colormaps, Colormap, to_rgba
 
 
@@ -47,30 +47,6 @@ def _simplify_polyline(polyline):
     return simplified
 
 
-def _point_at_arc_length(polyline, target):
-    if not polyline:
-        return 0, (0, 0)
-
-    if target <= 0:
-        return 0, polyline[0]
-
-    walked = 0.0
-    for i in range(1, len(polyline)):
-        dx = polyline[i][0] - polyline[i - 1][0]
-        dy = polyline[i][1] - polyline[i - 1][1]
-        seg_len = math.hypot(dx, dy)
-        if seg_len == 0:
-            continue
-        if walked + seg_len >= target:
-            t = (target - walked) / seg_len
-            px = polyline[i - 1][0] + t * dx
-            py = polyline[i - 1][1] + t * dy
-            return i, (px, py)
-        walked += seg_len
-
-    return len(polyline) - 1, polyline[-1]
-
-
 def _closest_polyline_index(polyline, point):
     best_index = 0
     best_dist = float('inf')
@@ -82,7 +58,7 @@ def _closest_polyline_index(polyline, point):
     return best_index
 
 
-def _label_positions(polyline, spacing, max_labels=2):
+def _label_candidates(polyline, spacing):
     polyline = _simplify_polyline(polyline)
     if len(polyline) < 2:
         return []
@@ -91,14 +67,16 @@ def _label_positions(polyline, spacing, max_labels=2):
     if arc < spacing:
         return []
 
-    num_labels = min(max_labels, max(1, int(arc / spacing)))
-    positions = []
-    for k in range(num_labels):
-        target = (k + 0.5) * arc / num_labels
-        index, point = _point_at_arc_length(polyline, target)
-        positions.append((point, _closest_polyline_index(polyline, point)))
+    candidates = []
+    for point in resample_polyline(polyline, spacing)[1:-1]:
+        index = _closest_polyline_index(polyline, point)
+        candidates.append((point, index, arc))
 
-    return positions
+    if not candidates and arc >= spacing:
+        mid_index = len(polyline) // 2
+        candidates.append((polyline[mid_index], mid_index, arc))
+
+    return candidates
 
 
 def _point_in_expanded_bbox(x, y, bbox, padding):
@@ -132,7 +110,15 @@ class Contour:
     label : bool, optional
         Draw inline level labels on contour lines (default is True).
     labelSpacing : int, optional
-        Minimum pixel spacing between labels along a contour (default is 100).
+        Minimum pixel spacing between label candidates along a contour (default is 100).
+    labelCollisionPadding : int, optional
+        Extra pixel gap required between placed label bounding boxes (default is 4).
+    labelMinArc : int, optional
+        Minimum polyline arc length to consider for labels (default is labelSpacing).
+    labelMaxBranches : int, optional
+        Maximum number of polylines per level to label (default is 1).
+    labelMaxPerLevel : int, optional
+        Hard cap on labels placed per level; unlimited when None (default is None).
     labelColor : tuple, optional
         Color of inline contour labels (default is black).
         
@@ -156,6 +142,10 @@ class Contour:
         computePadding: int = 50,
         label: bool = True,
         labelSpacing: int = 100,
+        labelCollisionPadding: int = 4,
+        labelMinArc: Optional[int] = None,
+        labelMaxBranches: int = 1,
+        labelMaxPerLevel: Optional[int] = None,
         labelColor=(0, 0, 0, 255),
     ):
         self.batch = shapes.Batch()
@@ -168,6 +158,10 @@ class Contour:
         self.lineThickness = lineThickness
         self.label = label
         self.labelSpacing = labelSpacing
+        self.labelCollisionPadding = labelCollisionPadding
+        self.labelMinArc = labelSpacing if labelMinArc is None else labelMinArc
+        self.labelMaxBranches = labelMaxBranches
+        self.labelMaxPerLevel = labelMaxPerLevel
         self.labelColor = to_rgba(labelColor)
     
         # color
@@ -208,12 +202,10 @@ class Contour:
         if self.label and label_parent == identities.XYPLOT:
             self.__finalizeLabels__(label_parent)
 
-    def __finalizeLabels__(self, parent):
-        fontSize = parent.getAttr('fontSize')
-        padding = max(2, fontSize // 8)
-        label_bboxes = []
+    def __collectCandidates__(self, parent):
+        candidates = []
 
-        for z, eq in self.__equations:
+        for level_index, (z, eq) in enumerate(self.__equations):
             label_text = _format_contour_level(z, self.a, self.b, self.steps)
             polylines = trace_contour_polylines(eq.dotsPosAbstract, parent)
             polylines = sorted(
@@ -224,36 +216,68 @@ class Contour:
             polylines = [
                 polyline
                 for polyline in polylines
-                if _polyline_arc_length(_simplify_polyline(polyline)) >= self.labelSpacing
-            ][:3]
+                if _polyline_arc_length(_simplify_polyline(polyline)) >= self.labelMinArc
+            ][: self.labelMaxBranches]
 
-            for polyline in polylines:
-                for point, index in _label_positions(polyline, self.labelSpacing):
-                    angle = contour_label_angle(polyline, index)
-                    text = Text(
-                        label_text,
-                        int(point[0]),
-                        int(point[1]),
-                        fontSize=fontSize,
-                        color=self.labelColor,
-                        rotate=int(angle),
-                        anchor_x='center',
-                        anchor_y='center',
-                    )
+            for branch_index, polyline in enumerate(polylines):
+                simplified = _simplify_polyline(polyline)
+                arc = _polyline_arc_length(simplified)
+                for candidate_index, (point, index, _) in enumerate(
+                    _label_candidates(polyline, self.labelSpacing)
+                ):
+                    candidates.append({
+                        "z": z,
+                        "level_index": level_index,
+                        "branch_index": branch_index,
+                        "candidate_index": candidate_index,
+                        "arc": arc,
+                        "polyline": polyline,
+                        "point": point,
+                        "index": index,
+                        "label_text": label_text,
+                    })
 
-                    left, top = text.getLeftTopPos()
-                    shapes.Rectangle(
-                        left - padding,
-                        top - padding,
-                        text.width + 2 * padding,
-                        text.height + 2 * padding,
-                        color=WHITE,
-                        batch=self.batch,
-                    )
-                    text.batch = self.batch
-                    self.batch.add(text)
+        candidates.sort(
+            key=lambda item: (-item["arc"], item["level_index"], item["branch_index"], item["candidate_index"])
+        )
+        return candidates
 
-                    label_bboxes.append(text.getBoundingBox())
+    def __finalizeLabels__(self, parent):
+        fontSize = parent.getAttr('fontSize')
+        placed_bboxes = []
+        label_bboxes = []
+        placed_per_level = {}
+
+        for candidate in self.__collectCandidates__(parent):
+            level_index = candidate["level_index"]
+            if self.labelMaxPerLevel is not None:
+                if placed_per_level.get(level_index, 0) >= self.labelMaxPerLevel:
+                    continue
+
+            angle = contour_label_angle(candidate["polyline"], candidate["index"])
+            text = Text(
+                candidate["label_text"],
+                int(candidate["point"][0]),
+                int(candidate["point"][1]),
+                fontSize=fontSize,
+                color=self.labelColor,
+                rotate=int(angle),
+                anchor_x='center',
+                anchor_y='center',
+            )
+            bbox = text.getBoundingBox()
+
+            if any(
+                bbox_overlaps(bbox, placed_bbox, self.labelCollisionPadding)
+                for placed_bbox in placed_bboxes
+            ):
+                continue
+
+            text.batch = self.batch
+            self.batch.add(text)
+            placed_bboxes.append(bbox)
+            label_bboxes.append(bbox)
+            placed_per_level[level_index] = placed_per_level.get(level_index, 0) + 1
 
         if not label_bboxes:
             return

@@ -71,6 +71,32 @@ def contour_label_angle(polyline, index):
     return angle
 
 
+def bbox_overlaps(a, b, padding=0):
+    """Return True if two axis-aligned boxes overlap.
+
+    Each box is ``(left, top, width, height)`` as returned by ``Text.getBoundingBox()``.
+    """
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+
+    a_center = (ax + aw / 2, ay + ah / 2)
+    b_center = (bx + bw / 2, by + bh / 2)
+    a_size = (aw + 2 * padding, ah + 2 * padding)
+    b_size = (bw + 2 * padding, bh + 2 * padding)
+
+    a_top_right = (a_center[0] + a_size[0] / 2, a_center[1] + a_size[1] / 2)
+    a_bottom_left = (a_center[0] - a_size[0] / 2, a_center[1] - a_size[1] / 2)
+    b_top_right = (b_center[0] + b_size[0] / 2, b_center[1] + b_size[1] / 2)
+    b_bottom_left = (b_center[0] - b_size[0] / 2, b_center[1] - b_size[1] / 2)
+
+    return not (
+        a_top_right[0] < b_bottom_left[0]
+        or a_bottom_left[0] > b_top_right[0]
+        or a_top_right[1] < b_bottom_left[1]
+        or a_bottom_left[1] > b_top_right[1]
+    )
+
+
 def resample_polyline(points, spacing):
     """
     Emit points every `spacing` pixels along polyline arc length.
