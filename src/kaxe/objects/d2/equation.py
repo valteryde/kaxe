@@ -8,6 +8,101 @@ from ...core.helper import vdiff, vlen
 import math
 
 
+_CONTOUR_NEIGHBORS = (
+    (0, 1), (0, -1), (1, 0), (-1, 0),
+    (-1, -1), (1, 1), (-1, 1), (1, -1),
+)
+
+
+def _contour_adjacency(dotsPosAbstract):
+    connections = {}
+    for x, y in dotsPosAbstract:
+        neighbors = []
+        for dx, dy in _CONTOUR_NEIGHBORS:
+            other = (x + dx, y + dy)
+            if other in dotsPosAbstract:
+                neighbors.append(other)
+        if neighbors:
+            connections[(x, y)] = neighbors
+    return connections
+
+
+def _contour_edge_key(a, b):
+    return (a, b) if a <= b else (b, a)
+
+
+def _abstract_to_pixel(abstract_pos, parent):
+    px, py = abstract_pos
+    if parent == identities.XYPLOT:
+        return (px, py)
+    x, y = parent.inversetranslate(px, py)
+    pixel = parent.pixel(x, y)
+    if pixel[0] is None or pixel[1] is None:
+        return None
+    return pixel
+
+
+def trace_contour_polylines(dotsPosAbstract, parent):
+    """Return ordered pixel-space polylines traced from contour grid hits."""
+    if not dotsPosAbstract:
+        return []
+
+    connections = _contour_adjacency(dotsPosAbstract)
+    visited_edges = set()
+    polylines = []
+
+    def trace_from(start, first_neighbor):
+        chain = [start]
+        prev = start
+        current = first_neighbor
+        visited_edges.add(_contour_edge_key(start, first_neighbor))
+        chain.append(current)
+
+        while True:
+            if current == start and len(chain) > 2:
+                break
+
+            next_node = None
+            for neighbor in connections.get(current, []):
+                if neighbor == prev:
+                    continue
+                edge = _contour_edge_key(current, neighbor)
+                if edge not in visited_edges:
+                    next_node = neighbor
+                    break
+
+            if next_node is None:
+                break
+
+            visited_edges.add(_contour_edge_key(current, next_node))
+            prev = current
+            current = next_node
+            chain.append(current)
+            if current == start:
+                break
+
+        pixel_chain = []
+        for pos in chain:
+            pixel = _abstract_to_pixel(pos, parent)
+            if pixel is not None:
+                pixel_chain.append(pixel)
+        return pixel_chain
+
+    all_edges = set()
+    for node, neighbors in connections.items():
+        for neighbor in neighbors:
+            all_edges.add(_contour_edge_key(node, neighbor))
+
+    for edge in sorted(all_edges):
+        if edge in visited_edges:
+            continue
+        polyline = trace_from(edge[0], edge[1])
+        if len(polyline) >= 2:
+            polylines.append(polyline)
+
+    return polylines
+
+
 class Equation:
     """
     A class to represent a mathematical equation from left and right side of equation.

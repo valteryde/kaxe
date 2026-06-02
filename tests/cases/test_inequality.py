@@ -15,7 +15,7 @@ from runner import judge, sanity, smoke, unit
 @smoke()
 @sanity()
 @judge(
-    elements=["contour curves", "inequality boundary", "hatched forbidden region", "axes"],
+    elements=["contour curves", "inline contour labels", "inequality boundary", "hatched forbidden region", "axes"],
     focus="inequality boundary and forbidden-side hatching legibility",
     min_score=5,
 )

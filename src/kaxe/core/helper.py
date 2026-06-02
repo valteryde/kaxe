@@ -45,6 +45,32 @@ def vlen(v):
     return math.sqrt(sum([i**2 for i in v]))
 
 
+def contour_label_angle(polyline, index):
+    """Readable tangent angle in degrees for text placed on a contour polyline."""
+    n = len(polyline)
+    if n < 2:
+        return 0
+
+    if index <= 0:
+        p0, p1 = polyline[0], polyline[1]
+    elif index >= n - 1:
+        p0, p1 = polyline[-2], polyline[-1]
+    else:
+        p0, p1 = polyline[index - 1], polyline[index + 1]
+
+    dx = p1[0] - p0[0]
+    dy = p1[1] - p0[1]
+    if dx == 0 and dy == 0:
+        return 0
+
+    angle = math.degrees(math.atan2(-dy, dx))
+    if angle > 90:
+        angle -= 180
+    elif angle < -90:
+        angle += 180
+    return angle
+
+
 def resample_polyline(points, spacing):
     """
     Emit points every `spacing` pixels along polyline arc length.
