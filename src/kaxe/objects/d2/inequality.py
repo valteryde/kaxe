@@ -3,8 +3,16 @@ import math
 from ...core.shapes import shapes
 from ...core.color import to_rgba
 from ...core.symbol import symbol
+from ...core.helper import isRealNumber
 from ...plot import identities
 from .equation import Equation
+
+
+def _as_2d_expr(expr):
+    if isRealNumber(expr):
+        value = float(expr)
+        return lambda x, y, _v=value: _v
+    return expr
 
 _OPS = {
     '<=': lambda d: d > 0,
@@ -50,10 +58,10 @@ class Inequality:
 
     Parameters
     ----------
-    left : callable
-        Left side of the inequality.
-    right : callable
-        Right side of the inequality.
+    left : callable or real
+        Left side of the inequality. A real number is treated as constant in ``x`` and ``y``.
+    right : callable or real
+        Right side of the inequality. A real number is treated as constant in ``x`` and ``y``.
     op : str, optional
         Comparison operator: ``<=``, ``<``, ``>=``, or ``>`` (default is ``<=``).
     color : tuple | list, optional
@@ -75,7 +83,7 @@ class Inequality:
     Examples
     --------
     >>> g = lambda x, y: x + y - 3
-    >>> ineq = Inequality(g, lambda x, y: 0)
+    >>> ineq = Inequality(g, 0)
     >>> plt.add(ineq)
     """
 
@@ -92,8 +100,8 @@ class Inequality:
         hatch_angle=45,
         computePadding=50,
     ):
-        self.left = left
-        self.right = right
+        self.left = _as_2d_expr(left)
+        self.right = _as_2d_expr(right)
         self.computePadding = computePadding
         self.hatch_spacing = hatch_spacing
         self.hatch_width = hatch_width
@@ -105,7 +113,7 @@ class Inequality:
         self.op = op
         self._is_forbidden = _OPS[op]
 
-        self.boundary = Equation(left, right, color=color, width=width, computePadding=computePadding)
+        self.boundary = Equation(self.left, self.right, color=color, width=width, computePadding=computePadding)
         self.hatch_batch = shapes.Batch()
         self.color = self.boundary.color
         self.legendColor = self.boundary.legendColor
