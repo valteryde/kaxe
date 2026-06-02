@@ -89,13 +89,28 @@ Display with show()
 
 **Terminal:** opens the image with the system viewer (via Pillow).
 
-**Jupyter / IPython:** detects the active shell and displays the image inline instead of opening an external viewer.
+**Jupyter / IPython:** detects the active shell and displays the image inline instead of opening an external viewer. Images are rendered in memory (no temporary files).
 
 .. code-block:: python
 
    plt.show()
 
-In notebooks, prefer ``show()`` for quick previews and ``save()`` when you need a file for LaTeX inclusion.
+Auto-display in notebooks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Jupyter and IPython, the plot object displays automatically when it is the last expression in a cell — no ``show()`` call needed:
+
+.. code-block:: python
+
+   plt = kaxe.Plot([-5, 5, -5, 5])
+   plt.add(kaxe.Function2D(lambda x: x**2))
+   plt
+
+The same applies to :class:`kaxe.Grid` and chart windows. Explicit ``show()`` still works.
+
+For :class:`kaxe.Plot3D`, auto-display and ``show(gui=False)`` produce a static raster snapshot. Interactive rotation requires ``plt.show(gui=True)``.
+
+In notebooks, prefer ``show()`` or bare ``plt`` for quick previews and ``save()`` when you need a file for LaTeX inclusion.
 
 Including figures in LaTeX
 --------------------------
@@ -129,8 +144,16 @@ Tips for publication figures:
 Suppressing progress output
 ---------------------------
 
-Kaxe logs bake progress to the terminal by default. In Jupyter, logging is automatically reduced. To suppress progress bars and info messages globally:
+Kaxe logs bake progress to the terminal by default. In Jupyter, logging is automatically reduced. Progress bars appear only when baking takes longer than one second (configurable). To suppress progress bars and info messages globally:
 
 .. code-block:: python
 
    kaxe.setSetting(removeInfo=True)
+
+Notebook display settings
+-------------------------
+
+.. code-block:: python
+
+   kaxe.setSetting(jupyterDisplayWidth=600)       # inline image width in pixels
+   kaxe.setSetting(jupyterLoadingThreshold=2.0)   # seconds before progress bar appears

@@ -10,10 +10,10 @@ from io import BytesIO
 from typing import Optional, Union
 
 import numpy as np
-import tqdm
 from PIL import Image
 
 from ...core.helper import insideBox, getbbox
+from ...core.progress import make_progress_bar
 from ...core.window import Window, settings
 from ...core.svg import infer_format, is_file_path
 from ...core.shapes import ImageShape, shapes
@@ -395,7 +395,7 @@ class Plot3D(Plot3DAxesMixin, Window):
         prof.start('window_pillow_paint_start')
 
         startTime = time.time()
-        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
+        pbar = make_progress_bar(self.showProgressBar, len(self.shapes), 'Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         surface = Image.new('RGBA', winSize)
@@ -408,7 +408,7 @@ class Plot3D(Plot3DAxesMixin, Window):
         prof.start('window_paint')
         for shape in self.shapes:
             shape.draw(surface)
-            if self.showProgressBar: pbar.update()
+            pbar.update()
         prof.end('window_paint')
 
         if fname is not None:
@@ -417,7 +417,7 @@ class Plot3D(Plot3DAxesMixin, Window):
             else:
                 surface.save(fname, format="png")
 
-        if self.showProgressBar: pbar.close()
+        pbar.close()
         if self.printDebugInfo:
             import logging
             logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))

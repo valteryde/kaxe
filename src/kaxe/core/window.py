@@ -8,14 +8,9 @@ from .styles import *
 from .legend import LegendBox
 from .shapes import shapes
 from .svg import SvgDocument, infer_format, is_file_path
+from .progress import make_progress_bar
+from .ipython_display import display_png_bytes, is_notebook, to_png_bytes
 from PIL import Image
-import tqdm
-from random import randint
-import os
-try:
-    from IPython import display # pyright: ignore[reportMissingModuleSource]
-except ImportError:
-    pass
 
 
 """
@@ -38,7 +33,11 @@ except:
     pass
 
 
-settings = {"removeInfo":False}
+settings = {
+    "removeInfo": False,
+    "jupyterLoadingThreshold": 1.0,
+    "jupyterDisplayWidth": 800,
+}
 
 def compute_adjust_styles(
     procentWidth,
@@ -82,6 +81,11 @@ def setSetting(**kwargs):
         removeInfo : bool
             When ``True``, suppress progress bars and bake timing logs.
             Useful in notebooks and batch scripts.
+        jupyterLoadingThreshold : float
+            Seconds before a progress bar appears in Jupyter (default 1.0).
+            Fast plots stay quiet.
+        jupyterDisplayWidth : int
+            Width in pixels for inline notebook display (default 800).
 
     Examples
     --------
@@ -140,7 +144,7 @@ class Window(AttrObject):
 
         self.legendbox = LegendBox()
         self.offset = [0,0]
-        self.showProgressBar = terminaltype == "terminal" 
+        self.showProgressBar = terminaltype != "terminal"
         self.printDebugInfo = True
 
         if settings["removeInfo"]:
@@ -487,17 +491,17 @@ class Window(AttrObject):
     def __addInnerContent__(self):
         
         # finalizeing objects
-        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.objects), desc='Baking')
+        pbar = make_progress_bar(self.showProgressBar, len(self.objects), 'Baking')
         for obj in self.objects:
             self.__callFinalizeObject__(obj)
-            if self.showProgressBar: pbar.update()
+            pbar.update()
             self.addDrawingFunction(obj)
-        if self.showProgressBar:pbar.close()
+        pbar.close()
 
 
     def __pillowPaint__(self, fname=None):
         startTime = time.time()
-        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating')
+        pbar = make_progress_bar(self.showProgressBar, len(self.shapes), 'Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         surface = Image.new('RGBA', winSize)
@@ -508,8 +512,7 @@ class Window(AttrObject):
 
         for shape in self.shapes:
             shape.draw(surface)
-            
-            if self.showProgressBar: pbar.update()
+            pbar.update()
 
         if fname is not None:
             if is_file_path(fname):
@@ -517,7 +520,7 @@ class Window(AttrObject):
             else:
                 surface.save(fname, format="png")
 
-        if self.showProgressBar: pbar.close()
+        pbar.close()
         if self.printDebugInfo: logging.info('Painted in {}s'.format(str(round(time.time() - startTime, 4))))
         
         return surface
@@ -525,7 +528,7 @@ class Window(AttrObject):
 
     def __svgPaint__(self, fname=None) -> str:
         startTime = time.time()
-        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating SVG')
+        pbar = make_progress_bar(self.showProgressBar, len(self.shapes), 'Decorating SVG')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         doc = SvgDocument(winSize)
@@ -536,7 +539,7 @@ class Window(AttrObject):
 
         for shape in self.shapes:
             shape.draw(doc)
-            if self.showProgressBar: pbar.update()
+            pbar.update()
 
         xml = doc.serialize()
 
@@ -547,7 +550,7 @@ class Window(AttrObject):
             else:
                 fname.write(xml.encode('utf-8'))
 
-        if self.showProgressBar: pbar.close()
+        pbar.close()
         if self.printDebugInfo: logging.info('Painted SVG in {}s'.format(str(round(time.time() - startTime, 4))))
 
         return xml
@@ -555,7 +558,7 @@ class Window(AttrObject):
 
     def __pdfPaint__(self, fname=None) -> bytes:
         startTime = time.time()
-        if self.showProgressBar: pbar = tqdm.tqdm(total=len(self.shapes), desc='Decorating PDF')
+        pbar = make_progress_bar(self.showProgressBar, len(self.shapes), 'Decorating PDF')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
         doc = SvgDocument(winSize)
@@ -566,11 +569,11 @@ class Window(AttrObject):
 
         for shape in self.shapes:
             shape.draw(doc)
-            if self.showProgressBar: pbar.update()
+            pbar.update()
 
         pdf_bytes = doc.to_pdf(fname)
 
-        if self.showProgressBar: pbar.close()
+        pbar.close()
         if self.printDebugInfo: logging.info('Painted PDF in {}s'.format(str(round(time.time() - startTime, 4))))
 
         return pdf_bytes
@@ -651,23 +654,20 @@ class Window(AttrObject):
         --------
         >>> plt.show( )
         """
-
-        fname = 'plot{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
-
-        if terminaltype != "terminal":
-            self.save(fname)
-            i = display.Image(filename=fname, width=800, unconfined=True)
-            display.display(i)
-            os.remove(fname)
-
+        data = to_png_bytes(self)
+        if is_notebook():
+            display_png_bytes(data)
         else:
-            
-            self.save(fname)
-            pilImage = Image.open(fname)
-            pilImage.show()
-            os.remove(fname)
+            Image.open(BytesIO(data)).show()
 
-        return fname
+    def _repr_png_(self):
+        if not is_notebook():
+            return None
+        return to_png_bytes(self)
+
+    def __repr__(self):
+        n = len(getattr(self, "objects", []))
+        return f"<{type(self).__name__} with {n} object(s)>"
 
     # shape
     # for at kunne overskrive den nederste funktion indføres denne

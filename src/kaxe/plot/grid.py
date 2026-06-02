@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import Optional, Union
 from ..core.styles import AttrObject, AttrMap
 from ..core.window import *
+from ..core.ipython_display import display_png_bytes, is_notebook, to_png_bytes
 from ..core.legend import LegendBox
 from ..core.svg import (
     SvgDocument,
@@ -499,23 +500,20 @@ class Grid(AttrObject):
         --------
         >>> plt.show( )
         """
-
-        fname = 'plot{}.png'.format(''.join([str(randint(0,9)) for i in range(10)]))
-
-        if terminaltype != "terminal":
-            self.save(fname)
-            i = display.Image(filename=fname, width=800, unconfined=True)
-            display.display(i)
-            os.remove(fname)
-
+        data = to_png_bytes(self)
+        if is_notebook():
+            display_png_bytes(data)
         else:
-            
-            self.save(fname)
-            pilImage = Image.open(fname)
-            pilImage.show()
-            os.remove(fname)
+            Image.open(BytesIO(data)).show()
 
-        return fname
+    def _repr_png_(self):
+        if not is_notebook():
+            return None
+        return to_png_bytes(self)
+
+    def __repr__(self):
+        cells = sum(len(row) for row in self.grid)
+        return f"<Grid with {cells} cell(s)>"
 
 
     def getSize(self):
