@@ -144,6 +144,35 @@ def test_inequality_hatch_band_excludes_far_forbidden():
 
 
 @unit()
+def test_inequality_hatch_band_circle_near_boundary():
+    """hatch_band hatches around a curved boundary, not just straight lines."""
+    import math
+
+    f = lambda x, y: (x - 5) ** 2 + (y - 5) ** 2 - 9
+    plot = kaxe.Plot([0, 10, 0, 10])
+    ineq = kaxe.Inequality(f, 0, hatch_spacing=10, hatch_band=30)
+    plot.add(ineq)
+    plot.printDebugInfo = False
+    plot.showProgressBar = False
+    plot.__bake__()
+
+    covered = 0
+    checked = 0
+    for deg in range(0, 360, 15):
+        angle = math.radians(deg)
+        x = 5 + 3.15 * math.cos(angle)
+        y = 5 + 3.15 * math.sin(angle)
+        if f(x, y) <= 0:
+            continue
+        checked += 1
+        if _hatch_covers_point(ineq, plot, x, y):
+            covered += 1
+
+    assert checked > 0
+    assert covered >= checked // 2, "most near-boundary forbidden samples should be hatched"
+
+
+@unit()
 def test_inequality_hatch_band_none_full_fill():
     """Default hatch_band=None hatches more of the forbidden region than a small band."""
     g = lambda x, y: x + y - 3

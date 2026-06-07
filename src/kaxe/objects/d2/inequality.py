@@ -47,44 +47,14 @@ def _eval_diff(parent, left, right, px, py):
         return None
 
 
-def _point_segment_distance_sq(px, py, x1, y1, x2, y2):
-    dx = x2 - x1
-    dy = y2 - y1
-    if dx == 0 and dy == 0:
-        dpx = px - x1
-        dpy = py - y1
-        return dpx * dpx + dpy * dpy
-    t = max(0.0, min(1.0, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
-    cx = x1 + t * dx
-    cy = y1 + t * dy
-    dpx = px - cx
-    dpy = py - cy
-    return dpx * dpx + dpy * dpy
-
-
-def _min_distance_sq_to_segments(px, py, segments):
-    if not segments:
-        return float('inf')
-    return min(
-        _point_segment_distance_sq(px, py, x1, y1, x2, y2)
-        for x1, y1, x2, y2 in segments
-    )
-
-
-def _boundary_segments(boundary, parent):
-    segments = []
+def _boundary_band_points(boundary, parent):
+    points = []
     for polyline in trace_contour_polylines(boundary.dotsPosAbstract, parent):
-        if len(polyline) < 2:
-            continue
-        decimated = _decimate_polyline(polyline, min_step=12)
-        for i in range(len(decimated) - 1):
-            x1, y1 = decimated[i]
-            x2, y2 = decimated[i + 1]
-            segments.append((x1, y1, x2, y2))
-    return segments
+        points.extend(_decimate_polyline(polyline, min_step=8))
+    return points
 
 
-def _decimate_polyline(polyline, min_step=12):
+def _decimate_polyline(polyline, min_step=8):
     if len(polyline) < 2:
         return polyline
     result = [polyline[0]]
@@ -101,18 +71,27 @@ def _decimate_polyline(polyline, min_step=12):
     return result
 
 
-def _build_band_cells(segments, band, x0, y0, x1, y1):
+def _build_band_cells(points, band, x0, y0, x1, y1):
     cell = max(1, int(band / 2))
-    band_sq = band * band
-    cols = int((x1 - x0) / cell) + 1
-    rows = int((y1 - y0) / cell) + 1
+    reach = band + cell * 0.7071067811865476
+    reach_sq = reach * reach
     near = set()
-    for ci in range(cols):
-        for ri in range(rows):
+
+    for px, py in points:
+        ci0 = int((px - reach - x0) // cell)
+        ci1 = int((px + reach - x0) // cell)
+        ri0 = int((py - reach - y0) // cell)
+        ri1 = int((py + reach - y0) // cell)
+
+        for ci in range(ci0, ci1 + 1):
             cx = x0 + ci * cell + cell * 0.5
-            cy = y0 + ri * cell + cell * 0.5
-            if _min_distance_sq_to_segments(cx, cy, segments) <= band_sq:
-                near.add((ci, ri))
+            for ri in range(ri0, ri1 + 1):
+                cy = y0 + ri * cell + cell * 0.5
+                dx = cx - px
+                dy = cy - py
+                if dx * dx + dy * dy <= reach_sq:
+                    near.add((ci, ri))
+
     return cell, near, x0, y0
 
 
@@ -212,14 +191,13 @@ class Inequality:
         sample_step = 2
         eps = 1e-9
 
-        boundary_segments = None
         band_cells = None
         if self.hatch_band is not None:
-            boundary_segments = _boundary_segments(self.boundary, parent)
-            if not boundary_segments:
+            boundary_points = _boundary_band_points(self.boundary, parent)
+            if not boundary_points:
                 return
             band_cells = _build_band_cells(
-                boundary_segments, self.hatch_band, x0, y0, x1, y1
+                boundary_points, self.hatch_band, x0, y0, x1, y1
             )
 
         scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
@@ -271,6 +249,11 @@ class Inequality:
                     last_point = None
                     continue
 
+                in_band = True
+                if band_cells is not None:
+                    cell, near, origin_x, origin_y = band_cells
+                    in_band = _point_in_band_cells(px, py, cell, near, origin_x, origin_y)
+
                 diff = _eval_diff(parent, self.left, self.right, px, py)
                 if diff is None:
                     if segment_start is not None and last_point is not None:
@@ -287,14 +270,12 @@ class Inequality:
                 forbidden = self._is_forbidden(diff)
 
                 if forbidden:
-                    if band_cells is not None:
-                        cell, near, origin_x, origin_y = band_cells
-                        if not _point_in_band_cells(px, py, cell, near, origin_x, origin_y):
-                            if segment_start is not None and last_point is not None:
-                                self.__add_hatch_segment__(segment_start, last_point, hatch_width)
-                            segment_start = None
-                            last_point = None
-                            continue
+                    if not in_band:
+                        if segment_start is not None and last_point is not None:
+                            self.__add_hatch_segment__(segment_start, last_point, hatch_width)
+                        segment_start = None
+                        last_point = None
+                        continue
                     point = (px, py)
                     if segment_start is None:
                         segment_start = point
