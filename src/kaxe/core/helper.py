@@ -87,6 +87,41 @@ def contour_label_angle(func, parent, px, py, polyline=None, tangent_window=40):
     return rotation
 
 
+def bbox_intersects_box(bbox, box_ltrb):
+    """Return True if bbox intersects box_ltrb.
+
+    ``bbox`` is ``(left, top, width, height)``; ``box_ltrb`` is
+    ``[left, top, right, bottom]`` (same as ``windowBox``).
+    """
+    left, top, width, height = bbox
+    right = left + width
+    bottom = top + height
+    box_left, box_top, box_right, box_bottom = box_ltrb
+    return not (
+        right <= box_left
+        or left >= box_right
+        or bottom <= box_top
+        or top >= box_bottom
+    )
+
+
+def intersect_bbox_with_box(bbox, box_ltrb):
+    """Return intersection of bbox with box_ltrb as (left, top, w, h), or None."""
+    left, top, width, height = bbox
+    right = left + width
+    bottom = top + height
+    box_left, box_top, box_right, box_bottom = box_ltrb
+
+    ix0 = max(left, box_left)
+    iy0 = max(top, box_top)
+    ix1 = min(right, box_right)
+    iy1 = min(bottom, box_bottom)
+
+    if ix0 >= ix1 or iy0 >= iy1:
+        return None
+    return (int(ix0), int(iy0), int(ix1 - ix0), int(iy1 - iy0))
+
+
 def bbox_overlaps(a, b, padding=0):
     """Return True if two axis-aligned boxes overlap.
 

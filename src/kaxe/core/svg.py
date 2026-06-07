@@ -57,6 +57,8 @@ class SvgDocument:
         self._width, self._height = int(size[0]), int(size[1])
         self._elements: list[ET.Element] = []
         self._fondi_font_css: Optional[str] = None
+        self._clip_defs: dict[tuple[int, int, int, int], str] = {}
+        self._clip_counter = 0
 
     @property
     def height(self) -> int:
@@ -76,6 +78,42 @@ class SvgDocument:
         )
         self._elements.append(el)
         return el
+
+    def get_clip_id(self, box_ltrb) -> str:
+        """Return a stable clip-path id for a kaxe [left, top, right, bottom] box."""
+        key = tuple(int(v) for v in box_ltrb)
+        if key in self._clip_defs:
+            return self._clip_defs[key]
+
+        clip_id = f"kaxe-clip-{self._clip_counter}"
+        self._clip_counter += 1
+        self._clip_defs[key] = clip_id
+        return clip_id
+
+    def _clip_rect_element(self, box_ltrb) -> ET.Element:
+        left, top, right, bottom = (int(v) for v in box_ltrb)
+        svg_y = self.flip_y(bottom)
+        height = bottom - top
+        width = right - left
+        return ET.Element(
+            f"{{{SVG_NS}}}rect",
+            {
+                "x": str(left),
+                "y": str(svg_y),
+                "width": str(width),
+                "height": str(height),
+            },
+        )
+
+    def append_clipped(self, element: ET.Element, box_ltrb) -> None:
+        """Append ``element`` inside a group clipped to ``box_ltrb``."""
+        clip_id = self.get_clip_id(box_ltrb)
+        group = ET.Element(
+            f"{{{SVG_NS}}}g",
+            {"clip-path": f"url(#{clip_id})"},
+        )
+        group.append(element)
+        self._elements.append(group)
 
     def add_rect(
         self,
@@ -284,6 +322,7 @@ class SvgDocument:
         y_coord: str = "bottom",
         rotate: float = 0,
         rotate_center: Optional[tuple[float, float]] = None,
+        clip_box: Optional[list] = None,
     ) -> None:
         """Place an image; y is in kaxe coords (y-up). y_coord='bottom' or 'top'."""
         href = pil_to_data_uri(img)
@@ -302,7 +341,14 @@ class SvgDocument:
         if rotate:
             cx, cy = rotate_center or (x + img.width / 2, svg_top + img.height / 2)
             attribs["transform"] = f"rotate({-rotate},{cx},{cy})"
-        self.add_element("image", attribs)
+        el = ET.Element(
+            f"{{{SVG_NS}}}image",
+            {k: str(v) for k, v in attribs.items() if v is not None},
+        )
+        if clip_box is not None:
+            self.append_clipped(el, clip_box)
+        else:
+            self._elements.append(el)
 
     def _ensure_fondi_fonts(self) -> None:
         if self._fondi_font_css is not None:
@@ -319,6 +365,7 @@ class SvgDocument:
         *,
         rotate: float = 0,
         rotate_center: Optional[tuple[float, float]] = None,
+        clip_box: Optional[list] = None,
     ) -> None:
         """Embed a fondi scene (vector math text) at SVG top-left coordinates."""
         from fondi.backends import render_svg
@@ -347,7 +394,10 @@ class SvgDocument:
         group = ET.Element(f"{{{SVG_NS}}}g", {"transform": transform})
         for child in list(inner):
             group.append(copy.deepcopy(child))
-        self._elements.append(group)
+        if clip_box is not None:
+            self.append_clipped(group, clip_box)
+        else:
+            self._elements.append(group)
 
     def serialize(self) -> str:
         root = ET.Element(
@@ -359,10 +409,18 @@ class SvgDocument:
                 "viewBox": f"0 0 {self._width} {self._height}",
             },
         )
-        if self._fondi_font_css is not None:
+        if self._fondi_font_css is not None or self._clip_defs:
             defs = ET.SubElement(root, f"{{{SVG_NS}}}defs")
-            style = ET.SubElement(defs, f"{{{SVG_NS}}}style")
-            style.text = self._fondi_font_css
+            if self._fondi_font_css is not None:
+                style = ET.SubElement(defs, f"{{{SVG_NS}}}style")
+                style.text = self._fondi_font_css
+            for box_ltrb, clip_id in self._clip_defs.items():
+                clip_path = ET.SubElement(
+                    defs,
+                    f"{{{SVG_NS}}}clipPath",
+                    {"id": clip_id},
+                )
+                clip_path.append(self._clip_rect_element(box_ltrb))
         for el in self._elements:
             root.append(el)
         body = ET.tostring(root, encoding="unicode")

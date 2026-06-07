@@ -12,6 +12,24 @@ from kaxe.core.shapes import shapes
 from runner import judge, sanity, smoke, unit
 
 
+def _hatch_covers_point(ineq, plot, x, y):
+    px, py = plot.pixel(x, y)
+    if not plot.inside(px, py):
+        return False
+    for ln in ineq.hatch_batch.objects:
+        if not isinstance(ln, shapes.Line):
+            continue
+        xmin, xmax = sorted((ln.x0, ln.x1))
+        ymin, ymax = sorted((ln.y0, ln.y1))
+        if xmin <= px <= xmax and ymin <= py <= ymax:
+            return True
+    return False
+
+
+def _count_hatch_lines(ineq):
+    return sum(1 for obj in ineq.hatch_batch.objects if isinstance(obj, shapes.Line))
+
+
 @smoke()
 @sanity()
 @judge(
@@ -91,3 +109,59 @@ def test_inequality_hatch_past_axis_intercept():
             break
 
     assert covered, "forbidden point past x-intercept should lie on a hatch segment"
+
+
+@unit()
+def test_inequality_hatch_band_near_boundary():
+    """A small hatch_band still hatches forbidden points close to the boundary."""
+    g = lambda x, y: x + y - 3
+    plot = kaxe.Plot([0, 5, 0, 5])
+    ineq = kaxe.Inequality(g, 0, hatch_spacing=10, hatch_band=25)
+    plot.add(ineq)
+    plot.printDebugInfo = False
+    plot.showProgressBar = False
+    plot.__bake__()
+
+    assert _hatch_covers_point(ineq, plot, 2.52, 0.52), (
+        "forbidden point near boundary should lie on a hatch segment"
+    )
+
+
+@unit()
+def test_inequality_hatch_band_excludes_far_forbidden():
+    """hatch_band limits hatching to a pixel band and skips far forbidden points."""
+    g = lambda x, y: x + y - 3
+    plot = kaxe.Plot([0, 10, 0, 10])
+    ineq = kaxe.Inequality(g, 0, hatch_spacing=10, hatch_band=25)
+    plot.add(ineq)
+    plot.printDebugInfo = False
+    plot.showProgressBar = False
+    plot.__bake__()
+
+    assert not _hatch_covers_point(ineq, plot, 9, 9), (
+        "forbidden point far from boundary should not lie on a hatch segment"
+    )
+
+
+@unit()
+def test_inequality_hatch_band_none_full_fill():
+    """Default hatch_band=None hatches more of the forbidden region than a small band."""
+    g = lambda x, y: x + y - 3
+    plot = kaxe.Plot([0, 10, 0, 10])
+    plot.printDebugInfo = False
+    plot.showProgressBar = False
+
+    full = kaxe.Inequality(g, 0, hatch_spacing=10)
+    band = kaxe.Inequality(g, 0, hatch_spacing=10, hatch_band=25)
+    plot.add(full)
+    plot.__bake__()
+    full_count = _count_hatch_lines(full)
+
+    plot2 = kaxe.Plot([0, 10, 0, 10])
+    plot2.printDebugInfo = False
+    plot2.showProgressBar = False
+    plot2.add(band)
+    plot2.__bake__()
+    band_count = _count_hatch_lines(band)
+
+    assert full_count > band_count

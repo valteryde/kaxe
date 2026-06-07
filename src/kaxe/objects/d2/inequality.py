@@ -5,7 +5,7 @@ from ...core.color import to_rgba
 from ...core.symbol import symbol
 from ...core.helper import isRealNumber
 from ...plot import identities
-from .equation import Equation
+from .equation import Equation, trace_contour_polylines
 
 
 def _as_2d_expr(expr):
@@ -47,6 +47,81 @@ def _eval_diff(parent, left, right, px, py):
         return None
 
 
+def _point_segment_distance_sq(px, py, x1, y1, x2, y2):
+    dx = x2 - x1
+    dy = y2 - y1
+    if dx == 0 and dy == 0:
+        dpx = px - x1
+        dpy = py - y1
+        return dpx * dpx + dpy * dpy
+    t = max(0.0, min(1.0, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
+    cx = x1 + t * dx
+    cy = y1 + t * dy
+    dpx = px - cx
+    dpy = py - cy
+    return dpx * dpx + dpy * dpy
+
+
+def _min_distance_sq_to_segments(px, py, segments):
+    if not segments:
+        return float('inf')
+    return min(
+        _point_segment_distance_sq(px, py, x1, y1, x2, y2)
+        for x1, y1, x2, y2 in segments
+    )
+
+
+def _boundary_segments(boundary, parent):
+    segments = []
+    for polyline in trace_contour_polylines(boundary.dotsPosAbstract, parent):
+        if len(polyline) < 2:
+            continue
+        decimated = _decimate_polyline(polyline, min_step=12)
+        for i in range(len(decimated) - 1):
+            x1, y1 = decimated[i]
+            x2, y2 = decimated[i + 1]
+            segments.append((x1, y1, x2, y2))
+    return segments
+
+
+def _decimate_polyline(polyline, min_step=12):
+    if len(polyline) < 2:
+        return polyline
+    result = [polyline[0]]
+    last = polyline[0]
+    min_step_sq = min_step * min_step
+    for point in polyline[1:]:
+        dx = point[0] - last[0]
+        dy = point[1] - last[1]
+        if dx * dx + dy * dy >= min_step_sq:
+            result.append(point)
+            last = point
+    if result[-1] != polyline[-1]:
+        result.append(polyline[-1])
+    return result
+
+
+def _build_band_cells(segments, band, x0, y0, x1, y1):
+    cell = max(1, int(band / 2))
+    band_sq = band * band
+    cols = int((x1 - x0) / cell) + 1
+    rows = int((y1 - y0) / cell) + 1
+    near = set()
+    for ci in range(cols):
+        for ri in range(rows):
+            cx = x0 + ci * cell + cell * 0.5
+            cy = y0 + ri * cell + cell * 0.5
+            if _min_distance_sq_to_segments(cx, cy, segments) <= band_sq:
+                near.add((ci, ri))
+    return cell, near, x0, y0
+
+
+def _point_in_band_cells(px, py, cell, near, origin_x, origin_y):
+    ci = int((px - origin_x) // cell)
+    ri = int((py - origin_y) // cell)
+    return (ci, ri) in near
+
+
 class Inequality:
     """
     A class to represent a two-variable inequality ``left op right``.
@@ -77,6 +152,9 @@ class Inequality:
     hatch_angle : float, optional
         Hatch line angle in degrees, measured counter-clockwise from the
         horizontal axis (default is 45).
+    hatch_band : float, optional
+        Maximum pixel distance from the boundary to draw hatching. When
+        omitted, the entire forbidden side is hatched.
     computePadding : int, optional
         Extra padding when sampling the plot area (default is 50).
 
@@ -98,6 +176,7 @@ class Inequality:
         hatch_spacing=10,
         hatch_width=1,
         hatch_angle=45,
+        hatch_band=None,
         computePadding=50,
     ):
         self.left = _as_2d_expr(left)
@@ -106,6 +185,7 @@ class Inequality:
         self.hatch_spacing = hatch_spacing
         self.hatch_width = hatch_width
         self.hatch_angle = hatch_angle
+        self.hatch_band = hatch_band
         self.hatch_color = to_rgba(hatch_color)
 
         if op not in _OPS:
@@ -128,11 +208,19 @@ class Inequality:
         y0 = box[1] - self.computePadding
         y1 = box[3] + self.computePadding
 
-        width = x1 - x0
-        height = y1 - y0
         spacing = self.hatch_spacing
         sample_step = 2
         eps = 1e-9
+
+        boundary_segments = None
+        band_cells = None
+        if self.hatch_band is not None:
+            boundary_segments = _boundary_segments(self.boundary, parent)
+            if not boundary_segments:
+                return
+            band_cells = _build_band_cells(
+                boundary_segments, self.hatch_band, x0, y0, x1, y1
+            )
 
         scale = getattr(parent, 'getVisualScale', lambda: 1.0)()
         hatch_width = max(1, int(self.hatch_width * scale))
@@ -199,6 +287,14 @@ class Inequality:
                 forbidden = self._is_forbidden(diff)
 
                 if forbidden:
+                    if band_cells is not None:
+                        cell, near, origin_x, origin_y = band_cells
+                        if not _point_in_band_cells(px, py, cell, near, origin_x, origin_y):
+                            if segment_start is not None and last_point is not None:
+                                self.__add_hatch_segment__(segment_start, last_point, hatch_width)
+                            segment_start = None
+                            last_point = None
+                            continue
                     point = (px, py)
                     if segment_start is None:
                         segment_start = point

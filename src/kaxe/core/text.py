@@ -76,10 +76,12 @@ class Text(Shape):
                  anchor_x:str="center", 
                  anchor_y:str="center", 
                  cacheImage=True,
+                 clip_box=None,
                  *args, **kwargs
         ):
         
         self.batch = batch
+        self.clip_box = list(clip_box) if clip_box is not None else None
         self.color = color
         self.rotate = rotate
         self.fontSize = fontSize
@@ -164,9 +166,29 @@ class Text(Shape):
         self.__center__[1] = self.__leftTop__[1] - self.height/2
 
 
+    def _pil_clip_box(self, surface):
+        if self.clip_box is None:
+            return None
+        left, top, right, bottom = self.clip_box
+        return [
+            left,
+            surface.height - bottom,
+            right,
+            surface.height - top,
+        ]
+
     def drawPillow(self, surface):
         [y] = flipHorizontal(surface, self.__center__[1] + self.height/2)
-        blitImageToSurface(surface, self.img, (self.__leftTop__[0], y))
+        if self.clip_box is not None:
+            blit_image_clipped(
+                surface,
+                self.img,
+                self.__leftTop__[0],
+                y,
+                self._pil_clip_box(surface),
+            )
+        else:
+            blitImageToSurface(surface, self.img, (self.__leftTop__[0], y))
 
     def drawSvg(self, doc):
         kaxe_top = self.__center__[1] + self.height / 2
@@ -187,6 +209,7 @@ class Text(Shape):
                 scene_top,
                 rotate=self.rotate,
                 rotate_center=rotate_center,
+                clip_box=self.clip_box,
             )
             return
 
@@ -197,6 +220,7 @@ class Text(Shape):
             y_coord="top",
             rotate=self.rotate,
             rotate_center=rotate_center,
+            clip_box=self.clip_box,
         )
 
 
@@ -208,6 +232,11 @@ class Text(Shape):
         self.__center__[1] += int(y)
         self.__leftTop__[0] += int(x)
         self.__leftTop__[1] += int(y)
+        if self.clip_box is not None:
+            self.clip_box[0] += int(x)
+            self.clip_box[1] += int(y)
+            self.clip_box[2] += int(x)
+            self.clip_box[3] += int(y)
 
 
     def getIncludeArguments(self):

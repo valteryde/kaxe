@@ -4,7 +4,7 @@ import math
 from ...core.styles import *
 from ...core.shapes import shapes
 from ...core.symbol import symbol as symbols
-from ...core.helper import bbox_overlaps, contour_label_angle, resample_polyline
+from ...core.helper import bbox_intersects_box, bbox_overlaps, contour_label_angle
 from ...core.text import Text
 from ...core.round import koundTeX
 from ...plot import identities
@@ -32,6 +32,56 @@ def _polyline_arc_length(polyline):
     return total
 
 
+def _polyline_is_closed(polyline, tolerance=2.0):
+    if len(polyline) < 3:
+        return False
+    dx = polyline[0][0] - polyline[-1][0]
+    dy = polyline[0][1] - polyline[-1][1]
+    return math.hypot(dx, dy) <= tolerance
+
+
+def _polyline_total_arc(polyline, closed):
+    arc = _polyline_arc_length(polyline)
+    if closed:
+        dx = polyline[0][0] - polyline[-1][0]
+        dy = polyline[0][1] - polyline[-1][1]
+        arc += math.hypot(dx, dy)
+    return arc
+
+
+def _point_at_arc_length(polyline, target, closed=False):
+    if not polyline:
+        return 0, (0, 0)
+
+    total = _polyline_total_arc(polyline, closed)
+    if total <= 0:
+        return 0, polyline[0]
+
+    if closed:
+        target = target % total
+    elif target >= total:
+        return len(polyline) - 1, polyline[-1]
+
+    walked = 0.0
+    segment_count = len(polyline) - 1 + (1 if closed else 0)
+
+    for seg in range(segment_count):
+        i = seg if seg < len(polyline) - 1 else len(polyline) - 1
+        j = (seg + 1) if seg < len(polyline) - 1 else 0
+        dx = polyline[j][0] - polyline[i][0]
+        dy = polyline[j][1] - polyline[i][1]
+        seg_len = math.hypot(dx, dy)
+        if seg_len == 0:
+            continue
+        if walked + seg_len >= target:
+            t = (target - walked) / seg_len
+            point = (polyline[i][0] + t * dx, polyline[i][1] + t * dy)
+            return i, point
+        walked += seg_len
+
+    return len(polyline) - 1, polyline[-1]
+
+
 def _simplify_polyline(polyline):
     if not polyline:
         return []
@@ -47,43 +97,33 @@ def _simplify_polyline(polyline):
     return simplified
 
 
-def _closest_polyline_index(polyline, point):
-    best_index = 0
-    best_dist = float('inf')
-    for i, (px, py) in enumerate(polyline):
-        dist = (px - point[0]) ** 2 + (py - point[1]) ** 2
-        if dist < best_dist:
-            best_dist = dist
-            best_index = i
-    return best_index
+_LABEL_PHASE_GOLDEN = 0.618033988749895
 
 
-def _label_candidates(polyline, spacing, max_candidates=None):
+def _label_candidates(polyline, spacing, max_candidates=None, phase=0.0):
     polyline = _simplify_polyline(polyline)
     if len(polyline) < 2:
         return []
 
-    arc = _polyline_arc_length(polyline)
+    closed = _polyline_is_closed(polyline)
+    arc = _polyline_total_arc(polyline, closed)
     if arc < spacing:
         return []
 
+    num_labels = max(1, int(arc / spacing))
+    if max_candidates is not None:
+        num_labels = min(num_labels, max_candidates)
+
     candidates = []
-    for point in resample_polyline(polyline, spacing)[1:-1]:
-        index = _closest_polyline_index(polyline, point)
+    for k in range(num_labels):
+        fraction = (k + 0.5 + phase) / num_labels
+        if closed:
+            fraction = fraction % 1.0
+        elif fraction > 1.0:
+            continue
+        target = fraction * arc
+        index, point = _point_at_arc_length(polyline, target, closed)
         candidates.append((point, index, arc))
-
-    if not candidates and arc >= spacing:
-        mid_index = len(polyline) // 2
-        candidates.append((polyline[mid_index], mid_index, arc))
-
-    if max_candidates is not None and len(candidates) > max_candidates:
-        if max_candidates <= 1:
-            return candidates[:1]
-        last = len(candidates) - 1
-        candidates = [
-            candidates[int(i * last / (max_candidates - 1))]
-            for i in range(max_candidates)
-        ]
 
     return candidates
 
@@ -236,6 +276,10 @@ class Contour:
                         polyline,
                         self.labelSpacing,
                         max_candidates=self.labelMaxPerLevel,
+                        phase=(
+                            level_index / max(self.steps, 1)
+                            + (level_index * _LABEL_PHASE_GOLDEN) % 1.0
+                        ) % 1.0,
                     )
                 ):
                     candidates.append({
@@ -278,8 +322,12 @@ class Contour:
                 rotate=round(angle),
                 anchor_x='center',
                 anchor_y='center',
+                clip_box=list(parent.windowBox),
             )
             bbox = text.getBoundingBox()
+            if not bbox_intersects_box(bbox, parent.windowBox):
+                continue
+
             label_padding = max(
                 collision_padding,
                 int(max(bbox[2], bbox[3]) * 0.15),

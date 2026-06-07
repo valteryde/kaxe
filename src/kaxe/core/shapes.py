@@ -33,6 +33,22 @@ def blitImageToSurface(surface:Image, image:Image, pos:Union[tuple, list]):
     return surface.paste(image, (int(pos[0]), int(pos[1])), image)
 
 
+def blit_image_clipped(surface, image, dest_left, dest_top, clip_ltrb):
+    """Paste ``image`` at (dest_left, dest_top), clipped to clip_ltrb [l,t,r,b]."""
+    from .helper import intersect_bbox_with_box
+
+    dest_bbox = (int(dest_left), int(dest_top), image.width, image.height)
+    intersection = intersect_bbox_with_box(dest_bbox, clip_ltrb)
+    if intersection is None:
+        return
+
+    ix, iy, iw, ih = intersection
+    src_x = ix - int(dest_left)
+    src_y = iy - int(dest_top)
+    cropped = image.crop((src_x, src_y, src_x + iw, src_y + ih))
+    blitImageToSurface(surface, cropped, (ix, iy))
+
+
 def newImage(width, height, color):
     img = Image.new('RGBA', (int(width), int(height)), color=color)
     return img
