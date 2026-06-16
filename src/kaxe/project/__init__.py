@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Union
 from pathlib import Path
 
-from ..core.styles import resetColor
 from . import serializers as _serializers  # noqa: F401 — register type handlers
 from .document import ProjectDocument
 from .window import assert_project_supported
@@ -28,7 +27,6 @@ def load_project(path: Union[str, Path]):
 
     Returns a fresh, unbaked window ready for ``style()``, ``title()``, and ``save()``.
     """
-    resetColor()
     return ProjectDocument.read(path).to_window()
 
 

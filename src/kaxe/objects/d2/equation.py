@@ -1,6 +1,5 @@
 
 from ...core.shapes import shapes
-from ...core.styles import getRandomColor
 from ...core.color import to_rgba
 from ...core.symbol import symbol
 from ...plot import identities
@@ -141,10 +140,12 @@ class Equation:
         
         self.width = width
         if color is None:
-            self.color = getRandomColor()
+            self.color = None
+            self._autoSeriesColor = True
         else:
+            self._autoSeriesColor = False
             self.color = to_rgba(color)
-        self.legendColor = self.color # default
+        self.legendColor = self.color
         
         self.dots = []
         self.dotsPosAbstract = set()

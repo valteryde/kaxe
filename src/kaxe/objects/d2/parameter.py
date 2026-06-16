@@ -1,7 +1,6 @@
 
 from typing import Callable
 from .point import Points2D
-from ...core.styles import getRandomColor
 from ...core.color import Colormap, to_rgba
 from ...core.helper import *
 from ...core.shapes import shapes
@@ -60,13 +59,15 @@ class ParametricEquation:
         self.tangentFunctions = []
 
         if color is None:
-            self.color = getRandomColor()
+            self.color = None
+            self._autoSeriesColor = True
+            self.legendColor = None
         else:
+            self._autoSeriesColor = False
             self.color = color if isinstance(color, Colormap) else to_rgba(color)
-        
-        self.legendColor = self.color
-        if type(self.color) is Colormap:
-            self.legendColor = self.color.getColor(0, 1, 2)
+            self.legendColor = self.color
+            if type(self.color) is Colormap:
+                self.legendColor = self.color.getColor(0, 1, 2)
 
         self.thickness = width
 

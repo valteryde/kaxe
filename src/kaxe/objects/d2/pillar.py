@@ -64,7 +64,8 @@ class Pillars:
         self.randomColor = False
         if colors is None:
             maxColors = max([len(i) for i in heights])
-            self.color = [getRandomColor() for i in range(maxColors)]
+            self.color = None
+            self._autoColorCount = maxColors
             self.randomColor = True
         else:
             if isinstance(colors, str):
@@ -72,8 +73,7 @@ class Pillars:
             elif not (type(colors[0]) in [list, tuple]):
                 colors = [colors]
             self.color = [to_rgba(c) for c in colors]
-
-        self.legendColor = self.color[0]
+            self.legendColor = self.color[0]
         
         xcopy = list(self.x).copy()
         xcopy.sort()

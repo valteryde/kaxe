@@ -139,7 +139,7 @@ Tips for publication figures:
 
 * Use ``plt.theme(kaxe.Themes.A4Medium)`` or ``plt.adjust(0.5)`` to match document font size — see :doc:`styling`
 * Prefer ``.svg`` or ``.pdf`` for 2D plots in LaTeX documents
-* Each new figure resets the default series palette automatically; call ``kaxe.resetColor()`` only if you need to restart the cycle within one script without creating a new window
+* Each plot cycles its own default series colors; the first series in every subplot starts with the same orange — see :doc:`styling`
 
 Suppressing progress output
 ---------------------------

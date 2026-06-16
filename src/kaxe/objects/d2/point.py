@@ -60,8 +60,10 @@ class Points2D:
     
         # color
         if color is None:
-            self.color = getRandomColor()
+            self.color = None
+            self._autoSeriesColor = True
         else:
+            self._autoSeriesColor = False
             self.color = to_rgba(color)
 
         self.size = size

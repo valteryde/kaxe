@@ -4,7 +4,7 @@ from ..core.helper import *
 import logging
 from ..core.axis import *
 from ..plot.zoom_connector import compute_boxplot_whiskers
-from ..core.styles import getRandomColor, isLightOrDark
+from ..core.styles import isLightOrDark
 from ..core.symbol import symbol as symbols
 from ..core.symbol import makeSymbolShapes
 from ..core.window import Window
@@ -195,7 +195,7 @@ class BoxPlot(Window):
         """
 
         if color is None:
-            color = getRandomColor()
+            color = self.nextSeriesColor()
 
         self.boxplots.append({"data": data, "color": color, "symbol": symbol})
 

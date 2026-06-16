@@ -10,7 +10,7 @@ from .shapes import shapes
 from .svg import SvgDocument, infer_format, is_file_path
 from .progress import make_progress_bar
 from .ipython_display import display_png_bytes, is_notebook, to_png_bytes
-from .styles import resetColor
+from .styles import assign_series_color, _palette_color_at
 from PIL import Image
 
 
@@ -112,8 +112,8 @@ class Window(AttrObject):
         left to right is always positive
         bottom to top is always positive
         """
-        resetColor()
         super().__init__()
+        self._seriesColorNum = -1
         self.identity = None
         
         self.attrmap = AttrMap()
@@ -488,6 +488,7 @@ class Window(AttrObject):
 
     # enables this code to be manipulated with in other subclasses
     def __callFinalizeObject__(self, obj):
+        self._assignSeriesColor(obj)
         obj.finalize(self)
 
     def __addInnerContent__(self):
@@ -676,6 +677,16 @@ class Window(AttrObject):
     def addDrawingFunction(self, shape, z=0):
         self.shapes.append((shape, z))
 
+    def nextSeriesColor(self) -> tuple:
+        self._seriesColorNum += 1
+        return _palette_color_at(self._seriesColorNum)
+
+    def resetSeriesColors(self) -> None:
+        self._seriesColorNum = -1
+
+    def _assignSeriesColor(self, obj) -> None:
+        assign_series_color(self, obj)
+
     # api
     def add(self, obj):
         """
@@ -693,6 +704,7 @@ class Window(AttrObject):
         """
 
         if self.identity in obj.supports:
+            self._assignSeriesColor(obj)
             self.objects.append(obj)
         else:
             logging.error(f'{obj}, is not supported in {self}')

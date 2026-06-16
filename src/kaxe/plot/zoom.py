@@ -79,6 +79,7 @@ class ZoomInset:
         The added object
         """
         if self.parent.identity in obj.supports:
+            self.parent._assignSeriesColor(obj)
             self.objects.append(obj)
         else:
             import logging

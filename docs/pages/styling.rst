@@ -120,12 +120,9 @@ Kaxe applies an **opinionated default palette** so figures look publication-read
 * **Series colors** (lines, points, bars, pie slices) cycle through the `Okabe–Ito palette <https://jfly.uni-koeln.de/color/>`_ — seven colorblind-safe colors used in Nature/PNAS-style figures
 * **Black** is reserved for axes, ticks, and text; it is not used as a data-series color
 * **Heatmaps and contours** use :attr:`kaxe.Colormaps.standard`, a blue-to-green sequential ramp distinct from the categorical series
-* The series cycle **resets automatically** when you create a new :class:`kaxe.Window` or :class:`kaxe.Grid`, so the first series in every figure starts with the same orange
-
-Override the defaults when needed:
-
-* :func:`kaxe.getRandomColor` — next color in the series palette
-* :func:`kaxe.resetColor` — restart the cycle manually (rarely needed)
+* Each plot maintains its own series color cycle, so the first series in every subplot starts with the same orange without manual resets
+* :func:`kaxe.getRandomColor` — next color in the global series palette (for explicit ``color=`` arguments)
+* :func:`kaxe.resetColor` — restart the global palette cycle manually (rarely needed)
 * :func:`kaxe.setDefaultColors` — replace the global series palette
 
 Gradients on surfaces and contours use :class:`kaxe.Colormap` / :class:`kaxe.Colormaps` — see :doc:`utilities`.

@@ -14,12 +14,22 @@ colorNum = -1
 colors = list(DEFAULT_SERIES_COLORS)
 
 
+def _series_palette() -> list:
+    return colors
+
+
+def _palette_color_at(index: int) -> tuple:
+    palette = _series_palette()
+    return palette[index % len(palette)]
+
+
 def getRandomColor() -> tuple:
     """Return the next color from Kaxe's default series palette.
 
-    Colors rotate through the built-in Okabe–Ito palette. The cycle resets
-    automatically when a new figure window is created. Call :func:`resetColor`
-    to restart the cycle manually.
+    Colors rotate through the built-in Okabe–Ito palette. Each plot window
+    maintains its own cycle for objects added without an explicit color; this
+    global function is for manual use (e.g. ``color=kaxe.getRandomColor()``).
+    Call :func:`resetColor` to restart the global cycle manually.
 
     Returns
     -------
@@ -27,14 +37,62 @@ def getRandomColor() -> tuple:
         RGBA color tuple, e.g. ``(230, 159, 0, 255)``.
     """
     global colorNum
-    colorNum+=1
-    return colors[colorNum%(len(colors))]
+    colorNum += 1
+    return _palette_color_at(colorNum)
 
 
 def resetColor() -> None:
-    """Reset the series color cycle to before the first palette color."""
+    """Reset the global series color cycle to before the first palette color."""
     global colorNum
     colorNum = -1
+
+
+def _apply_function2d_color(obj, color: tuple) -> None:
+    from .color import to_rgba
+    obj.color = to_rgba(color)
+    obj.legendColor = obj.color
+    if len(obj.color) > 3:
+        obj.fillcolor = (*obj.color[:3], int(obj.color[3] * 0.5))
+    else:
+        obj.fillcolor = (*obj.color, 175)
+
+
+def _apply_fill_color(obj, color: tuple) -> None:
+    from .color import to_rgba
+    rgba = list(to_rgba(color))
+    if len(rgba) > 3:
+        rgba[3] = 100
+    else:
+        rgba.append(100)
+    obj.color = tuple(rgba)
+    obj.legendColor = obj.color
+
+
+def assign_series_color(plot, obj) -> None:
+    """Assign the next series palette color from *plot* when the object defers color."""
+    if getattr(obj, 'randomColor', False):
+        count = getattr(obj, '_autoColorCount', 1)
+        obj.color = [plot.nextSeriesColor() for _ in range(count)]
+        obj.legendColor = obj.color[0]
+        obj.randomColor = False
+        return
+
+    if not getattr(obj, '_autoSeriesColor', False):
+        return
+
+    color = plot.nextSeriesColor()
+    obj._autoSeriesColor = False
+
+    if type(obj).__name__ == 'Function2D':
+        _apply_function2d_color(obj, color)
+    elif type(obj).__name__ == 'Fill':
+        _apply_fill_color(obj, color)
+    else:
+        from .color import Colormap, to_rgba
+        obj.color = to_rgba(color)
+        obj.legendColor = obj.color
+        if type(obj.color) is Colormap:
+            obj.legendColor = obj.color.getColor(0, 1, 2)
 
 
 def isLightOrDark(rgbColor=[0,128,255,255]):

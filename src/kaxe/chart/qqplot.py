@@ -4,7 +4,6 @@ import numpy as np
 import statistics
 from ..objects.point import Points2D
 from ..objects.function import Function2D
-from ..core.styles import getRandomColor
 from ..core.symbol import symbol
 
 
@@ -40,12 +39,7 @@ class QQPlot(BoxedPlot):
     def __init__(self, data, quantiles:list=None, color:list=[None, None], size=50):
         
         self.size = size
-
-        self.color = color
-        if color[0] is None:
-            self.color[0] = getRandomColor()
-        if color[1] is None:
-            self.color[1] = getRandomColor()
+        self._pending_colors = list(color)
 
         data = sorted(data)
 
@@ -56,6 +50,13 @@ class QQPlot(BoxedPlot):
         self.data = data.copy()
 
         super().__init__()
+
+        self.color = self._pending_colors
+        if self.color[0] is None:
+            self.color[0] = self.nextSeriesColor()
+        if self.color[1] is None:
+            self.color[1] = self.nextSeriesColor()
+        del self._pending_colors
 
         points = self.points = self.add(Points2D(
             self.quantiles, 

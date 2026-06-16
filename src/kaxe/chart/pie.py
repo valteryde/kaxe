@@ -7,7 +7,7 @@ from ..core.helper import *
 import logging
 from ..core.axis import *
 from ..core.window import Window
-from ..core.styles import getRandomColor, isLightOrDark
+from ..core.styles import isLightOrDark
 from ..core.symbol import symbol
 
 XYPLOT = 'xy'
@@ -135,7 +135,7 @@ class Pie(Window):
 
         colors = self.getAttr('pieColor')
         if colors == None:
-            colors = [getRandomColor() for _ in range(self.pieslices)]
+            colors = [self.nextSeriesColor() for _ in range(self.pieslices)]
         elif type(colors[0]) is int:
             colors = [colors]
 

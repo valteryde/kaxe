@@ -1,7 +1,7 @@
 
 from typing import Callable, Optional, Sequence, Tuple, Union
 from .point import Points2D
-from ...core.styles import getRandomColor
+from ...core.styles import _apply_function2d_color
 from ...core.color import to_rgba
 from ...core.helper import *
 from ...core.shapes import shapes
@@ -86,20 +86,17 @@ class Function2D:
         self.dashed = dashed
 
         if color is None:
-            self.color = getRandomColor()
+            self.color = None
+            self._autoSeriesColor = True
         else:
-            self.color = to_rgba(color)
-        self.legendColor = self.color
+            self._autoSeriesColor = False
+            _apply_function2d_color(self, to_rgba(color))
 
         self.legendSymbol = symbol.LINE
         if self.dotted:
             self.legendSymbol = symbol.CIRCLE
 
         self.thickness = width
-        if len(self.color) > 3:
-            self.fillcolor = (*self.color[:3], int(self.color[3]*0.5))
-        else:
-            self.fillcolor = (*self.color, 175)
 
         self.otherArgs = args
         self.otherKwargs = kwargs

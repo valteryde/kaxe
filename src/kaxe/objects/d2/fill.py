@@ -51,16 +51,13 @@ class Fill:
 
         # color
         if color is None:
-            self.color = list(getRandomColor())
-            if len(self.color) > 3:
-                self.color[3] = 100
-            else:
-                self.color.append(100)
-            self.color = tuple(self.color)
+            self.color = None
+            self._autoSeriesColor = True
+            self.legendColor = None
         else:
+            self._autoSeriesColor = False
             self.color = to_rgba(color)
-    
-        self.legendColor = self.color
+            self.legendColor = self.color
 
         self.supports = [identities.XYPLOT]
 

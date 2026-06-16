@@ -49,6 +49,32 @@ def _():
     assert func1.color == func2.color == to_rgba("#E69F00")
 
 
+@test("grid cells each start series cycle at first color")
+def _():
+    p1 = kaxe.Plot([0, 1, 0, 1])
+    p2 = kaxe.Plot([0, 1, 0, 1])
+    grid = kaxe.Grid()
+    grid.addRow(p1, p2)
+    f1 = kaxe.Function2D(lambda x: x)
+    f2 = kaxe.Function2D(lambda x: x)
+    p1.add(f1)
+    p2.add(f2)
+    assert f1.color == f2.color == to_rgba("#E69F00")
+
+
+@test("second series on one plot does not affect another plot cycle")
+def _():
+    p1 = kaxe.Plot([0, 1, 0, 1])
+    p2 = kaxe.Plot([0, 1, 0, 1])
+    f1 = kaxe.Function2D(lambda x: x)
+    p1.add(f1)
+    f2 = kaxe.Function2D(lambda x: x)
+    p2.add(f2)
+    p1.add(kaxe.Function2D(lambda x: x + 1))
+    assert p1.objects[1].color == DEFAULT_SERIES_COLORS[1]
+    assert f2.color == DEFAULT_SERIES_COLORS[0]
+
+
 @test("setDefaultColors replaces the series palette")
 def _():
     try:
