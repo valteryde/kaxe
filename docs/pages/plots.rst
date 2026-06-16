@@ -30,6 +30,35 @@ Classical Plot
     .. image:: /_static/plot.png
         :width: 400 px
 
+Polar guide overlay
+~~~~~~~~~~~~~~~~~~~
+
+Add a polar-style guide grid (concentric arcs and radial lines) on top of a
+Cartesian :class:`kaxe.Plot`. This is useful for s-plane root locus diagrams
+and other plots that combine Cartesian axes with polar guide geometry. Use
+:class:`kaxe.PolarGuideGrid`, not :class:`kaxe.PolarPlot`, when data lives in
+Cartesian coordinates:
+
+.. code-block:: python
+
+   import kaxe
+
+   plt = kaxe.Plot([-10, 2, -5, 5])
+   plt.title("Real Axis", "Imag Axis")
+   plt.add(kaxe.PolarGuideGrid(
+       center=(0, 0),
+       radii=[2, 4, 6, 8, 10],
+       angles=[120, 135, 150, 160, 170, 175, 178, 179],
+       arc_span=(90, 270),
+       radius_labels=True,
+       angle_labels=[0.2, 0.4, 0.56, 0.7, 0.81, 0.9, 0.955, 0.988],
+       dashed=True,
+   ))
+   plt.add(kaxe.Points2D(reals, imags, connect=True))
+   plt.save("splane.png")
+
+See :class:`kaxe.PolarGuideGrid` in :doc:`objects` for all parameters.
+
 Zoom inset
 ~~~~~~~~~~
 

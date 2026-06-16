@@ -10,3 +10,4 @@ from .arrow import Arrow
 from .bubble import Bubble
 from .contour import Contour
 from .fill import Fill
+from .guide_grid import PolarGuideGrid

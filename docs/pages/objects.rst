@@ -66,6 +66,9 @@ Smart objects adapt to the plot type (2D or 3D) based on the window you add them
     .. image:: /_static/arrow3d.png
         :width: 400 px
 
+.. autoclass:: kaxe.PolarGuideGrid
+    :members:
+
 2D objects
 ----------
 
