@@ -1,31 +1,58 @@
 
-from PIL import Image
-from .shapes import ImageShape, shapes, Batch
-from .styles import *
-import numpy as np
-from .fileloader import loadFile
+import math
 
-triangle = Image.open(loadFile('symboltriangle.png'))
-lollipop = Image.open(loadFile('symbollollipop.png'))
-cross = Image.open(loadFile('symbolcross.png'))
-donut = Image.open(loadFile('symboldonut.png'))
+from .shapes import Batch, Line, Shape, shapes
 
 
-class CustomSymbol(ImageShape):
-    def __init__(self, symbimg:Image, width:int, height:int, color:tuple=BLACK, batch:Batch=None):
-        self.img = symbimg.copy()
-        self.img = self.img.resize((width, height))
-        
-        data = np.array(self.img)
-        r2, g2, b2, a2 = *color[:3], 255
+class SymbolGroup(Shape):
+    """Composite symbol built from shapes in a size×size local box."""
 
-        red, green, blue, alpha = data[:,:,0], data[:,:,1], data[:,:,2], data[:,:,3]
-        mask = (alpha > 0)
-        data[:,:,:4][mask] = [r2, g2, b2, a2]
+    def __init__(self, size: int, parts: list, batch: Batch = None):
+        self.size = int(size)
+        self.parts = parts
+        self.x = 0
+        self.y = 0
+        self.batch = batch
+        super().__init__()
+        if batch:
+            batch.add(self)
 
-        self.img = Image.fromarray(data)
+    def getBoundingBox(self):
+        return [self.size, self.size]
 
-        super().__init__(self.img, 0, 0, batch=batch)
+    def centerAlign(self):
+        self.x -= self.size / 2
+        self.y -= self.size / 2
+
+    def push(self, x, y):
+        self.x += x
+        self.y += y
+
+    def _offset_part(self, part, dx, dy):
+        if isinstance(part, Line):
+            part.push(dx, dy)
+        else:
+            part.x += dx
+            part.y += dy
+
+    def _restore_part(self, part, dx, dy):
+        if isinstance(part, Line):
+            part.push(-dx, -dy)
+        else:
+            part.x -= dx
+            part.y -= dy
+
+    def _draw_parts(self, draw_fn):
+        for part in self.parts:
+            self._offset_part(part, self.x, self.y)
+            draw_fn(part)
+            self._restore_part(part, self.x, self.y)
+
+    def drawPillow(self, surface):
+        self._draw_parts(lambda part: part.drawPillow(surface))
+
+    def drawSvg(self, doc):
+        self._draw_parts(lambda part: part.drawSvg(doc))
 
 
 # SYMBOLS
@@ -41,20 +68,73 @@ class symbol:
     DONUT = "DONUT"
 
 
-def makeSymbolShapes(symb:str, height:int, color:tuple, batch):
+def _triangle_symbol(size: int, color: tuple, batch: Batch):
+    return SymbolGroup(
+        size,
+        [shapes.Polygon((size / 2, 0), (0, size), (size, size), color=color, batch=None)],
+        batch=batch,
+    )
+
+
+def _star_symbol(size: int, color: tuple, batch: Batch):
+    cx = cy = size / 2
+    outer_r = size / 2
+    inner_r = outer_r * 0.4
+    points = []
+    for i in range(10):
+        angle = math.pi / 2 + i * math.pi / 5
+        radius = outer_r if i % 2 == 0 else inner_r
+        points.append((cx + radius * math.cos(angle), cy - radius * math.sin(angle)))
+    return SymbolGroup(size, [shapes.Polygon(*points, color=color, batch=None)], batch=batch)
+
+
+def _cross_symbol(size: int, color: tuple, batch: Batch):
+    thickness = max(1, int(size / 6))
+    parts = [
+        Line(0, 0, size, size, color=color, width=thickness, batch=None),
+        Line(size, 0, 0, size, color=color, width=thickness, batch=None),
+    ]
+    return SymbolGroup(size, parts, batch=batch)
+
+
+def _lollipop_symbol(size: int, color: tuple, batch: Batch):
+    stem_h = max(1, size // 4)
+    stem_y = (size - stem_h) // 2
+    head_r = max(1, size // 3)
+    stem_w = max(1, size - head_r)
+    parts = [
+        shapes.Rectangle(0, stem_y, stem_w, stem_h, color=color, batch=None),
+        shapes.Circle(size - head_r, size // 2, head_r, color=color, batch=None, cornerAlign=False),
+    ]
+    return SymbolGroup(size, parts, batch=batch)
+
+
+def makeSymbolShapes(symb: str, height: int, color: tuple, batch):
+    size = int(height)
     if symb == symbol.LINE:
-        return shapes.Rectangle(0, 0, height, height/6, color=color, batch=batch)
+        return shapes.Rectangle(0, 0, size, size / 6, color=color, batch=batch)
     if symb == symbol.THICKLINE:
-        return shapes.Rectangle(0, 0, height, height/2, color=color, batch=batch)
+        return shapes.Rectangle(0, 0, size, size / 2, color=color, batch=batch)
     if symb == symbol.RECTANGLE:
-        return shapes.Rectangle(0, 0, height, height, color=color, batch=batch)
+        return shapes.Rectangle(0, 0, size, size, color=color, batch=batch)
     if symb == symbol.CIRCLE:
-        return shapes.Circle(0,0, int(height/2), cornerAlign=True, color=color, batch=batch)
+        return shapes.Circle(0, 0, int(size / 2), cornerAlign=True, color=color, batch=batch)
     if symb == symbol.TRIANGLE:
-        return CustomSymbol(triangle, height, height, color=color, batch=batch)
+        return _triangle_symbol(size, color, batch)
+    if symb == symbol.STAR:
+        return _star_symbol(size, color, batch)
     if symb == symbol.LOLLIPOP:
-        return CustomSymbol(lollipop, height, height, color=color, batch=batch)
+        return _lollipop_symbol(size, color, batch)
     if symb == symbol.CROSS:
-        return CustomSymbol(cross, height, height, color=color, batch=batch)
+        return _cross_symbol(size, color, batch)
     if symb == symbol.DONUT:
-        return CustomSymbol(donut, height, height, color=color, batch=batch)
+        return shapes.Circle(
+            0,
+            0,
+            int(size / 2),
+            cornerAlign=True,
+            fill=False,
+            width=max(1, size // 8),
+            color=color,
+            batch=batch,
+        )

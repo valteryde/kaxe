@@ -1,7 +1,7 @@
 
 from .helper import intersectLines
 from .shapes import shapes
-from .symbol import CustomSymbol, symbol
+from .symbol import symbol
 from .styles import resetColor, setDefaultColors, getRandomColor
 from .axis import Axis
 from .round import koundTeX
