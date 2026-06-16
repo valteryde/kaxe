@@ -92,3 +92,34 @@ Load a rectangular range from an ``.xlsx`` workbook. Column indices are 1-based 
 Set ``flip=True`` to transpose rows and columns. See :doc:`recipes` for a full example.
 
 .. automethod:: kaxe.data.loadExcel
+
+Point thinning
+--------------
+
+Reduce large point series before adding them to a plot — especially useful for
+SVG export where millions of markers make files slow to load:
+
+.. code-block:: python
+
+   import kaxe
+
+   # Cap at 5000 points (uniform index sampling)
+   x_thin, y_thin = kaxe.thin_points(x, y, max_points=5000)
+
+   # Keep every 10th point
+   x_thin, y_thin = kaxe.thin_points(x, y, every=10)
+
+   # Min spacing in data coordinates
+   x_thin, y_thin = kaxe.thin_points(x, y, min_distance=0.05)
+
+   # Min spacing in screen pixels (needs plot with fixed bounds)
+   plt = kaxe.Plot([0, 10, 0, 10])
+   plt.theme(kaxe.Themes.A4Medium)
+   x_thin, y_thin = kaxe.thin_points(x, y, min_distance=3, space="pixel", plot=plt)
+
+   plt.add(kaxe.Points2D(x_thin, y_thin))
+
+Provide exactly one of ``every``, ``min_distance``, or ``max_points``. Optional
+``z`` is thinned with the same indices: ``x, y, z = kaxe.thin_points(x, y, z, every=5)``.
+
+.. autofunction:: kaxe.thin_points

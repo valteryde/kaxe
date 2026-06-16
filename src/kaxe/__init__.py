@@ -42,6 +42,7 @@ from .core import symbol
 from .core import Colormaps, SingleColormap, Colormap, to_rgba
 from .core.window import Window, AttrObject, AttrMap, setSetting
 from .core import Axis
+from .core.thin import thin_points
 from .project import save_project, load_project
 
 try:

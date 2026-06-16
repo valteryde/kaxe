@@ -4,6 +4,7 @@ from ...core.shapes import shapes
 from ...core.color import to_rgba
 from ...core.symbol import symbol
 from ...core.helper import isRealNumber
+from ...core.thin import decimate_by_distance
 from ...plot import identities
 from .equation import Equation, trace_contour_polylines
 
@@ -50,25 +51,8 @@ def _eval_diff(parent, left, right, px, py):
 def _boundary_band_points(boundary, parent):
     points = []
     for polyline in trace_contour_polylines(boundary.dotsPosAbstract, parent):
-        points.extend(_decimate_polyline(polyline, min_step=8))
+        points.extend(decimate_by_distance(polyline, 8))
     return points
-
-
-def _decimate_polyline(polyline, min_step=8):
-    if len(polyline) < 2:
-        return polyline
-    result = [polyline[0]]
-    last = polyline[0]
-    min_step_sq = min_step * min_step
-    for point in polyline[1:]:
-        dx = point[0] - last[0]
-        dy = point[1] - last[1]
-        if dx * dx + dy * dy >= min_step_sq:
-            result.append(point)
-            last = point
-    if result[-1] != polyline[-1]:
-        result.append(polyline[-1])
-    return result
 
 
 def _build_band_cells(points, band, x0, y0, x1, y1):
