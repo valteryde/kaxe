@@ -2,6 +2,7 @@
 import numpy as np
 from ..mapdata import heatcolormap
 import math
+from PIL import Image
 from ...core.shapes import shapes
 from ...core.text import Text
 from ...core.round import koundTeX
@@ -297,37 +298,55 @@ class HeatMap:
         )
 
     def finalize(self, parent):
+        nrows = len(self.data)
+        if nrows == 0:
+            return
+        ncols = len(self.data[0])
+        if ncols == 0:
+            return
 
-        # get size of one box
-        width, height = parent.scaled(*self.unitPerPixel)
-        width, height = math.ceil(width), math.ceil(height)
+        x0, y0 = self.position
+        x1 = x0 + ncols * self.unitPerPixel[0]
+        y1 = y0 + nrows * self.unitPerPixel[1]
 
-        for rowNum, row in enumerate(self.data):
+        px0, py0 = parent.pixel(x0, y0)
+        px1, py1 = parent.pixel(x1, y1)
 
-            for cellNum, cell in enumerate(row):
-                
-                p = parent.pixel(
-                    cellNum*self.unitPerPixel[0] + self.position[0], 
-                    rowNum*self.unitPerPixel[1] + self.position[1]
-                )
-                if not parent.inside(*p): continue
+        left = int(math.floor(px0))
+        bottom = int(math.floor(py0))
+        right = int(math.ceil(px1))
+        top = int(math.ceil(py1))
+        pw = max(right - left, 1)
+        ph = max(top - bottom, 1)
 
-                w, h = width, height
-                p1 = parent.inversepixel(p[0]+w, p[1]+h)
-                p1 = parent.pixel(p1[0], p1[1])
-                if not parent.inside(*p1):
-                    p1 = parent.clamp(*p1)
-                    w = p1[0] - p[0]
-                    h = p1[1] - p[1]
+        rgba = self.cmap.map_array(
+            np.asarray(self.data, dtype=np.float64),
+            self.minValue,
+            self.maxValue,
+        )
+        rgba = rgba[::-1]
 
-                    if w == 0 or h == 0:
-                        continue
-            
-                shapes.Rectangle(
-                    *p, math.ceil(w), math.ceil(h),
-                    color=self.cmap.getColor(cell, self.minValue, self.maxValue), 
-                    batch=self.batch
-                )
+        img = Image.fromarray(rgba)
+        if (pw, ph) != (ncols, nrows):
+            img = img.resize((pw, ph), Image.NEAREST)
+
+        wb = parent.windowBox
+        clip_l = max(left, wb[0])
+        clip_b = max(bottom, wb[1])
+        clip_r = min(left + pw, wb[2])
+        clip_t = min(bottom + ph, wb[3])
+        if clip_l >= clip_r or clip_b >= clip_t:
+            return
+
+        if (clip_l, clip_b, clip_r, clip_t) != (left, bottom, left + pw, bottom + ph):
+            src_left = clip_l - left
+            src_right = clip_r - left
+            src_top = ph - (clip_t - bottom)
+            src_bottom = ph - (clip_b - bottom)
+            img = img.crop((src_left, src_top, src_right, src_bottom))
+            left, bottom = clip_l, clip_b
+
+        self.img = shapes.ImageArray(np.asarray(img), left, bottom, batch=self.batch)
         
     
     def addColorScale(self, parent, digits=64):

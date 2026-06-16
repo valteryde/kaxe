@@ -134,6 +134,32 @@ class Colormap:
         x -= x0
         return tuple(round(i) for i in (1 - x) * self.colorGradientSteps[x0] + (x) * self.colorGradientSteps[x1])
 
+    def map_array(self, values: np.ndarray, start: Union[int, float], end: Union[int, float]) -> np.ndarray:
+        """
+        Map a numeric array to RGBA colors using this colormap.
+
+        Returns an array with shape ``(*values.shape, 4)`` and dtype ``uint8``.
+        """
+        steps = np.asarray(self.colorGradientSteps, dtype=np.float64)
+        if end == start:
+            return np.broadcast_to(steps[0].astype(np.uint8), (*values.shape, 4)).copy()
+
+        n = len(steps) - 1
+        t = (values - start) / (end - start) * n
+        t = np.clip(t, 0, n)
+        i0 = np.floor(t).astype(np.intp)
+        i1 = np.minimum(i0 + 1, n)
+        frac = (t - i0)[..., np.newaxis]
+        colors = np.round((1 - frac) * steps[i0] + frac * steps[i1]).astype(np.uint8)
+
+        below = values < start
+        above = values > end
+        if np.any(below):
+            colors[below] = steps[0].astype(np.uint8)
+        if np.any(above):
+            colors[above] = steps[-1].astype(np.uint8)
+        return colors
+
     def setAlpha(self, alpha255):
         """
         Update the alpha (transparency) value for each color in the color gradient steps.
