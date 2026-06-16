@@ -231,6 +231,9 @@ class SingleColormap(Colormap):
         super().__init__(arr)
 
 
+from .palette import DEFAULT_SEQUENTIAL_STEPS
+
+
 class Colormaps:
     """
     A collection of predefined colormaps for various color schemes.
@@ -238,7 +241,7 @@ class Colormaps:
     Attributes
     ----------
     standard : Colormap
-        A colormap with a standard set of colors.
+        Default sequential colormap (blue to green, colorblind-safe).
     green : Colormap
         A colormap with various shades of green.
     brown : Colormap
@@ -254,14 +257,7 @@ class Colormaps:
     """
 
 
-    standard = Colormap([
-        "#AFE3C0",
-        "#90C290",
-        "#FF5154",
-        "#91A6FF",
-        "#FAFF7F",
-        "#ED7D3A",
-    ])
+    standard = Colormap(DEFAULT_SEQUENTIAL_STEPS)
     green = Colormap([
         "#004b23",
         "#006400",

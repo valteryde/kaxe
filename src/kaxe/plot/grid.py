@@ -5,6 +5,7 @@ from ..core.styles import AttrObject, AttrMap
 from ..core.window import *
 from ..core.ipython_display import display_png_bytes, is_notebook, to_png_bytes
 from ..core.legend import LegendBox
+from ..core.styles import resetColor
 from ..core.svg import (
     SvgDocument,
     infer_format,
@@ -52,6 +53,7 @@ class Grid(AttrObject):
     name = "Grid"
 
     def __init__(self):
+        resetColor()
         super().__init__()
 
         self.grid = []

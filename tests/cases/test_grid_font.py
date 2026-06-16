@@ -46,7 +46,7 @@ def test_grid_with_legend_exports_smoke():
     grid.addRow(p1, p2)
     grid.legends(
         ("Series A", kaxe.symbol.LINE, (222, 107, 72, 255)),
-        ("Series B", kaxe.symbol.CIRCLE, (6, 71, 137, 255)),
+        ("Series B", kaxe.symbol.CIRCLE, (0, 114, 178, 255)),
     )
 
     buf = BytesIO()

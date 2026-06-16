@@ -113,7 +113,7 @@ Grid legends
    grid.style(fontSize=100)
    grid.legends(
        ("Curve A", kaxe.symbol.LINE, (222, 107, 72, 255)),
-       ("Points B", kaxe.symbol.CIRCLE, (6, 71, 137, 255)),
+       ("Points B", kaxe.symbol.CIRCLE, (0, 114, 178, 255)),
    )
 
 Each entry is a tuple of ``(label, symbol, color)``. Use ``grid.style(fontSize=...)`` so legend text matches axis and tick labels in the subplots (see :doc:`styling`).

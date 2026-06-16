@@ -102,21 +102,31 @@ Useful ``marker`` keys:
 Colors
 ------
 
-Colors accept **RGBA tuples** ``(red, green, blue, alpha)`` with values 0–255, or **hex strings** such as ``"#FF5154"``. Named CSS colors (``"red"``, ``"white"``, …) also work wherever colors are accepted.
+Colors accept **RGBA tuples** ``(red, green, blue, alpha)`` with values 0–255, or **hex strings** such as ``"#0072B2"``. Named CSS colors (``"red"``, ``"white"``, …) also work wherever colors are accepted.
 
 .. code-block:: python
 
    plt.style(color="#000000", backgroundColor="#ffffff")
-   func = kaxe.Function2D(lambda x: x, color="#DE6B48")
+   func = kaxe.Function2D(lambda x: x, color="#0072B2")
    plt.add(func)
 
 Use :func:`kaxe.to_rgba` to normalize any supported input to an RGBA tuple.
 
-Default plot colors cycle automatically. Control the cycle with:
+Default palette
+~~~~~~~~~~~~~~~
 
-* :func:`kaxe.getRandomColor` — next color in the palette
-* :func:`kaxe.resetColor` — restart the cycle
-* :func:`kaxe.setDefaultColors` — replace the global palette
+Kaxe applies an **opinionated default palette** so figures look publication-ready without manual styling:
+
+* **Series colors** (lines, points, bars, pie slices) cycle through the `Okabe–Ito palette <https://jfly.uni-koeln.de/color/>`_ — seven colorblind-safe colors used in Nature/PNAS-style figures
+* **Black** is reserved for axes, ticks, and text; it is not used as a data-series color
+* **Heatmaps and contours** use :attr:`kaxe.Colormaps.standard`, a blue-to-green sequential ramp distinct from the categorical series
+* The series cycle **resets automatically** when you create a new :class:`kaxe.Window` or :class:`kaxe.Grid`, so the first series in every figure starts with the same orange
+
+Override the defaults when needed:
+
+* :func:`kaxe.getRandomColor` — next color in the series palette
+* :func:`kaxe.resetColor` — restart the cycle manually (rarely needed)
+* :func:`kaxe.setDefaultColors` — replace the global series palette
 
 Gradients on surfaces and contours use :class:`kaxe.Colormap` / :class:`kaxe.Colormaps` — see :doc:`utilities`.
 
@@ -164,7 +174,7 @@ Many objects accept constructor arguments that override global styles:
 
 .. code-block:: python
 
-   kaxe.Function2D(lambda x: x**2, width=8, color=(6, 71, 137, 255))
+   kaxe.Function2D(lambda x: x**2, width=8, color="#0072B2")
    kaxe.Points2D([1, 2, 3], [1, 4, 9], size=30, symbol=kaxe.symbol.CIRCLE)
 
 See :doc:`objects` for parameters on each object class.

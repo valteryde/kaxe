@@ -4,39 +4,35 @@ from types import MappingProxyType, FunctionType
 import math
 
 from .color import is_color_attr
+from .palette import DEFAULT_SERIES_COLORS, apply_series_palette
 
 # COLORS
 WHITE = (255,255,255,255)
 BLACK = (0,0,0,255)
 
 colorNum = -1
-def getRandomColor() -> tuple:
-    """Return the next color from Kaxe's default color cycle.
+colors = list(DEFAULT_SERIES_COLORS)
 
-    Colors rotate through the built-in palette. Call :func:`resetColor` to
-    restart the cycle from the first color.
+
+def getRandomColor() -> tuple:
+    """Return the next color from Kaxe's default series palette.
+
+    Colors rotate through the built-in Okabe–Ito palette. The cycle resets
+    automatically when a new figure window is created. Call :func:`resetColor`
+    to restart the cycle manually.
 
     Returns
     -------
     tuple
-        RGBA color tuple, e.g. ``(222, 107, 72, 255)``.
+        RGBA color tuple, e.g. ``(230, 159, 0, 255)``.
     """
     global colorNum
     colorNum+=1
     return colors[colorNum%(len(colors))]
 
+
 def resetColor() -> None:
-    """
-    Resets the global color number to its initial state.
-    This function sets the global variable `colorNum` to -1, effectively
-    resetting any color-related state that depends on this variable.
-
-    Note
-    ----
-    This resets all plot color progress
-
-    """
-
+    """Reset the series color cycle to before the first palette color."""
     global colorNum
     colorNum = -1
 
@@ -49,36 +45,17 @@ def isLightOrDark(rgbColor=[0,128,255,255]):
     return False
 
 
-colors = [
-    (222,107,72, 255),
-    (91,200,175, 255),
-    (6,71,137, 255),
-    (8,45,15, 255),
-    # (247,197,72, 255),
-    (251, 111, 146),
-    (0, 53,102),
-    (188, 108,37),
-    (33, 104, 105),
-]
-
 def setDefaultColors(colorList:list):
-    """
-    Set the global default colors for all plots
-    
+    """Replace the global default series palette.
+
     Parameters
     ----------
     colorList : list
-        A list of colors to be set as the default colors. Entries may be RGBA
-        tuples or hex/named color strings (see :func:`kaxe.to_rgba`).
-    
-    Notes
-    -----
-    This function sets the global variable `colors` to the provided list of colors.
+        Colors for the series cycle. Entries may be RGBA tuples or hex/named
+        color strings (see :func:`kaxe.to_rgba`).
     """
-    from .color import to_rgba
-
     global colors
-    colors = [to_rgba(c) for c in colorList]
+    colors = apply_series_palette(colorList)
 
 
 class bcolors:

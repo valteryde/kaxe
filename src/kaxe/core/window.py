@@ -10,6 +10,7 @@ from .shapes import shapes
 from .svg import SvgDocument, infer_format, is_file_path
 from .progress import make_progress_bar
 from .ipython_display import display_png_bytes, is_notebook, to_png_bytes
+from .styles import resetColor
 from PIL import Image
 
 
@@ -111,6 +112,7 @@ class Window(AttrObject):
         left to right is always positive
         bottom to top is always positive
         """
+        resetColor()
         super().__init__()
         self.identity = None
         
