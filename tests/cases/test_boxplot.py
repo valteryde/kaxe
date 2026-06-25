@@ -62,6 +62,18 @@ def test_boxplot_overlay():
 
 @smoke()
 @sanity()
+def test_boxplot_overlay_same_x():
+    """Two overlay series at the same x value are separated vertically."""
+    chart = kaxe.BoxPlot()
+    chart.add([6, 10, 15, 20])
+    chart.overlay([15.0], box=0, color=(220, 50, 50, 255), symbol=kaxe.symbol.CIRCLE)
+    chart.overlay([15.0], box=0, color=(50, 80, 220, 255), symbol=kaxe.symbol.CROSS)
+    chart.legends("speed")
+    return chart
+
+
+@smoke()
+@sanity()
 def test_boxplot_no_outliers():
     """Outlier markers can be disabled when using overlay points."""
     chart = kaxe.BoxPlot()

@@ -10,11 +10,25 @@ from ..core.symbol import makeSymbolShapes
 from ..core.window import Window
 
 
-def _overlay_y_offset(index, count, box_height, jitter_frac):
-    if count <= 1:
-        return 0.0
-    t = index / (count - 1)
-    return (t - 0.5) * jitter_frac * box_height
+def _overlay_cluster_offsets(points, box_height, jitter_frac):
+    """Assign vertical offsets so points at the same value do not overlap."""
+    clusters = {}
+    for p in points:
+        clusters.setdefault(p["value"], []).append(p)
+
+    span = jitter_frac * box_height
+    for value in sorted(clusters.keys(), key=lambda v: (type(v).__name__, v)):
+        group = clusters[value]
+        group.sort(key=lambda p: (p["overlay_idx"], p["point_idx"]))
+        n = len(group)
+        for slot, p in enumerate(group):
+            if n == 1:
+                p["offset"] = 0.0
+            else:
+                t = slot / (n - 1)
+                p["offset"] = (t - 0.5) * span
+
+    return points
 
 
 class BoxPlot(Window):
@@ -202,21 +216,39 @@ class BoxPlot(Window):
                     symbol.y = centerLine - height/2
 
         symbolHeight = self.getAttr('symbolHeight')
-        for overlay in self.overlays:
-            geom = box_geometry[overlay["box"]]
+        overlays_by_box = {}
+        for overlay_idx, overlay in enumerate(self.overlays):
+            box_idx = overlay["box"]
+            overlays_by_box.setdefault(box_idx, []).append((overlay_idx, overlay))
+
+        for box_idx, box_overlays in overlays_by_box.items():
+            geom = box_geometry[box_idx]
             centerLine = geom["centerLine"]
-            data = overlay["data"]
-            count = len(data)
-            for j, value in enumerate(data):
-                offset = _overlay_y_offset(j, count, boxHeight, overlayJitter)
+
+            points = []
+            for overlay_idx, overlay in box_overlays:
+                for point_idx, value in enumerate(overlay["data"]):
+                    points.append(
+                        {
+                            "overlay_idx": overlay_idx,
+                            "point_idx": point_idx,
+                            "value": value,
+                            "overlay": overlay,
+                        }
+                    )
+
+            _overlay_cluster_offsets(points, boxHeight, overlayJitter)
+
+            for p in points:
+                overlay = p["overlay"]
                 symbol = makeSymbolShapes(
                     overlay["symbol"],
                     symbolHeight,
                     color=overlay["color"],
                     batch=self.boxbatch,
                 )
-                symbol.x = self.axis.get(value)[0]
-                symbol.y = centerLine + offset - symbolHeight / 2
+                symbol.x = self.axis.get(p["value"])[0]
+                symbol.y = centerLine + p["offset"] - symbolHeight / 2
 
 
 
@@ -270,7 +302,8 @@ class BoxPlot(Window):
         Overlay custom points on a box plot row.
 
         Use this to highlight subgroups within a box, each with its own color
-        and symbol. Points are jittered vertically within the target box row.
+        and symbol. Points at the same x value are separated vertically
+        (beeswarm) so overlay series do not stack on top of each other.
 
         Parameters
         ----------

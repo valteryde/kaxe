@@ -90,9 +90,15 @@ useful when you want to split one group visually — for example, to show where 
 low and high subgroup fall along the same box.
 
 The box is still computed from the full dataset passed to :meth:`kaxe.BoxPlot.add`.
-Overlay values are plotted at their x positions with a small vertical jitter within
-the target row. The ``box`` argument is the index of the target box in
+Overlay values are plotted at their x positions on the target row. When several
+overlay points share the same x value on one box row, they are separated
+vertically (beeswarm) so different colored series do not stack on the same pixel.
+Unique x values stay on the box midline. Overlay call order controls slot order
+within a cluster. The ``box`` argument is the index of the target box in
 :meth:`~kaxe.BoxPlot.add` order (``0`` = first ``add()`` call).
+
+When looping over subgroup names, use a stable order (for example
+``sorted(set(groups))``) so legend and draw order do not change between runs.
 
 .. code-block:: python
 
@@ -117,8 +123,8 @@ the target row. The ``box`` argument is the index of the target box in
    chart.legends("full group")
    chart.save("boxplot_overlay.png")
 
-Control the vertical spread with the ``overlayJitter`` style (default ``0.8``, as a
-fraction of box height):
+Control the vertical spread of clustered points with the ``overlayJitter`` style
+(default ``0.8``, as a fraction of box height):
 
 .. code-block:: python
 
