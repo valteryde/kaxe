@@ -58,3 +58,15 @@ def test_boxplot_overlay():
     )
     chart.legends("full group")
     return chart
+
+
+@smoke()
+@sanity()
+def test_boxplot_no_outliers():
+    """Outlier markers can be disabled when using overlay points."""
+    chart = kaxe.BoxPlot()
+    chart.style(showOutliers=False)
+    chart.add([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100])
+    chart.overlay([100], box=0, color=(220, 50, 50, 255), symbol=kaxe.symbol.CIRCLE)
+    chart.legends("with outlier")
+    return chart

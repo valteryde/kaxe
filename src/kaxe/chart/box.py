@@ -46,6 +46,7 @@ class BoxPlot(Window):
         self.attrmap.default('fill', True)
         self.attrmap.default('lineColor', (0,0,0,255))
         self.attrmap.default('overlayJitter', 0.8)
+        self.attrmap.default('showOutliers', True)
 
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
@@ -192,6 +193,8 @@ class BoxPlot(Window):
             
             for value in data:
                 # Outliers: points outside the whisker range (beyond fence)
+                if not self.getAttr('showOutliers'):
+                    continue
                 if value < leftwhisker or value > rightwhisker:
                     height = self.getAttr('symbolHeight')
                     symbol = makeSymbolShapes(boxplot["symbol"], height, color=boxplot["color"], batch=self.boxbatch)

@@ -125,8 +125,12 @@ fraction of box height):
    chart.style(overlayJitter=0.6)
 
 Points outside the whisker range are still drawn automatically as outliers on each
-:meth:`~kaxe.BoxPlot.add` series. Overlays are independent and do not change the
-box or whisker calculation.
+:meth:`~kaxe.BoxPlot.add` series unless disabled with ``showOutliers=False``.
+Overlays are independent and do not change the box or whisker calculation.
+
+.. code-block:: python
+
+   chart.style(showOutliers=False)
 
 .. autoclass:: kaxe.BoxPlot
     :show-inheritance:
