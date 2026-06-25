@@ -81,6 +81,53 @@ Statistical box-and-whisker chart. Not the same as :class:`kaxe.BoxedPlot`, whic
    chart.legends("dataset 1", "dataset 2")
    chart.save("boxplot.png")
 
+Overlay points
+~~~~~~~~~~~~~~
+
+Use :meth:`kaxe.BoxPlot.overlay` to draw custom point subsets on top of a box row.
+Each overlay can have its own color, symbol, and optional legend entry. This is
+useful when you want to split one group visually — for example, to show where a
+low and high subgroup fall along the same box.
+
+The box is still computed from the full dataset passed to :meth:`kaxe.BoxPlot.add`.
+Overlay values are plotted at their x positions with a small vertical jitter within
+the target row. The ``box`` argument is the index of the target box in
+:meth:`~kaxe.BoxPlot.add` order (``0`` = first ``add()`` call).
+
+.. code-block:: python
+
+   import kaxe
+
+   chart = kaxe.BoxPlot()
+   chart.add([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+   chart.overlay(
+       [2, 3, 4],
+       box=0,
+       color=(220, 50, 50, 255),
+       symbol=kaxe.symbol.CIRCLE,
+       legend="low",
+   )
+   chart.overlay(
+       [8, 9, 10],
+       box=0,
+       color=(50, 80, 220, 255),
+       symbol=kaxe.symbol.CROSS,
+       legend="high",
+   )
+   chart.legends("full group")
+   chart.save("boxplot_overlay.png")
+
+Control the vertical spread with the ``overlayJitter`` style (default ``0.8``, as a
+fraction of box height):
+
+.. code-block:: python
+
+   chart.style(overlayJitter=0.6)
+
+Points outside the whisker range are still drawn automatically as outliers on each
+:meth:`~kaxe.BoxPlot.add` series. Overlays are independent and do not change the
+box or whisker calculation.
+
 .. autoclass:: kaxe.BoxPlot
     :show-inheritance:
     :members:

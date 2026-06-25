@@ -214,6 +214,26 @@ Box plot chart
    chart.legends("group A", "group B")
    chart.save("boxplot.png")
 
+Box plot with overlay points
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Highlight subgroups on one box row with :meth:`kaxe.BoxPlot.overlay`:
+
+.. code-block:: python
+
+   import kaxe
+
+   chart = kaxe.BoxPlot()
+   chart.add([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+   chart.overlay([2, 3, 4], box=0, color=(220, 50, 50, 255),
+                 symbol=kaxe.symbol.CIRCLE, legend="low")
+   chart.overlay([8, 9, 10], box=0, color=(50, 80, 220, 255),
+                 symbol=kaxe.symbol.CROSS, legend="high")
+   chart.legends("full group")
+   chart.save("boxplot_overlay.png")
+
+See :doc:`charts` for full details on ``box``, symbols, and ``overlayJitter``.
+
 QQ plot
 -------
 
