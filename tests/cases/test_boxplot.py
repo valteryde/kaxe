@@ -34,3 +34,27 @@ def test_boxplot_whiskers():
     chart.add([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100])
     chart.legends("with outlier")
     return chart
+
+
+@smoke()
+@sanity()
+def test_boxplot_overlay():
+    """Manual overlay points on a box row with custom colors and symbols."""
+    chart = kaxe.BoxPlot()
+    chart.add([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    chart.overlay(
+        [2, 3, 4],
+        box=0,
+        color=(220, 50, 50, 255),
+        symbol=kaxe.symbol.CIRCLE,
+        legend="low",
+    )
+    chart.overlay(
+        [8, 9, 10],
+        box=0,
+        color=(50, 80, 220, 255),
+        symbol=kaxe.symbol.CROSS,
+        legend="high",
+    )
+    chart.legends("full group")
+    return chart

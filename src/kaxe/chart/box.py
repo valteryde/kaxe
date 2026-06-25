@@ -9,6 +9,14 @@ from ..core.symbol import symbol as symbols
 from ..core.symbol import makeSymbolShapes
 from ..core.window import Window
 
+
+def _overlay_y_offset(index, count, box_height, jitter_frac):
+    if count <= 1:
+        return 0.0
+    t = index / (count - 1)
+    return (t - 0.5) * jitter_frac * box_height
+
+
 class BoxPlot(Window):
     """
     Box plot for 1-d data 
@@ -37,6 +45,7 @@ class BoxPlot(Window):
         self.attrmap.default('symbolHeight', ComputedAttribute(lambda m: m.getAttr('lineWidth')*4))
         self.attrmap.default('fill', True)
         self.attrmap.default('lineColor', (0,0,0,255))
+        self.attrmap.default('overlayJitter', 0.8)
 
         self.attrmap.submit(Axis)
         self.attrmap.submit(Marker)
@@ -46,6 +55,7 @@ class BoxPlot(Window):
         self.maxNumber = 0
         self.maxNumberAmount = 0
         self.boxplots = []
+        self.overlays = []
         self.numberAmount = 0
 
         self.legendsLabels = []
@@ -73,11 +83,22 @@ class BoxPlot(Window):
             boxplot["whiskers"] = (leftwhisker, rightwhisker)
             boxplot["quantile"] = (leftbox, rightbox)
 
+        n_boxes = len(self.boxplots)
+        for overlay in self.overlays:
+            box = overlay["box"]
+            if box < 0 or box >= n_boxes:
+                raise ValueError(
+                    f"overlay box index {box} out of range; expected 0..{n_boxes - 1}"
+                )
+            if overlay["data"]:
+                min_ = min(min_, *overlay["data"])
+                max_ = max(max_, *overlay["data"])
+
         # important styles
         boxHeight = (self.getAttr('height')-self.getAttr('boxGap')*(len(self.boxplots)+1))/len(self.boxplots)
         lineWidth = self.getAttr('lineWidth')
         fill = self.getAttr('fill')
-
+        overlayJitter = self.getAttr('overlayJitter')
 
         self.axis.addStartAndEnd(min_, max_)
 
@@ -91,8 +112,26 @@ class BoxPlot(Window):
         self.axis.finalize(self)        
         self.axis.autoAddMarkers(self)
 
+        box_geometry = {}
+        for user_index, boxplot in enumerate(self.boxplots):
+            render_index = n_boxes - 1 - user_index
+            median = np.median(boxplot["data"])
+            _, y = self.axis.get(median)
+            y += self.getAttr('boxGap') * (render_index + 1)
+            y0 = render_index * boxHeight + y
+            y1 = (render_index + 1) * boxHeight + y
+            box_geometry[user_index] = {"centerLine": (y0 + y1) / 2}
+
         for i, label in enumerate(self.legendsLabels):
             if label: self.legendbox.add(label, color=self.boxplots[i]["color"], symbol=self.boxplots[i]["symbol"])
+
+        for overlay in self.overlays:
+            if overlay["legend"]:
+                self.legendbox.add(
+                    overlay["legend"],
+                    color=overlay["color"],
+                    symbol=overlay["symbol"],
+                )
 
         self.boxbatch = shapes.Batch()
         self.addDrawingFunction(self.boxbatch)
@@ -151,13 +190,30 @@ class BoxPlot(Window):
             shapes.Line(wxl, y0, wxl, y1, width=lineWidth, batch=self.boxbatch, color=lineColor)
             shapes.Line(wxr, y0, wxr, y1, width=lineWidth, batch=self.boxbatch, color=lineColor)
             
-            for i in data:
+            for value in data:
                 # Outliers: points outside the whisker range (beyond fence)
-                if i < leftwhisker or i > rightwhisker:
+                if value < leftwhisker or value > rightwhisker:
                     height = self.getAttr('symbolHeight')
                     symbol = makeSymbolShapes(boxplot["symbol"], height, color=boxplot["color"], batch=self.boxbatch)
-                    symbol.x = self.axis.get(i)[0]
+                    symbol.x = self.axis.get(value)[0]
                     symbol.y = centerLine - height/2
+
+        symbolHeight = self.getAttr('symbolHeight')
+        for overlay in self.overlays:
+            geom = box_geometry[overlay["box"]]
+            centerLine = geom["centerLine"]
+            data = overlay["data"]
+            count = len(data)
+            for j, value in enumerate(data):
+                offset = _overlay_y_offset(j, count, boxHeight, overlayJitter)
+                symbol = makeSymbolShapes(
+                    overlay["symbol"],
+                    symbolHeight,
+                    color=overlay["color"],
+                    batch=self.boxbatch,
+                )
+                symbol.x = self.axis.get(value)[0]
+                symbol.y = centerLine + offset - symbolHeight / 2
 
 
 
@@ -198,6 +254,59 @@ class BoxPlot(Window):
             color = self.nextSeriesColor()
 
         self.boxplots.append({"data": data, "color": color, "symbol": symbol})
+
+    def overlay(
+        self,
+        data: Union[list, tuple],
+        box: int = 0,
+        color=None,
+        symbol: str = symbols.CIRCLE,
+        legend: str = None,
+    ):
+        """
+        Overlay custom points on a box plot row.
+
+        Use this to highlight subgroups within a box, each with its own color
+        and symbol. Points are jittered vertically within the target box row.
+
+        Parameters
+        ----------
+        data : list or tuple
+            Numeric x-values to plot.
+        box : int, optional
+            Index of the target box in ``add()`` order (0 = first ``add()``).
+        color : tuple, optional
+            Point color. Defaults to the next series color.
+        symbol : str, optional
+            Marker symbol. Default is circle.
+        legend : str, optional
+            Legend label for this overlay series.
+
+        Returns
+        -------
+        self
+            Returns the chart instance for chaining.
+
+        Examples
+        --------
+        >>> chart.add([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        >>> chart.overlay([2, 3, 4], box=0, color=(220, 50, 50, 255), legend="low")
+        >>> chart.overlay([8, 9, 10], box=0, color=(50, 80, 220, 255), legend="high")
+        """
+
+        if color is None:
+            color = self.nextSeriesColor()
+
+        self.overlays.append(
+            {
+                "data": data,
+                "box": box,
+                "color": color,
+                "symbol": symbol,
+                "legend": legend,
+            }
+        )
+        return self
 
     
     def legends(self, *legends):
