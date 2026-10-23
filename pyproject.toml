@@ -1,6 +1,6 @@
 [project]
 name = "kaxe"
-version = "1.8.1.dev0"
+version = "1.8.1.dev1"
 authors = [
   { name="Valter Yde Daugberg", email="valteryde@hotmail.com" },
 ]
@@ -31,6 +31,10 @@ core = []
   "psutil",
 ]
 pdf = ["reportlab>=4.0", "fonttools>=4.0"]
+viewer = ["pyglet>=2.0"]
+
+[project.scripts]
+kaxe = "kaxe.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/valteryde/kaxe"

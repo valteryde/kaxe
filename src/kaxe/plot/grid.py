@@ -4,6 +4,7 @@ from typing import Optional, Union
 from ..core.styles import AttrObject, AttrMap
 from ..core.window import *
 from ..core.ipython_display import display_png_bytes, is_notebook, to_png_bytes
+from ..viewer.client import try_show_in_viewer
 from ..core.legend import LegendBox
 from ..core.svg import (
     SvgDocument,
@@ -503,6 +504,8 @@ class Grid(AttrObject):
         data = to_png_bytes(self)
         if is_notebook():
             display_png_bytes(data)
+        elif try_show_in_viewer(data, title="Grid"):
+            return
         else:
             Image.open(BytesIO(data)).show()
 

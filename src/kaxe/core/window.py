@@ -11,6 +11,7 @@ from .svg import SvgDocument, infer_format, is_file_path
 from .progress import make_progress_bar
 from .ipython_display import display_png_bytes, is_notebook, to_png_bytes
 from .styles import assign_series_color, _palette_color_at
+from ..viewer.client import try_show_in_viewer
 from PIL import Image
 
 
@@ -660,6 +661,8 @@ class Window(AttrObject):
         data = to_png_bytes(self)
         if is_notebook():
             display_png_bytes(data)
+        elif try_show_in_viewer(data, title=getattr(self, "titleText", "")):
+            return
         else:
             Image.open(BytesIO(data)).show()
 
