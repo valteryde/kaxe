@@ -490,24 +490,53 @@ class Grid(AttrObject):
             img.save(fname, format="png")
 
 
-    def show(self):
+    def id(self, plot_id: str):
+        """Assign a persistent identifier to this grid for the Kaxe Viewer."""
+        self.plot_id = str(plot_id)
+        return self
+
+    def show(self, id: Optional[str] = None):
         """
-        Show the current image using `Pillow.Image.Show`
+        Show the current image using `Pillow.Image.Show` or the Kaxe Viewer.
         
         If a cached image is available, it will be used to save the file.
         Otherwise, the image will be generated and then saved.
 
+        Parameters
+        ----------
+        id : str, optional
+            Identifier for this grid when sent to the Kaxe Viewer canvas.
+
         Examples
         --------
-        >>> plt.show( )
+        >>> grid.show()
+        >>> grid.show(id="my_grid_1")
         """
+        if id is not None:
+            self.plot_id = str(id)
+
         data = to_png_bytes(self)
         if is_notebook():
             display_png_bytes(data)
-        elif try_show_in_viewer(data, title="Grid"):
+        elif try_show_in_viewer(
+            data,
+            title="Grid",
+            plot_id=getattr(self, "plot_id", None),
+        ):
             return
         else:
             Image.open(BytesIO(data)).show()
+
+    def open(self, id: Optional[str] = None):
+        """
+        Show the current grid or stream to viewer (alias for show()).
+
+        Examples
+        --------
+        >>> grid.open()
+        >>> grid.open(id="my_grid_1")
+        """
+        return self.show(id=id)
 
     def _repr_png_(self):
         if not is_notebook():

@@ -547,6 +547,10 @@ class Plot3D(Plot3DAxesMixin, Window):
         else:
             self.save(None).show()
 
+    def open(self, gui=True):
+        """Show the current plot (alias for show())."""
+        return self.show(gui=gui)
+
     def title(self, firstAxis=None, secondAxis=None, thirdAxis=None):
         """
         Adds title to the plot.

@@ -647,24 +647,53 @@ class Window(AttrObject):
             logging.info('Total time to save {}s'.format(str(round(time.time() - totStartTime, 4))))
     
     
-    def show(self):
+    def id(self, plot_id: str):
+        """Assign a persistent identifier to this plot for the Kaxe Viewer."""
+        self.plot_id = str(plot_id)
+        return self
+
+    def show(self, id: Optional[str] = None):
         """
-        Show the current image using `Pillow.Image.Show`
+        Show the current image using `Pillow.Image.Show` or the Kaxe Viewer.
         
         If a cached image is available, it will be used to save the file.
         Otherwise, the image will be generated and then saved.
 
+        Parameters
+        ----------
+        id : str, optional
+            Identifier for this plot when sent to the Kaxe Viewer canvas.
+
         Examples
         --------
-        >>> plt.show( )
+        >>> plt.show()
+        >>> plt.show(id="my_graph_1")
         """
+        if id is not None:
+            self.plot_id = str(id)
+
         data = to_png_bytes(self)
         if is_notebook():
             display_png_bytes(data)
-        elif try_show_in_viewer(data, title=getattr(self, "titleText", "")):
+        elif try_show_in_viewer(
+            data,
+            title=getattr(self, "titleText", ""),
+            plot_id=getattr(self, "plot_id", None),
+        ):
             return
         else:
             Image.open(BytesIO(data)).show()
+
+    def open(self, id: Optional[str] = None):
+        """
+        Show the current image or stream to viewer (alias for show()).
+
+        Examples
+        --------
+        >>> plt.open()
+        >>> plt.open(id="my_graph_1")
+        """
+        return self.show(id=id)
 
     def _repr_png_(self):
         if not is_notebook():

@@ -46,6 +46,7 @@ def is_viewer_active(port: Optional[int] = None, timeout: float = 0.03) -> bool:
 def send_to_viewer(
     data: bytes,
     title: str = "",
+    plot_id: Optional[str] = None,
     port: Optional[int] = None,
     timeout: float = 2.0,
 ) -> bool:
@@ -58,9 +59,11 @@ def send_to_viewer(
 
     url = f"http://127.0.0.1:{port}/show"
     safe_title = urllib.parse.quote(title or "")
+    safe_id = urllib.parse.quote(plot_id or "")
     headers = {
         "Content-Type": "image/png",
         "X-Kaxe-Title": safe_title,
+        "X-Kaxe-Id": safe_id,
     }
 
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
@@ -71,12 +74,18 @@ def send_to_viewer(
         return False
 
 
-def try_show_in_viewer(data: bytes, title: str = "") -> bool:
+def try_show_in_viewer(
+    data: bytes,
+    title: str = "",
+    plot_id: Optional[str] = None,
+) -> bool:
     """Convenience helper: probe port and send image if viewer is alive.
 
     Returns True if sent to viewer, False if fallback is needed.
     """
     port = get_viewer_port()
     if is_viewer_active(port):
-        return send_to_viewer(data, title=title, port=port)
+        if send_to_viewer(data, title=title, plot_id=plot_id, port=port):
+            print("[Kaxe] Plot streamed to viewer", flush=True)
+            return True
     return False

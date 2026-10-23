@@ -40,9 +40,13 @@ class PlotRequestHandler(BaseHTTPRequestHandler):
             raw_title = self.headers.get("X-Kaxe-Title", "")
             title = urllib.parse.unquote(raw_title) if raw_title else ""
 
+            raw_id = self.headers.get("X-Kaxe-Id", "")
+            plot_id = urllib.parse.unquote(raw_id) if raw_id else ""
+
             item: Dict[str, Any] = {
                 "data": img_bytes,
                 "title": title,
+                "plot_id": plot_id,
             }
             self.plot_queue.put(item)
 

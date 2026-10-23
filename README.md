@@ -31,29 +31,37 @@ plt.save("figure.png")
 plt.save("figure.svg")
 ```
 
-## Interactive Plot Viewer
+## Interactive Plot Viewer (Infinite Canvas)
 
-Kaxe includes a dedicated, lightweight OpenGL viewer powered by [pyglet](https://pyglet.org) so you don't end up with cluttering preview windows while iterating on plots.
+Kaxe includes a dedicated, lightweight OpenGL workspace powered by [pyglet](https://pyglet.org) so you can arrange, inspect, and compare multiple plots on an infinite canvas without cluttering your desktop with preview windows.
 
 1. **Start the viewer** in a terminal:
    ```bash
    kaxe viewer
    ```
-2. **Run your scripts as normal** calling `.show()`:
+2. **Tag and show your plots**:
    ```python
-   plt.show()
+   # Tag plots with an ID to manage them on the board:
+   plt1 = kaxe.Plot().id("loss").title("Training Loss")
+   plt1.show()
+
+   plt2 = kaxe.Plot().id("accuracy").title("Validation Accuracy")
+   plt2.show()
    ```
 
-When the viewer is open, `.show()` automatically streams the plot to your window and returns immediately. If the viewer is closed, `.show()` falls back to your operating system's default viewer.
+When the viewer is open, `.show()` instantly streams plots to cards on your canvas. If you re-run code with the same ID, the card updates in-place and preserves previous runs as versions (`v1`, `v2`, etc.). If the viewer is closed, `.show()` automatically falls back to your operating system's default viewer.
 
-**Viewer Controls:**
-* **Mouse Scroll**: Smooth zoom anchored to mouse cursor
-* **Left Click + Drag**: Pan around the canvas
-* **`[R]` or `[Space]`**: Reset zoom & fit plot to window
-* **`[1]`**: View at 100% native pixel scale
-* **`[←]` / `[→]`**: Step backwards and forwards through plot history from the session
-* **`[C]`** *(or Cmd/Ctrl+C)*: Copy plot directly to system clipboard
-* **`[S]`** *(or Cmd/Ctrl+S)*: Save plot to timestamped PNG
+**Canvas & Card Controls:**
+* **Click & Drag on a Card**: Move that card freely across the canvas
+* **Click & Drag on Empty Space**: Pan the camera across the workspace
+* **Mouse Scroll**: Smooth zoom anchored to cursor
+* **`[A]`**: Auto-arrange all cards in a neat row
+* **`[Space]` or `[R]`**: Fit all cards on the canvas into view
+* **`[1]`**: View canvas at 100% native pixel scale
+* **`[←]` / `[→]`**: Cycle through versions (`v1`, `v2`, ...) of the selected card
+* **`[Backspace]` / `[Delete]`**: Remove the selected card from the board
+* **`[C]`** *(or Cmd/Ctrl+C)*: Copy selected plot to system clipboard
+* **`[S]`** *(or Cmd/Ctrl+S)*: Save selected plot to timestamped PNG
 * **`[H]`**: Toggle status & shortcuts HUD
 
 

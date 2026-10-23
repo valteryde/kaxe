@@ -1,7 +1,7 @@
-"""Interactive Pyglet window for Kaxe Viewer.
+"""Interactive Pyglet window for Kaxe Viewer with an Infinite Multi-Card Canvas.
 
-Provides 60 FPS hardware-accelerated OpenGL pan, cursor-anchored zoom,
-session plot history navigation, and quick clipboard/file export.
+Allows users to manage, arrange, and inspect multiple plots on a persistent,
+zoomable workspace with automatic version tracking and movable cards.
 """
 
 from io import BytesIO
@@ -18,6 +18,7 @@ from .._require_viewer import require_viewer
 require_viewer()
 
 import pyglet
+from pyglet import shapes
 from pyglet.window import key, mouse
 
 
@@ -25,7 +26,6 @@ def _copy_image_to_clipboard(png_bytes: bytes) -> bool:
     """Copy PNG image bytes to system clipboard using native OS tools."""
     try:
         if sys.platform == "darwin":
-            # On macOS, use osascript with a temporary file
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 tmp.write(png_bytes)
                 tmp_path = tmp.name
@@ -38,7 +38,6 @@ def _copy_image_to_clipboard(png_bytes: bytes) -> bool:
                 pass
             return res.returncode == 0
         elif sys.platform.startswith("linux"):
-            # Try wl-copy or xclip
             for cmd in (["wl-copy", "-t", "image/png"], ["xclip", "-selection", "clipboard", "-t", "image/png"]):
                 try:
                     p = subprocess.run(cmd, input=png_bytes, capture_output=True)
@@ -47,7 +46,6 @@ def _copy_image_to_clipboard(png_bytes: bytes) -> bool:
                 except FileNotFoundError:
                     continue
         elif sys.platform in ("win32", "cygwin"):
-            # On Windows, try PowerShell script to set clipboard
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 tmp.write(png_bytes)
                 tmp_path = tmp.name
@@ -67,37 +65,218 @@ def _copy_image_to_clipboard(png_bytes: bytes) -> bool:
     return False
 
 
+class PlotCard:
+    """A movable card on the infinite canvas representing a plot and its version history."""
+
+    HEADER_HEIGHT = 26
+
+    def __init__(self, card_id: str, world_x: float = 0.0, world_y: float = 0.0):
+        self.card_id = card_id
+        self.world_x = world_x
+        self.world_y = world_y
+        self.versions: List[Dict[str, Any]] = []
+        self.active_version_idx: int = -1
+        self.sprite: Optional[pyglet.sprite.Sprite] = None
+        self.is_selected: bool = False
+
+        # Visual header labels
+        self.title_label = pyglet.text.Label(
+            "",
+            font_size=10,
+            weight="bold",
+            color=(240, 245, 255, 255),
+            anchor_x="left",
+            anchor_y="center",
+        )
+        self.meta_label = pyglet.text.Label(
+            "",
+            font_size=9,
+            color=(170, 175, 185, 220),
+            anchor_x="right",
+            anchor_y="center",
+        )
+
+        # Graphical shapes
+        self.border_rect: Optional[shapes.BorderedRectangle] = None
+        self.header_rect: Optional[shapes.Rectangle] = None
+
+    @property
+    def current_version(self) -> Optional[Dict[str, Any]]:
+        if 0 <= self.active_version_idx < len(self.versions):
+            return self.versions[self.active_version_idx]
+        return None
+
+    @property
+    def width(self) -> int:
+        cur = self.current_version
+        return cur["width"] if cur else 400
+
+    @property
+    def height(self) -> int:
+        cur = self.current_version
+        return cur["height"] if cur else 300
+
+    @property
+    def total_height(self) -> int:
+        return self.height + self.HEADER_HEIGHT
+
+    def add_version(self, data: bytes, image: pyglet.image.ImageData, title: str):
+        timestamp = time.strftime("%H:%M:%S")
+        entry = {
+            "data": data,
+            "image": image,
+            "title": title,
+            "timestamp": timestamp,
+            "width": image.width,
+            "height": image.height,
+        }
+        self.versions.append(entry)
+        self.set_version(len(self.versions) - 1)
+
+    def set_version(self, idx: int):
+        if 0 <= idx < len(self.versions):
+            self.active_version_idx = idx
+            entry = self.versions[idx]
+            self.sprite = pyglet.sprite.Sprite(entry["image"])
+            self._update_labels()
+
+    def prev_version(self) -> bool:
+        if self.active_version_idx > 0:
+            self.set_version(self.active_version_idx - 1)
+            return True
+        return False
+
+    def next_version(self) -> bool:
+        if self.active_version_idx < len(self.versions) - 1:
+            self.set_version(self.active_version_idx + 1)
+            return True
+        return False
+
+    def _update_labels(self):
+        total_v = len(self.versions)
+        v_str = f" [v{self.active_version_idx + 1}/{total_v}]" if total_v > 1 else ""
+        self.title_label.text = f"  {self.card_id}{v_str}"
+
+        cur = self.current_version
+        ts = cur["timestamp"] if cur else ""
+        self.meta_label.text = f"{ts}  "
+
+    def contains_point(self, wx: float, wy: float) -> bool:
+        """Hit test for whether a world-space point is inside this card."""
+        return (
+            self.world_x <= wx <= self.world_x + self.width
+            and self.world_y <= wy <= self.world_y + self.total_height
+        )
+
+    def render(self, window: "KaxeViewerWindow"):
+        """Render card border, header bar, labels, and plot texture."""
+        if not self.sprite or not self.current_version:
+            return
+
+        sx, sy = window.world_to_screen(self.world_x, self.world_y)
+        sw = self.width * window.zoom
+        sh = self.height * window.zoom
+        hdr_h = self.HEADER_HEIGHT * window.zoom
+        tot_h = sh + hdr_h
+
+        # Don't draw if completely offscreen (culling)
+        if (
+            sx + sw < 0
+            or sx > window.width
+            or sy + tot_h < 0
+            or sy > window.height
+        ):
+            return
+
+        # 1. Background & Border
+        border_thickness = max(1, int(3 * window.zoom)) if self.is_selected else max(1, int(1.5 * window.zoom))
+        border_col = (85, 170, 255, 255) if self.is_selected else (50, 54, 64, 255)
+        bg_col = (20, 22, 27, 255)
+
+        if self.border_rect is None:
+            self.border_rect = shapes.BorderedRectangle(
+                sx, sy, sw, tot_h,
+                border=border_thickness,
+                color=bg_col,
+                border_color=border_col,
+            )
+        else:
+            self.border_rect.x = sx
+            self.border_rect.y = sy
+            self.border_rect.width = sw
+            self.border_rect.height = tot_h
+            self.border_rect.border = border_thickness
+            self.border_rect.border_color = border_col
+
+        self.border_rect.draw()
+
+        # 2. Plot Texture
+        self.sprite.update(x=sx, y=sy, scale_x=window.zoom, scale_y=window.zoom)
+        self.sprite.draw()
+
+        # 3. Header Bar Rectangle
+        hdr_y = sy + sh
+        hdr_bg = (38, 43, 54, 255) if self.is_selected else (28, 31, 38, 255)
+
+        if self.header_rect is None:
+            self.header_rect = shapes.Rectangle(sx, hdr_y, sw, hdr_h, color=hdr_bg)
+        else:
+            self.header_rect.x = sx
+            self.header_rect.y = hdr_y
+            self.header_rect.width = sw
+            self.header_rect.height = hdr_h
+            self.header_rect.color = hdr_bg
+
+        self.header_rect.draw()
+
+        # 4. Header Labels (only render if zoom is high enough to read)
+        if window.zoom >= 0.25:
+            font_size = max(8, min(13, int(10 * window.zoom)))
+            mid_hdr_y = hdr_y + hdr_h / 2.0
+
+            self.title_label.x = sx + 4
+            self.title_label.y = mid_hdr_y
+            self.title_label.font_size = font_size
+            self.title_label.draw()
+
+            self.meta_label.x = sx + sw - 4
+            self.meta_label.y = mid_hdr_y
+            self.meta_label.font_size = max(7, font_size - 1)
+            self.meta_label.draw()
+
+
 class KaxeViewerWindow(pyglet.window.Window):
-    """Pyglet OpenGL window that renders and inspects streamed Kaxe plots."""
+    """Infinite Canvas Pyglet Window supporting multiple movable plot cards and versioning."""
 
     def __init__(
         self,
         plot_queue: queue.Queue,
-        width: int = 1100,
-        height: int = 750,
-        caption: str = "Kaxe Viewer",
+        width: int = 1200,
+        height: int = 800,
+        caption: str = "Kaxe Board",
     ):
         super().__init__(width=width, height=height, caption=caption, resizable=True)
 
         self.plot_queue = plot_queue
-        self.history: List[Dict[str, Any]] = []
-        self.history_index: int = -1
+        self.cards: List[PlotCard] = []
+        self.selected_card: Optional[PlotCard] = None
 
-        # Pan and Zoom transform state
+        # Camera state in world coordinates
+        self.camera_x: float = 0.0
+        self.camera_y: float = 0.0
         self.zoom: float = 1.0
-        self.offset_x: float = 0.0
-        self.offset_y: float = 0.0
 
-        self.current_sprite: Optional[pyglet.sprite.Sprite] = None
+        # Mouse interaction state
+        self.dragging_card: Optional[PlotCard] = None
+        self.is_panning_camera: bool = False
+
         self.show_hud: bool = True
-
-        # Notification message banner (e.g. "Copied to clipboard!")
         self.notification_text: str = ""
         self.notification_expiry: float = 0.0
 
-        # Pyglet text labels
+        # Welcome text when no plots are loaded
         self.welcome_label = pyglet.text.Label(
-            "Kaxe Viewer Ready\nWaiting for plots... (Call .show() in any script)",
+            "Kaxe Board Ready\nWaiting for plots... (Call plt.show() or plt.id('my_graph').show())",
             font_size=16,
             x=self.width // 2,
             y=self.height // 2,
@@ -106,9 +285,10 @@ class KaxeViewerWindow(pyglet.window.Window):
             multiline=True,
             width=self.width - 40,
             align="center",
-            color=(180, 185, 195, 255),
+            color=(175, 180, 190, 255),
         )
 
+        # Bottom HUD labels
         self.hud_left = pyglet.text.Label(
             "",
             font_size=11,
@@ -120,7 +300,7 @@ class KaxeViewerWindow(pyglet.window.Window):
         )
 
         self.hud_right = pyglet.text.Label(
-            "[R/Space] Fit  [1] 100%  [←/→] History  [C] Copy  [S] Save  [H] Toggle HUD",
+            "[Drag] Move card / Pan  [Scroll] Zoom  [A] Arrange  [←/→] Version  [C] Copy  [Space] Fit",
             font_size=11,
             x=self.width - 15,
             y=15,
@@ -134,164 +314,232 @@ class KaxeViewerWindow(pyglet.window.Window):
             font_size=13,
             weight="bold",
             x=self.width // 2,
-            y=self.height - 30,
+            y=self.height - 25,
             anchor_x="center",
             anchor_y="top",
-            color=(80, 220, 120, 255),
+            color=(90, 220, 130, 255),
         )
 
-        # Set sleek dark background color
-        pyglet.gl.glClearColor(0.11, 0.11, 0.13, 1.0)
+        # Set canvas background color
+        pyglet.gl.glClearColor(0.10, 0.10, 0.12, 1.0)
 
         # Schedule queue polling at 60 FPS
         pyglet.clock.schedule_interval(self.poll_queue, 1.0 / 60.0)
+
+    def world_to_screen(self, wx: float, wy: float) -> tuple[float, float]:
+        """Convert world canvas coordinates to screen pixel coordinates."""
+        sx = (wx - self.camera_x) * self.zoom + self.width / 2.0
+        sy = (wy - self.camera_y) * self.zoom + self.height / 2.0
+        return sx, sy
+
+    def screen_to_world(self, sx: float, sy: float) -> tuple[float, float]:
+        """Convert screen pixel coordinates to world canvas coordinates."""
+        wx = (sx - self.width / 2.0) / self.zoom + self.camera_x
+        wy = (sy - self.height / 2.0) / self.zoom + self.camera_y
+        return wx, wy
 
     def set_notification(self, text: str, duration: float = 2.0):
         self.notification_text = text
         self.notification_expiry = time.time() + duration
 
+    def select_card(self, card: Optional[PlotCard]):
+        if self.selected_card and self.selected_card is not card:
+            self.selected_card.is_selected = False
+
+        self.selected_card = card
+        if card:
+            card.is_selected = True
+
     def poll_queue(self, dt: float):
         """Check for incoming plots sent from user scripts."""
-        updated = False
         while not self.plot_queue.empty():
             item = self.plot_queue.get_nowait()
             data = item["data"]
             title = item.get("title", "")
+            raw_id = item.get("plot_id", "")
+
+            # Determine card identifier
+            if raw_id:
+                card_id = raw_id
+            elif title:
+                card_id = title
+            else:
+                card_id = f"plot_{len(self.cards) + 1}"
 
             try:
                 py_image = pyglet.image.load("plot.png", file=BytesIO(data))
-                entry = {
-                    "image": py_image,
-                    "data": data,
-                    "title": title,
-                    "width": py_image.width,
-                    "height": py_image.height,
-                }
-                self.history.append(entry)
-                self.history_index = len(self.history) - 1
-                self._load_current_plot(first_load=len(self.history) == 1)
-                updated = True
+
+                # Check if card with this ID already exists
+                existing = next((c for c in self.cards if c.card_id == card_id), None)
+                if existing is not None:
+                    existing.add_version(data, py_image, title)
+                    # Bring to top of Z-order
+                    self.cards.remove(existing)
+                    self.cards.append(existing)
+                    self.select_card(existing)
+                    self.set_notification(f"Updated '{card_id}' (v{len(existing.versions)})")
+                else:
+                    # Place new card to the right of existing cards
+                    if self.cards:
+                        max_x = max(c.world_x + c.width for c in self.cards)
+                        new_x = max_x + 50.0
+                        new_y = self.cards[-1].world_y
+                    else:
+                        new_x = -py_image.width / 2.0
+                        new_y = -py_image.height / 2.0
+
+                    card = PlotCard(card_id=card_id, world_x=new_x, world_y=new_y)
+                    card.add_version(data, py_image, title)
+                    self.cards.append(card)
+                    self.select_card(card)
+
+                    if len(self.cards) == 1:
+                        self.fit_all_cards()
+                    self.set_notification(f"Added '{card_id}'")
             except Exception as e:
                 print(f"[Kaxe Viewer] Error loading incoming plot: {e}")
 
-        if updated:
-            self.set_notification("New plot received", duration=1.5)
-
-    def _load_current_plot(self, first_load: bool = False):
-        if not (0 <= self.history_index < len(self.history)):
+    def fit_all_cards(self):
+        """Fit all cards cleanly on the screen."""
+        if not self.cards:
+            self.camera_x = 0.0
+            self.camera_y = 0.0
+            self.zoom = 1.0
             return
 
-        entry = self.history[self.history_index]
-        self.current_sprite = pyglet.sprite.Sprite(entry["image"])
+        min_x = min(c.world_x for c in self.cards)
+        max_x = max(c.world_x + c.width for c in self.cards)
+        min_y = min(c.world_y for c in self.cards)
+        max_y = max(c.world_y + c.total_height for c in self.cards)
 
-        title = entry.get("title") or "Plot"
-        self.set_caption(f"Kaxe Viewer - {title} (#{self.history_index + 1})")
+        bb_w = max(1.0, max_x - min_x)
+        bb_h = max(1.0, max_y - min_y)
 
-        if first_load or len(self.history) <= 1:
-            self.fit_to_window()
+        self.camera_x = (min_x + max_x) / 2.0
+        self.camera_y = (min_y + max_y) / 2.0
 
-    def fit_to_window(self):
-        """Scale and center the current plot to fit the window cleanly."""
-        if not self.current_sprite or not self.history:
+        avail_w = max(50.0, self.width - 120.0)
+        avail_h = max(50.0, self.height - 120.0)
+
+        fit_zoom = min(avail_w / bb_w, avail_h / bb_h)
+        self.zoom = min(1.0, fit_zoom)
+
+    def auto_arrange_cards(self):
+        """Arrange all cards in a neat horizontal row."""
+        if not self.cards:
             return
 
-        entry = self.history[self.history_index]
-        img_w, img_h = entry["width"], entry["height"]
+        cur_x = 0.0
+        for card in self.cards:
+            card.world_x = cur_x
+            card.world_y = 0.0
+            cur_x += card.width + 50.0
 
-        # Reserve padding for HUD and borders
-        padding_x = 40
-        padding_y = 60
-        avail_w = max(50, self.width - padding_x * 2)
-        avail_h = max(50, self.height - padding_y * 2)
+        self.fit_all_cards()
+        self.set_notification("Arranged all cards")
 
-        scale_x = avail_w / img_w
-        scale_y = avail_h / img_h
-        self.zoom = min(scale_x, scale_y)
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+        wx, wy = self.screen_to_world(x, y)
 
-        # Center on canvas
-        self.offset_x = (self.width - img_w * self.zoom) / 2.0
-        self.offset_y = (self.height - img_h * self.zoom) / 2.0
+        # Hit test from top-most card downwards
+        hit_card = None
+        for card in reversed(self.cards):
+            if card.contains_point(wx, wy):
+                hit_card = card
+                break
 
-    def set_scale_100(self):
-        """Set zoom scale to exactly 100% (1:1 native pixels) and center."""
-        if not self.current_sprite or not self.history:
-            return
-
-        entry = self.history[self.history_index]
-        img_w, img_h = entry["width"], entry["height"]
-
-        self.zoom = 1.0
-        self.offset_x = (self.width - img_w) / 2.0
-        self.offset_y = (self.height - img_h) / 2.0
-
-    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
-        """Smooth cursor-anchored zooming."""
-        if not self.current_sprite or not self.history:
-            return
-
-        zoom_factor = 1.15 ** scroll_y
-        new_zoom = max(0.02, min(self.zoom * zoom_factor, 50.0))
-
-        # Anchor zoom relative to current mouse position (x, y)
-        img_x = (x - self.offset_x) / self.zoom
-        img_y = (y - self.offset_y) / self.zoom
-
-        self.offset_x = x - img_x * new_zoom
-        self.offset_y = y - img_y * new_zoom
-        self.zoom = new_zoom
+        if hit_card:
+            if button == mouse.LEFT:
+                # Bring hit card to top of Z-order
+                self.cards.remove(hit_card)
+                self.cards.append(hit_card)
+                self.select_card(hit_card)
+                self.dragging_card = hit_card
+        else:
+            # Clicked empty canvas -> pan
+            self.select_card(None)
+            self.is_panning_camera = True
 
     def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, buttons: int, modifiers: int):
-        """Pan plot on left mouse drag."""
-        if buttons & mouse.LEFT:
-            self.offset_x += dx
-            self.offset_y += dy
+        if self.dragging_card:
+            # Move card in world space
+            self.dragging_card.world_x += dx / self.zoom
+            self.dragging_card.world_y += dy / self.zoom
+        elif self.is_panning_camera:
+            # Move camera in world space
+            self.camera_x -= dx / self.zoom
+            self.camera_y -= dy / self.zoom
+
+    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
+        self.dragging_card = None
+        self.is_panning_camera = False
+
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
+        """Cursor-anchored zooming on the canvas."""
+        zoom_factor = 1.05 ** (-scroll_y)
+        new_zoom = max(0.04, min(self.zoom * zoom_factor, 20.0))
+
+        if hasattr(self, "width"):
+            wx, wy = self.screen_to_world(x, y)
+            self.camera_x = wx - (x - self.width / 2.0) / new_zoom
+            self.camera_y = wy - (y - self.height / 2.0) / new_zoom
+
+        self.zoom = new_zoom
 
     def on_key_press(self, symbol: int, modifiers: int):
-        # Reset / Fit
+        # Fit all
         if symbol in (key.R, key.SPACE):
-            self.fit_to_window()
-        # 1:1 scale
+            self.fit_all_cards()
+        # 100% scale
         elif symbol in (key._1, key.NUM_1):
-            self.set_scale_100()
-        # History navigation
+            self.zoom = 1.0
+        # Auto-arrange cards in a row
+        elif symbol == key.A:
+            self.auto_arrange_cards()
+        # Cycle versions on selected card
         elif symbol == key.LEFT:
-            if self.history_index > 0:
-                self.history_index -= 1
-                self._load_current_plot()
+            if self.selected_card and self.selected_card.prev_version():
+                c = self.selected_card
+                self.set_notification(f"'{c.card_id}' v{c.active_version_idx + 1}/{len(c.versions)}")
         elif symbol == key.RIGHT:
-            if self.history_index < len(self.history) - 1:
-                self.history_index += 1
-                self._load_current_plot()
+            if self.selected_card and self.selected_card.next_version():
+                c = self.selected_card
+                self.set_notification(f"'{c.card_id}' v{c.active_version_idx + 1}/{len(c.versions)}")
+        # Delete selected card
+        elif symbol in (key.BACKSPACE, key.DELETE):
+            if self.selected_card:
+                del_id = self.selected_card.card_id
+                self.cards.remove(self.selected_card)
+                self.select_card(self.cards[-1] if self.cards else None)
+                self.set_notification(f"Deleted '{del_id}'")
         # Toggle HUD
         elif symbol == key.H:
             self.show_hud = not self.show_hud
-        # Copy to clipboard (C or Cmd+C / Ctrl+C)
+        # Copy selected card
         elif symbol == key.C:
-            self.copy_current_plot()
-        # Save to disk
+            self.copy_selected_card()
+        # Save selected card
         elif symbol == key.S:
-            self.save_current_plot()
+            self.save_selected_card()
 
-    def copy_current_plot(self):
-        if not self.history or not (0 <= self.history_index < len(self.history)):
+    def copy_selected_card(self):
+        if not self.selected_card or not self.selected_card.current_version:
             return
-
-        entry = self.history[self.history_index]
-        if _copy_image_to_clipboard(entry["data"]):
-            self.set_notification("Copied to clipboard!")
+        data = self.selected_card.current_version["data"]
+        if _copy_image_to_clipboard(data):
+            self.set_notification(f"Copied '{self.selected_card.card_id}' to clipboard!")
         else:
             self.set_notification("Failed to copy image to clipboard")
 
-    def save_current_plot(self):
-        if not self.history or not (0 <= self.history_index < len(self.history)):
+    def save_selected_card(self):
+        if not self.selected_card or not self.selected_card.current_version:
             return
-
-        entry = self.history[self.history_index]
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        filename = f"kaxe_plot_{timestamp}.png"
+        card = self.selected_card
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"{card.card_id}_v{card.active_version_idx + 1}_{ts}.png"
         try:
             with open(filename, "wb") as f:
-                f.write(entry["data"])
+                f.write(card.current_version["data"])
             self.set_notification(f"Saved to {filename}!")
         except Exception as e:
             self.set_notification(f"Save failed: {e}")
@@ -308,26 +556,21 @@ class KaxeViewerWindow(pyglet.window.Window):
     def on_draw(self):
         self.clear()
 
-        if self.current_sprite and self.history:
-            # Draw plot sprite with current scale and offset
-            self.current_sprite.update(
-                x=self.offset_x,
-                y=self.offset_y,
-                scale_x=self.zoom,
-                scale_y=self.zoom,
-            )
-            self.current_sprite.draw()
+        if self.cards:
+            # Render all cards in Z-order
+            for card in self.cards:
+                card.render(self)
 
             # Render HUD overlay
             if self.show_hud:
-                entry = self.history[self.history_index]
                 zoom_pct = int(round(self.zoom * 100))
-                idx_info = f"Plot {self.history_index + 1}/{len(self.history)}"
-                dim_info = f"{entry['width']}×{entry['height']} px"
-                title = entry.get("title")
-                title_info = f" | {title}" if title else ""
+                card_cnt = f"{len(self.cards)} card(s)"
+                sel_info = ""
+                if self.selected_card:
+                    c = self.selected_card
+                    sel_info = f"  •  Selected: '{c.card_id}' (v{c.active_version_idx + 1}/{len(c.versions)})"
 
-                self.hud_left.text = f"{idx_info}  •  {dim_info}  •  Zoom: {zoom_pct}%{title_info}"
+                self.hud_left.text = f"{card_cnt}  •  Zoom: {zoom_pct}%{sel_info}"
                 self.hud_left.draw()
                 self.hud_right.draw()
         else:

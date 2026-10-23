@@ -138,3 +138,158 @@ def test_grid_show_routes_to_viewer_when_active(monkeypatch):
         server.server_close()
 
 
+def test_plot_open_streams_and_prints_message(capsys, monkeypatch):
+    import kaxe
+    from PIL import Image
+
+    plot_queue = queue.Queue()
+    test_port = 58495
+    monkeypatch.setenv("KAXE_VIEWER_PORT", str(test_port))
+
+    server, thread = start_server_thread(test_port, plot_queue)
+    try:
+        time.sleep(0.05)
+        plt = kaxe.Plot()
+        plt.add(kaxe.Points([1, 2], [3, 4]))
+
+        with patch.object(Image.Image, "show") as mock_pil_show:
+            plt.open()
+            mock_pil_show.assert_not_called()
+
+        captured = capsys.readouterr()
+        assert "streamed" in captured.out.lower()
+        assert "[Kaxe] Plot streamed to viewer" in captured.out
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_grid_open_streams_and_prints_message(capsys, monkeypatch):
+    import kaxe
+    from PIL import Image
+
+    plot_queue = queue.Queue()
+    test_port = 58496
+    monkeypatch.setenv("KAXE_VIEWER_PORT", str(test_port))
+
+    server, thread = start_server_thread(test_port, plot_queue)
+    try:
+        time.sleep(0.05)
+        grid = kaxe.Grid()
+        grid.addRow(kaxe.Plot())
+
+        with patch.object(Image.Image, "show") as mock_pil_show:
+            grid.open()
+            mock_pil_show.assert_not_called()
+
+        captured = capsys.readouterr()
+        assert "streamed" in captured.out.lower()
+        assert "[Kaxe] Plot streamed to viewer" in captured.out
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_viewer_zoom_reversed_and_less_sensitive():
+    from unittest.mock import MagicMock
+    from kaxe.viewer.window import KaxeViewerWindow
+
+    # Create uninitialized instance to test logic without opening GUI window
+    window = object.__new__(KaxeViewerWindow)
+    window.current_sprite = MagicMock()
+    window.history = [{"width": 800, "height": 600}]
+    window.zoom = 1.0
+    window.offset_x = 0.0
+    window.offset_y = 0.0
+
+    # 1. Positive scroll_y (scroll up) must zoom OUT (reverse of previous behavior)
+    window.on_mouse_scroll(x=400, y=300, scroll_x=0.0, scroll_y=1.0)
+    expected_factor = 1.05 ** (-1.0)
+    assert window.zoom < 1.0
+    assert abs(window.zoom - expected_factor) < 1e-6
+
+    # 2. Negative scroll_y (scroll down) must zoom IN
+    window.zoom = 1.0
+    window.offset_x = 0.0
+    window.offset_y = 0.0
+    window.on_mouse_scroll(x=400, y=300, scroll_x=0.0, scroll_y=-1.0)
+    expected_in_factor = 1.05 ** 1.0
+    assert window.zoom > 1.0
+    assert abs(window.zoom - expected_in_factor) < 1e-6
+    # Sensitivity check: 1.05 per unit (much less sensitive than old 1.15)
+    assert abs(window.zoom - 1.05) < 1e-6
+
+
+def test_plot_id_chaining_and_streaming(monkeypatch):
+    import kaxe
+
+    plot_queue = queue.Queue()
+    test_port = 58497
+    monkeypatch.setenv("KAXE_VIEWER_PORT", str(test_port))
+
+    server, thread = start_server_thread(test_port, plot_queue)
+    try:
+        time.sleep(0.05)
+        plt1 = kaxe.Plot().id("my_custom_plot")
+        plt1.show()
+
+        assert not plot_queue.empty()
+        item1 = plot_queue.get(timeout=1.0)
+        assert item1["plot_id"] == "my_custom_plot"
+
+        plt2 = kaxe.Plot()
+        plt2.show(id="plot_from_show_arg")
+
+        assert not plot_queue.empty()
+        item2 = plot_queue.get(timeout=1.0)
+        assert item2["plot_id"] == "plot_from_show_arg"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_canvas_multi_card_and_versioning():
+    from io import BytesIO
+    from PIL import Image
+    from kaxe.viewer.window import KaxeViewerWindow
+
+    q = queue.Queue()
+    window = KaxeViewerWindow(q, width=800, height=600)
+
+    # 1. First plot arrives -> creates card "graph_1"
+    img = Image.new("RGB", (100, 80), color=(100, 150, 200))
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    raw_png = buf.getvalue()
+
+    q.put({"data": raw_png, "title": "Loss", "plot_id": "graph_1"})
+    window.poll_queue(0.016)
+    assert len(window.cards) == 1
+    assert window.cards[0].card_id == "graph_1"
+    assert len(window.cards[0].versions) == 1
+
+    # 2. Re-running with same ID -> increments version on existing card (stays 1 card!)
+    q.put({"data": raw_png, "title": "Loss v2", "plot_id": "graph_1"})
+    window.poll_queue(0.016)
+    assert len(window.cards) == 1
+    assert len(window.cards[0].versions) == 2
+    assert window.cards[0].active_version_idx == 1
+
+    # 3. New plot with distinct ID -> creates second card on the canvas
+    q.put({"data": raw_png, "title": "Accuracy", "plot_id": "graph_2"})
+    window.poll_queue(0.016)
+    assert len(window.cards) == 2
+    assert window.cards[0].card_id == "graph_1"
+    assert window.cards[1].card_id == "graph_2"
+
+    # 4. Moving card changes its coordinates
+    orig_x = window.cards[1].world_x
+    window.dragging_card = window.cards[1]
+    window.on_mouse_drag(x=100, y=100, dx=30, dy=15, buttons=1, modifiers=0)
+    assert window.cards[1].world_x > orig_x
+
+    window.close()
+
+
+
+
