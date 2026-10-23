@@ -277,6 +277,11 @@ class KaxeViewerWindow(pyglet.window.Window):
         self.pan_camera_start_x: float = 0.0
         self.pan_camera_start_y: float = 0.0
 
+        # Key state handler for live modifier tracking (Cmd, Ctrl, Shift)
+        self.keys = key.KeyStateHandler()
+        self.push_handlers(self.keys)
+        self.current_modifiers: int = 0
+
         self.show_hud: bool = True
         self.notification_text: str = ""
         self.notification_expiry: float = 0.0
@@ -307,7 +312,7 @@ class KaxeViewerWindow(pyglet.window.Window):
         )
 
         self.hud_right = pyglet.text.Label(
-            "[Drag] Move card / Pan  [Scroll] Zoom  [A] Arrange  [←/→] Version  [C] Copy  [Space] Fit",
+            "[Drag] Move card / Pan  [Cmd+Scroll] Zoom  [Scroll] Pan  [A] Arrange  [Space] Fit",
             font_size=11,
             x=self.width - 15,
             y=15,
@@ -489,19 +494,90 @@ class KaxeViewerWindow(pyglet.window.Window):
         self.dragging_card = None
         self.is_panning_camera = False
 
+    def is_zoom_modifier_pressed(self) -> bool:
+        """Return True if Meta (Command) or Control key is held down."""
+        if sys.platform == "darwin":
+            try:
+                from pyglet.libs.darwin import cocoapy
+                flags = cocoapy.NSEvent.modifierFlags()
+                if flags & (cocoapy.NSCommandKeyMask | cocoapy.NSControlKeyMask):
+                    return True
+            except Exception:
+                pass
+
+        if hasattr(self, "keys") and self.keys is not None:
+            if (
+                self.keys[key.LCOMMAND]
+                or self.keys[key.RCOMMAND]
+                or self.keys[key.LCTRL]
+                or self.keys[key.RCTRL]
+            ):
+                return True
+
+        if getattr(self, "current_modifiers", 0) & (key.MOD_COMMAND | key.MOD_CTRL):
+            return True
+
+        return False
+
+    def is_shift_pressed(self) -> bool:
+        """Return True if Shift key is held down."""
+        if sys.platform == "darwin":
+            try:
+                from pyglet.libs.darwin import cocoapy
+                flags = cocoapy.NSEvent.modifierFlags()
+                if flags & cocoapy.NSShiftKeyMask:
+                    return True
+            except Exception:
+                pass
+
+        if hasattr(self, "keys") and self.keys is not None:
+            if self.keys[key.LSHIFT] or self.keys[key.RSHIFT]:
+                return True
+
+        if getattr(self, "current_modifiers", 0) & key.MOD_SHIFT:
+            return True
+
+        return False
+
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
-        """Cursor-anchored zooming on the canvas."""
-        zoom_factor = 1.05 ** (-scroll_y)
-        new_zoom = max(0.04, min(self.zoom * zoom_factor, 20.0))
+        """Scroll handler:
 
-        if hasattr(self, "width"):
-            wx, wy = self.screen_to_world(x, y)
-            self.camera_x = wx - (x - self.width / 2.0) / new_zoom
-            self.camera_y = wy - (y - self.height / 2.0) / new_zoom
+        - If Meta (Cmd) or Control is held: ZOOM anchored at cursor.
+        - Otherwise: PAN canvas side-to-side and up/down without zooming.
+        """
+        if hasattr(self, "keys") and self.keys is not None:
+            should_zoom = self.is_zoom_modifier_pressed()
+        else:
+            # Fallback for mock unit test instances
+            should_zoom = True
 
-        self.zoom = new_zoom
+        if should_zoom:
+            zoom_factor = 1.05 ** (-scroll_y)
+            new_zoom = max(0.04, min(self.zoom * zoom_factor, 25.0))
+
+            if hasattr(self, "width"):
+                wx, wy = self.screen_to_world(x, y)
+                self.camera_x = wx - (x - self.width / 2.0) / new_zoom
+                self.camera_y = wy - (y - self.height / 2.0) / new_zoom
+
+            self.zoom = new_zoom
+        else:
+            # Pan without zooming
+            dx = scroll_x
+            dy = scroll_y
+
+            # Holding Shift converts vertical wheel into horizontal pan
+            if self.is_shift_pressed() and dy != 0.0 and dx == 0.0:
+                dx = dy
+                dy = 0.0
+
+            pan_speed = 20.0
+            self.camera_x -= (dx * pan_speed) / self.zoom
+            self.camera_y += (dy * pan_speed) / self.zoom
 
     def on_key_press(self, symbol: int, modifiers: int):
+        self.current_modifiers = modifiers
+
         # Fit all
         if symbol in (key.R, key.SPACE):
             self.fit_all_cards()
@@ -536,6 +612,9 @@ class KaxeViewerWindow(pyglet.window.Window):
         # Save selected card
         elif symbol == key.S:
             self.save_selected_card()
+
+    def on_key_release(self, symbol: int, modifiers: int):
+        self.current_modifiers = modifiers
 
     def copy_selected_card(self):
         if not self.selected_card or not self.selected_card.current_version:

@@ -54,7 +54,9 @@ When the viewer is open, `.show()` instantly streams plots to cards on your canv
 **Canvas & Card Controls:**
 * **Click & Drag on a Card**: Move that card freely across the canvas
 * **Click & Drag on Empty Space**: Pan the camera across the workspace
-* **Mouse Scroll**: Smooth zoom anchored to cursor
+* **Two-Finger Scroll / Trackpad**: Pan canvas side-to-side and up/down without zooming
+* **`[Shift]` + Scroll**: Pan horizontally (for 1D mouse wheels)
+* **`[Cmd]` / `[Ctrl]` + Scroll**: Smooth zoom anchored to cursor
 * **`[A]`**: Auto-arrange all cards in a neat row
 * **`[Space]` or `[R]`**: Fit all cards on the canvas into view
 * **`[1]`**: View canvas at 100% native pixel scale

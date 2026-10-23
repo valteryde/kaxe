@@ -220,6 +220,36 @@ def test_viewer_zoom_reversed_and_less_sensitive():
     assert abs(window.zoom - 1.05) < 1e-6
 
 
+def test_scroll_pans_side_to_side_without_zoom_modifier():
+    from unittest.mock import MagicMock
+    from kaxe.viewer.window import KaxeViewerWindow
+    from pyglet.window import key
+
+    window = object.__new__(KaxeViewerWindow)
+    window.keys = {key.LCOMMAND: False, key.RCOMMAND: False, key.LCTRL: False, key.RCTRL: False, key.LSHIFT: False, key.RSHIFT: False}
+    window.current_modifiers = 0
+    window.camera_x = 0.0
+    window.camera_y = 0.0
+    window.zoom = 1.0
+
+    # Horizontal scroll without Cmd/Ctrl -> pans horizontally, zoom stays unchanged!
+    window.on_mouse_scroll(x=400, y=300, scroll_x=2.0, scroll_y=0.0)
+    assert window.zoom == 1.0
+    assert window.camera_x < 0.0  # Camera moved left
+
+    # Vertical scroll without Cmd/Ctrl -> pans vertically, zoom stays unchanged!
+    orig_cam_x = window.camera_x
+    window.on_mouse_scroll(x=400, y=300, scroll_x=0.0, scroll_y=3.0)
+    assert window.zoom == 1.0
+    assert window.camera_x == orig_cam_x
+    assert window.camera_y > 0.0
+
+    # With Cmd key pressed -> zooms!
+    window.keys[key.LCOMMAND] = True
+    window.on_mouse_scroll(x=400, y=300, scroll_x=0.0, scroll_y=-1.0)
+    assert window.zoom > 1.0
+
+
 def test_plot_id_chaining_and_streaming(monkeypatch):
     import kaxe
 
