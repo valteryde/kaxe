@@ -268,7 +268,14 @@ class KaxeViewerWindow(pyglet.window.Window):
 
         # Mouse interaction state
         self.dragging_card: Optional[PlotCard] = None
+        self.drag_offset_x: float = 0.0
+        self.drag_offset_y: float = 0.0
+
         self.is_panning_camera: bool = False
+        self.pan_start_x: float = 0.0
+        self.pan_start_y: float = 0.0
+        self.pan_camera_start_x: float = 0.0
+        self.pan_camera_start_y: float = 0.0
 
         self.show_hud: bool = True
         self.notification_text: str = ""
@@ -455,20 +462,28 @@ class KaxeViewerWindow(pyglet.window.Window):
                 self.cards.append(hit_card)
                 self.select_card(hit_card)
                 self.dragging_card = hit_card
+                # Anchor grab offset so dragging sticks directly to the cursor
+                self.drag_offset_x = wx - hit_card.world_x
+                self.drag_offset_y = wy - hit_card.world_y
         else:
             # Clicked empty canvas -> pan
             self.select_card(None)
             self.is_panning_camera = True
+            self.pan_start_x = x
+            self.pan_start_y = y
+            self.pan_camera_start_x = self.camera_x
+            self.pan_camera_start_y = self.camera_y
 
     def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, buttons: int, modifiers: int):
         if self.dragging_card:
-            # Move card in world space
-            self.dragging_card.world_x += dx / self.zoom
-            self.dragging_card.world_y += dy / self.zoom
+            # Absolute position tracking: card sticks precisely to the cursor
+            wx, wy = self.screen_to_world(x, y)
+            self.dragging_card.world_x = wx - self.drag_offset_x
+            self.dragging_card.world_y = wy - self.drag_offset_y
         elif self.is_panning_camera:
-            # Move camera in world space
-            self.camera_x -= dx / self.zoom
-            self.camera_y -= dy / self.zoom
+            # Absolute canvas panning: workspace follows the mouse 1:1
+            self.camera_x = self.pan_camera_start_x - (x - self.pan_start_x) / self.zoom
+            self.camera_y = self.pan_camera_start_y - (y - self.pan_start_y) / self.zoom
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
         self.dragging_card = None

@@ -282,11 +282,13 @@ def test_canvas_multi_card_and_versioning():
     assert window.cards[0].card_id == "graph_1"
     assert window.cards[1].card_id == "graph_2"
 
-    # 4. Moving card changes its coordinates
-    orig_x = window.cards[1].world_x
-    window.dragging_card = window.cards[1]
-    window.on_mouse_drag(x=100, y=100, dx=30, dy=15, buttons=1, modifiers=0)
-    assert window.cards[1].world_x > orig_x
+    # 4. Moving card changes its coordinates via press and drag
+    card = window.cards[1]
+    sx, sy = window.world_to_screen(card.world_x + 20, card.world_y + 20)
+    window.on_mouse_press(int(sx), int(sy), button=1, modifiers=0)
+    orig_x = card.world_x
+    window.on_mouse_drag(int(sx + 50), int(sy + 20), dx=50, dy=20, buttons=1, modifiers=0)
+    assert card.world_x > orig_x
 
     window.close()
 
