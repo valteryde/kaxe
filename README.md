@@ -11,9 +11,9 @@ Documentation: [kaxe.readthedocs.io](https://kaxe.readthedocs.io/en/latest/)
 
 ```bash
 pip install kaxe          # 2D plotting (default)
-pip install kaxe[3d]        # add 3D plotting (OpenGL)
-pip install kaxe[pdf]       # add PDF export
-pip install kaxe[3d,pdf]    # 3D + PDF
+pip install kaxe[viewer]  # add interactive desktop viewer (pyglet)
+pip install kaxe[3d]      # add 3D plotting (OpenGL)
+pip install kaxe[pdf]     # add PDF export
 ```
 
 ## Quick example
@@ -26,9 +26,36 @@ plt.add(kaxe.Function2D(lambda x: x**2 - 4))
 plt.add(kaxe.Points2D([1, 2, 3], [1, 4, 9]))
 plt.theme(kaxe.Themes.A4Medium)
 plt.title("$x^2 - 4$")
+plt.show()                # streams to viewer if open, or opens system viewer
 plt.save("figure.png")
 plt.save("figure.svg")
 ```
+
+## Interactive Plot Viewer
+
+Kaxe includes a dedicated, lightweight OpenGL viewer powered by [pyglet](https://pyglet.org) so you don't end up with cluttering preview windows while iterating on plots.
+
+1. **Start the viewer** in a terminal:
+   ```bash
+   kaxe viewer
+   ```
+2. **Run your scripts as normal** calling `.show()`:
+   ```python
+   plt.show()
+   ```
+
+When the viewer is open, `.show()` automatically streams the plot to your window and returns immediately. If the viewer is closed, `.show()` falls back to your operating system's default viewer.
+
+**Viewer Controls:**
+* **Mouse Scroll**: Smooth zoom anchored to mouse cursor
+* **Left Click + Drag**: Pan around the canvas
+* **`[R]` or `[Space]`**: Reset zoom & fit plot to window
+* **`[1]`**: View at 100% native pixel scale
+* **`[←]` / `[→]`**: Step backwards and forwards through plot history from the session
+* **`[C]`** *(or Cmd/Ctrl+C)*: Copy plot directly to system clipboard
+* **`[S]`** *(or Cmd/Ctrl+S)*: Save plot to timestamped PNG
+* **`[H]`**: Toggle status & shortcuts HUD
+
 
 See the [getting started guide](https://kaxe.readthedocs.io/en/latest/pages/start.html), [recipes](https://kaxe.readthedocs.io/en/latest/pages/recipes.html), [styling guide](https://kaxe.readthedocs.io/en/latest/pages/styling.html), and [export guide](https://kaxe.readthedocs.io/en/latest/pages/export.html) for the full API.
 
