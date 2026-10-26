@@ -242,7 +242,7 @@ def test_scroll_pans_side_to_side_without_zoom_modifier():
     window.on_mouse_scroll(x=400, y=300, scroll_x=0.0, scroll_y=3.0)
     assert window.zoom == 1.0
     assert window.camera_x == orig_cam_x
-    assert window.camera_y > 0.0
+    assert window.camera_y < 0.0  # Camera moved down, canvas moves up
 
     # With Cmd key pressed -> zooms!
     window.keys[key.LCOMMAND] = True

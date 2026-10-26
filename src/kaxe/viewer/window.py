@@ -573,7 +573,7 @@ class KaxeViewerWindow(pyglet.window.Window):
 
             pan_speed = 20.0
             self.camera_x -= (dx * pan_speed) / self.zoom
-            self.camera_y += (dy * pan_speed) / self.zoom
+            self.camera_y -= (dy * pan_speed) / self.zoom
 
     def on_key_press(self, symbol: int, modifiers: int):
         self.current_modifiers = modifiers
