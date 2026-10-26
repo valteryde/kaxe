@@ -362,6 +362,7 @@ class Axis(AttrObject):
 
                 if (i + markerOffset) % maxOverlays != 0:
 
+                    marker.textLabel.hide()
                     marker.textLabel.img = Image.new('RGBA', (0,0))
                     if hasattr(marker, 'line'):
                         marker.line.color = (
@@ -589,6 +590,10 @@ class Axis(AttrObject):
 
         
     def __pixelCollision__(self, label:Text, title:Text):
+        if label.__hidden__ or label.img.width == 0 or label.img.height == 0:
+            return False
+        if title.__hidden__ or title.img.width == 0 or title.img.height == 0:
+            return False
 
         lx, ly, lwidth, lheight = label.getBoundingBox()
         tx, ty, twidth, theight = title.getBoundingBox()
@@ -769,6 +774,10 @@ class Axis(AttrObject):
             
             for a, b in l:
                 if not hasattr(a, 'textLabel') or not hasattr(b, 'textLabel'):
+                    continue
+                if a.textLabel.__hidden__ or b.textLabel.__hidden__:
+                    continue
+                if a.textLabel.img.width == 0 or b.textLabel.img.width == 0:
                     continue
                 
                 if not self.__topLeftBoxOverlays__(a.textLabel, b.textLabel):

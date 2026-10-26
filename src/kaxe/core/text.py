@@ -178,6 +178,8 @@ class Text(Shape):
         ]
 
     def drawPillow(self, surface):
+        if self.__hidden__ or self.img.width == 0 or self.img.height == 0:
+            return
         [y] = flipHorizontal(surface, self.__center__[1] + self.height/2)
         if self.clip_box is not None:
             blit_image_clipped(
@@ -191,6 +193,8 @@ class Text(Shape):
             blitImageToSurface(surface, self.img, (self.__leftTop__[0], y))
 
     def drawSvg(self, doc):
+        if self.__hidden__ or self.img.width == 0 or self.img.height == 0:
+            return
         kaxe_top = self.__center__[1] + self.height / 2
         svg_top = doc.flip_y(kaxe_top)
         rotate_center = (

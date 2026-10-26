@@ -193,7 +193,8 @@ class Marker(AttrObject):
         label_y += nudge[1]
 
         self.textLabel.setCenterPos(label_x, label_y)
-        self.textLabel.show()
+        if self.textLabel.img.width > 0 and self.textLabel.img.height > 0:
+            self.textLabel.show()
 
 
     def getBoundingBox(self):
