@@ -20,7 +20,7 @@ def _format_contour_level(z, a, b, steps):
         digits = max(4, int(-math.log10(step_size)) + 2)
     else:
         digits = 4
-    return str(koundTeX(round(z, digits)))
+    return koundTeX(z, decimals=digits)
 
 
 def _polyline_arc_length(polyline):

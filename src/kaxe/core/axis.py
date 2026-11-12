@@ -189,7 +189,7 @@ class Axis(AttrObject):
             for i in range(0, ticksBeforeNull+1):
                 p = -step*i
                 markers.append({
-                    "text": str(koundTeX(p)),
+                    "text": koundTeX(p),
                     "pos" : p,
                     "style": []
                 })
@@ -197,7 +197,7 @@ class Axis(AttrObject):
             for i in range(1, ticksAfterNull+1):
                 p = step*i
                 markers.append({
-                    "text": str(koundTeX(p)),
+                    "text": koundTeX(p),
                     "pos" : p,
                     "style": []
                 })
@@ -214,8 +214,10 @@ class Axis(AttrObject):
 
             for i in range(math.floor(lengthOverStep)+2):
                 p = direction*step*i + startPos
+                if abs(p) <= 1e-12 * step:
+                    p = 0
                 markers.append({
-                    "text": str(str(koundTeX(p))),
+                    "text": koundTeX(p),
                     "pos" : p,
                     "style": []
                 })

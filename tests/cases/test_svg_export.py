@@ -174,7 +174,8 @@ def test_svg_overlapping_axis_markers_not_rendered():
     plot.save(buf, format="svg")
     root = _parse_svg(buf.getvalue().decode("utf-8"))
     texts = [el.text for el in root.iter(f"{{{SVG_NS}}}text") if el.text]
-    # "2.0" and "4.0" (from 2.0*10^-4, 4.0*10^-4) overlap and must be skipped
-    assert not any("2.0" in t for t in texts)
-    assert any("8.0" in t for t in texts)
+    # "2" and "4" (from 2*10^-4, 4*10^-4) overlap and must be skipped; "8" and "1.8" remain
+    assert "2" not in texts
+    assert "8" in texts
+    assert "1.8" in texts
 

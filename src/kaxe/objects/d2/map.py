@@ -37,19 +37,21 @@ class ColorScale:
         """
         self.digits = 200
 
+        decimals = None if self.digits >= 20 else self.digits
+
         if type(lower) in [list, tuple]:
             self.lower = lower[0]
             self.lowerTitle = lower[1]
         else:
             self.lower = lower
-            self.lowerTitle = str(koundTeX(round(self.lower, self.digits)))
+            self.lowerTitle = koundTeX(self.lower, decimals=decimals)
 
         if type(upper) in [list, tuple]:
             self.upper = upper[0]
             self.upperTitle = upper[1]
         else:
             self.upper = upper
-            self.upperTitle = str(koundTeX(round(self.upper, self.digits)))
+            self.upperTitle = koundTeX(self.upper, decimals=decimals)
 
         self.cmap = cmap
         self.supports = [identities.XYPLOT, identities.XYZPLOT]

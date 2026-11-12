@@ -137,11 +137,11 @@ class LogPlot(Plot):
                             unconfirmedMarkers.add(10**math.ceil(testVal) / 2)
                             continue
                     
-                    marker["text"] = str(koundTeX(transinv(marker["pos"])))
+                    marker["text"] = koundTeX(transinv(marker["pos"]))
                     confirmedMarkers.append(marker)
                 
                 for marker in unconfirmedMarkers:
-                    axis.addMarkerAtPos(math.log10(marker), str(koundTeX(marker)), self)
+                    axis.addMarkerAtPos(math.log10(marker), koundTeX(marker), self)
 
                 axis.addMarkersToAxis(confirmedMarkers, self)
 
