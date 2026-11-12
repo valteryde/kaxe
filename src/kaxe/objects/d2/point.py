@@ -1,4 +1,4 @@
-
+import math
 from ...core.styles import *
 from ...core.color import to_rgba
 from ...core.shapes import shapes
@@ -109,12 +109,16 @@ class Points2D:
             self.__finalizeConnectedLine__(parent, line_width)
             return
 
-        for i, (x,y) in enumerate(zip(self.x,self.y)):
-            x,y = parent.pixel(x, y)
-            
-            if not parent.inside(x,y):
+        pixels = [parent.pixel(x, y) for x, y in zip(self.x, self.y)]
+        n_pts = len(pixels)
+        skip_dist = size if self.symbol else None
+        has_dashes = self.dashed > 0 or self.dotted > 0
+        default_radius = line_width / 2 if self.connect else size / 2
+
+        for i, (x, y) in enumerate(pixels):
+            if not parent.inside(x, y):
                 continue
-            
+
             # symbol
             if self.show_points:
                 if self.symbol:
@@ -124,8 +128,7 @@ class Points2D:
                     if hasattr(symbol, 'centerAlign'): symbol.centerAlign()
                     self.points.append(symbol)
                 else:
-                    radius = line_width / 2 if self.connect else size / 2
-                    shapes.Circle(x, y, radius, self.color, batch=self.batch)
+                    shapes.Circle(x, y, default_radius, self.color, batch=self.batch)
 
             # lollipop (lagt til lines)
             if self.lollipop:
@@ -134,24 +137,20 @@ class Points2D:
                 self.lines.append(line)
 
             # connect
-            if not self.connect or i == len(self.x)-1:
+            if not self.connect or i == n_pts - 1 or has_dashes:
                 continue
 
-            if self.dashed > 0 or self.dotted > 0:
-                continue
-            
-            x1, y1 = parent.pixel(self.x[i+1], self.y[i+1])
+            x1, y1 = pixels[i + 1]
             if x1 is None or y1 is None or x is None or y is None:
                 continue
-            
-            skip_dist = size if self.symbol else None
-            if skip_dist and vlen(vdiff((x1, y1), (x,y))) < skip_dist:
+
+            if skip_dist and math.hypot(x1 - x, y1 - y) < skip_dist:
                 continue
 
             if not parent.inside(x1, y1):
                 continue
 
-            line = shapes.Line(x,y, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
+            line = shapes.Line(x, y, x1, y1, color=self.color, width=line_width, batch=self.batch, center=True)
             self.lines.append(line)
 
 

@@ -237,14 +237,13 @@ class Line(Shape):
         if self.thickness == 0:
             return
 
-        [y0, y1] = flipHorizontal(surface, self.y0, self.y1)        
-
+        h = surface.height
         drawLineOnPillowImage(
             surface,
             self.x0,
-            y0,
+            h - self.y0,
             self.x1,
-            y1,
+            h - self.y1,
             self.color,
             self.thickness
         )
@@ -259,6 +258,10 @@ class Line(Shape):
 
     def drawSvg(self, doc: SvgDocument):
         doc.add_line(self.x0, self.y0, self.x1, self.y1, self.color, self.thickness)
+
+
+_CIRCLE_SPRITE_CACHE = {}
+_MAX_CIRCLE_SPRITE_CACHE = 512
 
 
 class Circle(Shape):
@@ -278,30 +281,47 @@ class Circle(Shape):
     def centerAlign(self):
         self.cornerAlign = False
 
+    @staticmethod
+    def _get_sprite(radius, color: tuple, fill: bool, width: int):
+        """Return a cached RGBA circle sprite for the given geometry and style."""
+        doubleradius = int(2 * radius)
+        if doubleradius <= 0:
+            return None
+        key = (doubleradius, radius, color, fill, width if not fill else 0)
+        sprite = _CIRCLE_SPRITE_CACHE.get(key)
+        if sprite is not None:
+            return sprite
 
-    def drawPillow(self, surface):
-        [y] = flipHorizontal(surface, self.y)
-
-        if not self.cornerAlign:
-            y -= self.radius
-        else:
-            self.x += self.radius   
-            y -= 2 * self.radius
-        
-        # Create a small RGBA circle image
-        doubleradius = int(2*self.radius)
-        circle = Image.new("RGBA", (doubleradius, doubleradius), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(circle)
+        sprite = Image.new("RGBA", (doubleradius, doubleradius), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(sprite)
         # PIL treats the bbox as inclusive on both ends; shrink by half a pixel so
         # the rendered circle is symmetric and not clipped at the bottom edge.
-        pos = (-0.5, -0.5, 2 * self.radius - 0.5, 2 * self.radius - 0.5)
-        if self.fill:
-            draw.ellipse(pos, fill=self.color)
+        pos = (-0.5, -0.5, 2 * radius - 0.5, 2 * radius - 0.5)
+        if fill:
+            draw.ellipse(pos, fill=color)
         else:
-            draw.ellipse(pos, outline=self.color, width=self.width)
+            draw.ellipse(pos, outline=color, width=width)
+
+        if len(_CIRCLE_SPRITE_CACHE) >= _MAX_CIRCLE_SPRITE_CACHE:
+            _CIRCLE_SPRITE_CACHE.pop(next(iter(_CIRCLE_SPRITE_CACHE)))
+        _CIRCLE_SPRITE_CACHE[key] = sprite
+        return sprite
+
+    def drawPillow(self, surface):
+        sprite = self._get_sprite(self.radius, self.color, self.fill, self.width)
+        if sprite is None:
+            return
+
+        y = surface.height - self.y
+        if not self.cornerAlign:
+            x = self.x - self.radius
+            y -= self.radius
+        else:
+            x = self.x
+            y -= 2 * self.radius
 
         # Paste the circle onto the main image using itself as the mask
-        surface.paste(circle, (int(self.x - self.radius), int(y)), mask=circle)
+        surface.paste(sprite, (int(x), int(y)), mask=sprite)
 
 
 
@@ -543,10 +563,12 @@ class LineSegment(Shape):
 
         draw = ImageDraw.Draw(surface)
         
+        h = surface.height
+        ox, oy = self.offset
         newpos = []
-        for x,y in self.points:
-            newpos.append(x+self.offset[0])
-            newpos.append(flipHorizontal(surface, y+self.offset[1])[0])
+        for x, y in self.points:
+            newpos.append(x + ox)
+            newpos.append(h - (y + oy))
 
         if self.dotted:
             self.__drawDottedLines__(draw, newpos)

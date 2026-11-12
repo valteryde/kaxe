@@ -2,9 +2,11 @@
 from io import BytesIO
 import time
 from typing import Union, Optional
+import numpy as np
 from .helper import *
 import logging
 from .styles import *
+from .color import to_rgba
 from .legend import LegendBox
 from .shapes import shapes
 from .svg import SvgDocument, infer_format, is_file_path
@@ -508,11 +510,24 @@ class Window(AttrObject):
         pbar = make_progress_bar(self.showProgressBar, len(self.shapes), 'Decorating')
 
         winSize = self.width+self.padding[0]+self.padding[2], self.height+self.padding[1]+self.padding[3]
-        surface = Image.new('RGBA', winSize)
-        
-        if self.getAttr('backgroundColor')[3] != 0:
-            background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=self.getAttr('backgroundColor')) # 10 ms
-            background.draw(surface) # ? ms
+        bg = to_rgba(self.getAttr('backgroundColor'))
+        if winSize[0] > 0 and winSize[1] > 0:
+            buf = np.empty((winSize[1], winSize[0], 4), dtype=np.uint8)
+            if bg[3] == 255:
+                buf[:, :] = bg
+            else:
+                buf.fill(0)
+            surface = Image.frombuffer('RGBA', winSize, buf, 'raw', 'RGBA', 0, 1)
+            surface.readonly = 0
+            surface._kaxe_buf = buf
+            if 0 < bg[3] < 255:
+                background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=bg)
+                background.draw(surface)
+        else:
+            surface = Image.new('RGBA', winSize)
+            if bg[3] != 0:
+                background = shapes.Rectangle(0, 0, winSize[0], winSize[1], color=bg) # 10 ms
+                background.draw(surface) # ? ms
 
         for shape in self.shapes:
             shape.draw(surface)

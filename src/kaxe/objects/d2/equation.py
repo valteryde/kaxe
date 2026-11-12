@@ -1,5 +1,6 @@
 
 from ...core.shapes import shapes
+from ...core.svg import SvgDocument
 from ...core.color import to_rgba
 from ...core.symbol import symbol
 from ...plot import identities
@@ -314,6 +315,24 @@ class Equation:
 
 
     def draw(self, *args, **kwargs):
+        if (
+            self.dots
+            and args
+            and not isinstance(args[0], SvgDocument)
+            and len(self.dots) == len(self.batch.objects)
+        ):
+            surface = args[0]
+            first = self.dots[0]
+            sprite = shapes.Circle._get_sprite(first.radius, first.color, first.fill, first.width)
+            if sprite is None:
+                return
+            h = surface.height
+            r = first.radius
+            paste = surface.paste
+            for dot in self.dots:
+                if not dot.__hidden__:
+                    paste(sprite, (int(dot.x - r), int(h - dot.y - r)), mask=sprite)
+            return
         self.batch.draw(*args, **kwargs)
 
 
