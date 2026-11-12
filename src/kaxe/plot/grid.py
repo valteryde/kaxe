@@ -187,10 +187,6 @@ class Grid(AttrObject):
 
         cellWidth, cellHeight = self.width // gridSize[0], self.height // gridSize[1]
 
-        leftpadding = 0
-        rightpadding = 0
-        toppadding = 0
-        bottompadding = 0
         gapcol = 0
 
         for row in grid:
@@ -212,15 +208,8 @@ class Grid(AttrObject):
                 plot.__ioBytes = memfile
                 memfile.seek(0)
 
-                if colNum == 0:
-                    leftpadding = max(leftpadding, plot.padding[0])
-                    bottompadding = max(bottompadding, plot.padding[1])
-                else:
+                if colNum > 0:
                     gapcol = max(gapcol, plot.padding[0] + row[colNum - 1].padding[2])
-
-                if colNum == len(row) - 1:
-                    rightpadding = max(rightpadding, plot.padding[2])
-                    toppadding = max(toppadding, plot.padding[3])
 
         gapcol = max(gapcol, self.gridGap[0])
 
@@ -229,30 +218,38 @@ class Grid(AttrObject):
             boundary_gap = 0
             row_above = grid[row_idx]
             row_below = grid[row_idx + 1]
-            for col_idx in range(max(len(row_above), len(row_below))):
-                if col_idx < len(row_above) and col_idx < len(row_below):
-                    above = row_above[col_idx]
-                    below = row_below[col_idx]
-                    boundary_gap = max(
-                        boundary_gap,
-                        above.padding[1] + below.padding[3],
-                    )
+            for col_idx in range(min(len(row_above), len(row_below))):
+                above = row_above[col_idx]
+                below = row_below[col_idx]
+                boundary_gap = max(
+                    boundary_gap,
+                    above.padding[1] + below.padding[3],
+                )
             gaprows.append(max(boundary_gap, self.gridGap[1]))
 
         num_rows = len(grid)
         largetsRowNumber = max(len(i) for i in grid)
-        width = (
-            gapcol * (largetsRowNumber - 1)
-            + largetsRowNumber * cellWidth
-            + leftpadding
-            + rightpadding
-        )
-        height = (
-            num_rows * cellHeight
-            + sum(gaprows)
-            + toppadding
-            + bottompadding
-        )
+        core_width = gapcol * (largetsRowNumber - 1) + largetsRowNumber * cellWidth
+        core_height = num_rows * cellHeight + sum(gaprows)
+
+        y_rel = [0]
+        for gap in gaprows:
+            y_rel.append(y_rel[-1] + cellHeight + gap)
+
+        leftpadding = 0
+        rightpadding = 0
+        toppadding = 0
+        bottompadding = 0
+        for row_idx, row in enumerate(grid):
+            for col_idx, plot in enumerate(row):
+                x_rel = col_idx * (cellWidth + gapcol)
+                leftpadding = max(leftpadding, plot.padding[0] - x_rel)
+                rightpadding = max(rightpadding, x_rel + cellWidth + plot.padding[2] - core_width)
+                toppadding = max(toppadding, plot.padding[3] - y_rel[row_idx])
+                bottompadding = max(bottompadding, y_rel[row_idx] + cellHeight + plot.padding[1] - core_height)
+
+        width = core_width + leftpadding + rightpadding
+        height = core_height + toppadding + bottompadding
 
         size = (
             width + self.outerPadding[0] + self.outerPadding[2],
@@ -313,11 +310,11 @@ class Grid(AttrObject):
                 legend_image,
                 (
                     image.width // 2 - legend_image.width // 2,
-                    image.height - legend_image.height - self.outerPadding[3],
+                    image.height - legend_image.height - self.outerPadding[1],
                 ),
             )
 
-        y = toppadding + self.outerPadding[1]
+        y = toppadding + self.outerPadding[3]
 
         for row_idx, row in enumerate(grid):
             x = leftpadding + self.outerPadding[0]
@@ -352,11 +349,11 @@ class Grid(AttrObject):
         legend_doc = layout["legend_doc"]
         if legend_doc is not None:
             lx = size[0] // 2 - legend_doc.width // 2
-            ly = size[1] - legend_doc.height - self.outerPadding[3]
+            ly = size[1] - legend_doc.height - self.outerPadding[1]
             embed_svg_children(doc, list(legend_doc._elements), lx, ly)
             merge_fondi_css(doc, legend_doc._fondi_font_css)
 
-        y = toppadding + self.outerPadding[1]
+        y = toppadding + self.outerPadding[3]
 
         for row_idx, row in enumerate(grid):
             x = leftpadding + self.outerPadding[0]
